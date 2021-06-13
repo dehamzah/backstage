@@ -1,5 +1,11 @@
 # @backstage/plugin-techdocs
 
+## 0.9.6
+
+### Patch Changes
+
+- 667656c8b: Adding support for user owned document filter for TechDocs custom Homepage
+
 ## 0.9.5
 
 ### Patch Changes

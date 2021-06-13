@@ -1,5 +1,11 @@
 # @backstage/plugin-catalog
 
+## 0.6.3
+
+### Patch Changes
+
+- 30c2fdad2: Exports `CatalogLayout` and `CreateComponentButton` for catalog customization.
+
 ## 0.6.2
 
 ### Patch Changes

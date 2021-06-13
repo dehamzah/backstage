@@ -1,5 +1,11 @@
 # @backstage/codemods
 
+## 0.1.2
+
+### Patch Changes
+
+- 59752e103: Fix execution of `jscodeshift` on windows.
+
 ## 0.1.1
 
 ### Patch Changes

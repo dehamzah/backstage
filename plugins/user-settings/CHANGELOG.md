@@ -1,5 +1,11 @@
 # @backstage/plugin-user-settings
 
+## 0.2.11
+
+### Patch Changes
+
+- 42a2d2ebc: Fix a bug that prevented changing themes on the user settings page when the theme `id` didn't match exactly the theme `variant`.
+
 ## 0.2.10
 
 ### Patch Changes
