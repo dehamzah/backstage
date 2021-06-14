@@ -1,8 +1,8 @@
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
-  name: artist-lookup
-  description: Artist Lookup Up
+  name: Artist-lookup
+  description: Artist Lookup Up Down
   tags:
     - java
     - data
