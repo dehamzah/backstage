@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,11 +36,15 @@ import {
   SearchOptions,
   SearchResponse,
   UrlReader,
+  ReadUrlResponse,
+  ReadUrlOptions,
 } from './types';
 
 /**
  * A processor that adds the ability to read files from Bitbucket v1 and v2 APIs, such as
  * the one exposed by Bitbucket Cloud itself.
+ *
+ * @public
  */
 export class BitbucketUrlReader implements UrlReader {
   static factory: ReaderFactory = ({ config, treeResponseFactory }) => {
@@ -58,13 +62,8 @@ export class BitbucketUrlReader implements UrlReader {
     private readonly integration: BitbucketIntegration,
     private readonly deps: { treeResponseFactory: ReadTreeResponseFactory },
   ) {
-    const {
-      host,
-      apiBaseUrl,
-      token,
-      username,
-      appPassword,
-    } = integration.config;
+    const { host, apiBaseUrl, token, username, appPassword } =
+      integration.config;
 
     if (!apiBaseUrl) {
       throw new Error(
@@ -89,7 +88,7 @@ export class BitbucketUrlReader implements UrlReader {
     }
 
     if (response.ok) {
-      return Buffer.from(await response.text());
+      return Buffer.from(await response.arrayBuffer());
     }
 
     const message = `${url} could not be read as ${bitbucketUrl}, ${response.status} ${response.statusText}`;
@@ -97,6 +96,15 @@ export class BitbucketUrlReader implements UrlReader {
       throw new NotFoundError(message);
     }
     throw new Error(message);
+  }
+
+  async readUrl(
+    url: string,
+    _options?: ReadUrlOptions,
+  ): Promise<ReadUrlResponse> {
+    // TODO etag is not implemented yet.
+    const buffer = await this.read(url);
+    return { buffer: async () => buffer };
   }
 
   async readTree(
@@ -127,7 +135,7 @@ export class BitbucketUrlReader implements UrlReader {
     }
 
     return await this.deps.treeResponseFactory.fromTarArchive({
-      stream: (archiveBitbucketResponse.body as unknown) as Readable,
+      stream: archiveBitbucketResponse.body as unknown as Readable,
       subpath: filepath,
       etag: lastCommitShortHash,
       filter: options?.filter,

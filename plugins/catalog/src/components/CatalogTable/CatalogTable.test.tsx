@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,7 +73,11 @@ describe('CatalogTable component', () => {
         value={{
           entities,
           filters: {
-            user: new UserListFilter('owned', undefined, () => false),
+            user: new UserListFilter(
+              'owned',
+              () => false,
+              () => false,
+            ),
           },
         }}
       >

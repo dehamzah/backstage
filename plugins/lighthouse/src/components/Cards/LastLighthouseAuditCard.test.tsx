@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 
 import { Entity } from '@backstage/catalog-model';
-import { EntityContext } from '@backstage/plugin-catalog-react';
+import { EntityProvider } from '@backstage/plugin-catalog-react';
 import { lightTheme } from '@backstage/theme';
 import { ThemeProvider } from '@material-ui/core';
 import { render } from '@testing-library/react';
@@ -64,15 +64,13 @@ describe('<LastLighthouseAuditCard />', () => {
     },
   };
 
-  const subject = (value = {}) =>
+  const subject = () =>
     render(
       <ThemeProvider theme={lightTheme}>
         <MemoryRouter>
-          <EntityContext.Provider
-            value={{ entity: entity, loading: false, ...value }}
-          >
+          <EntityProvider entity={entity}>
             <LastLighthouseAuditCard />
-          </EntityContext.Provider>
+          </EntityProvider>
         </MemoryRouter>
       </ThemeProvider>,
     );
@@ -93,7 +91,9 @@ describe('<LastLighthouseAuditCard />', () => {
     describe('where a category score is not a number', () => {
       beforeEach(() => {
         entityWebsite = { ...entityWebsite };
-        (entityWebsite.lastAudit as AuditCompleted).categories.accessibility.score = NaN;
+        (
+          entityWebsite.lastAudit as AuditCompleted
+        ).categories.accessibility.score = NaN;
       });
 
       afterEach(() => {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,18 +15,19 @@
  */
 
 import { KubernetesAuthTranslator } from './types';
-import { ClusterDetails } from '../types/types';
+import { ServiceAccountClusterDetails } from '../types/types';
 import { KubernetesRequestBody } from '@backstage/plugin-kubernetes-common';
 
 export class ServiceAccountKubernetesAuthTranslator
-  implements KubernetesAuthTranslator {
+  implements KubernetesAuthTranslator
+{
   async decorateClusterDetailsWithAuth(
-    clusterDetails: ClusterDetails,
+    clusterDetails: ServiceAccountClusterDetails,
     // To ignore TS6133 linting error where it detects 'requestBody' is declared but its value is never read.
     // @ts-ignore-start
     requestBody: KubernetesRequestBody, // eslint-disable-line @typescript-eslint/no-unused-vars
     // @ts-ignore-end
-  ): Promise<ClusterDetails> {
+  ): Promise<ServiceAccountClusterDetails> {
     return clusterDetails;
   }
 }

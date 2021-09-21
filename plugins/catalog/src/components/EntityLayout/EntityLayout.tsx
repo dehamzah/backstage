@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,35 +20,33 @@ import {
   RELATION_OWNED_BY,
 } from '@backstage/catalog-model';
 import {
-  attachComponentData,
   Content,
   Header,
   HeaderLabel,
-  IconComponent,
+  Link,
   Page,
   Progress,
   RoutedTabs,
-} from '@backstage/core';
+  WarningPanel,
+} from '@backstage/core-components';
+import {
+  attachComponentData,
+  IconComponent,
+  useElementFilter,
+} from '@backstage/core-plugin-api';
 import {
   EntityContext,
   EntityRefLinks,
+  FavoriteEntity,
   getEntityRelations,
+  UnregisterEntityDialog,
   useEntityCompoundName,
 } from '@backstage/plugin-catalog-react';
 import { Box, TabProps } from '@material-ui/core';
 import { Alert } from '@material-ui/lab';
-import {
-  Children,
-  default as React,
-  Fragment,
-  isValidElement,
-  useContext,
-  useState,
-} from 'react';
+import React, { useContext, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { EntityContextMenu } from '../EntityContextMenu/EntityContextMenu';
-import { FavouriteEntity } from '../FavouriteEntity/FavouriteEntity';
-import { UnregisterEntityDialog } from '../UnregisterEntityDialog/UnregisterEntityDialog';
 
 type SubRoute = {
   path: string;
@@ -58,45 +56,13 @@ type SubRoute = {
   tabProps?: TabProps<React.ElementType, { component?: React.ElementType }>;
 };
 
+const dataKey = 'plugin.catalog.entityLayoutRoute';
+
 const Route: (props: SubRoute) => null = () => null;
+attachComponentData(Route, dataKey, true);
 
 // This causes all mount points that are discovered within this route to use the path of the route itself
 attachComponentData(Route, 'core.gatherMountPoints', true);
-
-function createSubRoutesFromChildren(
-  childrenProps: React.ReactNode,
-  entity: Entity | undefined,
-): SubRoute[] {
-  // Directly comparing child.type with Route will not work with in
-  // combination with react-hot-loader in storybook
-  // https://github.com/gaearon/react-hot-loader/issues/304
-  const routeType = (
-    <Route path="" title="">
-      <div />
-    </Route>
-  ).type;
-
-  return Children.toArray(childrenProps).flatMap(child => {
-    if (!isValidElement(child)) {
-      return [];
-    }
-
-    if (child.type === Fragment) {
-      return createSubRoutesFromChildren(child.props.children, entity);
-    }
-
-    if (child.type !== routeType) {
-      throw new Error('Child of EntityLayout must be an EntityLayout.Route');
-    }
-
-    const { path, title, children, if: condition, tabProps } = child.props;
-    if (condition && entity && !condition(entity)) {
-      return [];
-    }
-
-    return [{ path, title, children, tabProps }];
-  });
-}
 
 const EntityLayoutTitle = ({
   entity,
@@ -104,12 +70,21 @@ const EntityLayoutTitle = ({
 }: {
   title: string;
   entity: Entity | undefined;
-}) => (
-  <Box display="inline-flex" alignItems="center" height="1em">
-    {title}
-    {entity && <FavouriteEntity entity={entity} />}
-  </Box>
-);
+}) => {
+  return (
+    <Box display="inline-flex" alignItems="center" height="1em" maxWidth="100%">
+      <Box
+        component="span"
+        textOverflow="ellipsis"
+        whiteSpace="nowrap"
+        overflow="hidden"
+      >
+        {title}
+      </Box>
+      {entity && <FavoriteEntity entity={entity} />}
+    </Box>
+  );
+};
 
 const headerProps = (
   paramKind: string | undefined,
@@ -119,7 +94,8 @@ const headerProps = (
 ): { headerTitle: string; headerType: string } => {
   const kind = paramKind ?? entity?.kind ?? '';
   const namespace = paramNamespace ?? entity?.metadata.namespace ?? '';
-  const name = paramName ?? entity?.metadata.name ?? '';
+  const name =
+    entity?.metadata.title ?? paramName ?? entity?.metadata.name ?? '';
   return {
     headerTitle: `${name}${
       namespace && namespace !== ENTITY_DEFAULT_NAMESPACE
@@ -168,8 +144,14 @@ type ExtraContextMenuItem = {
   onClick: () => void;
 };
 
+// unstable context menu option, eg: disable the unregister entity menu
+type contextMenuOptions = {
+  disableUnregister: boolean;
+};
+
 type EntityLayoutProps = {
   UNSTABLE_extraContextMenuItems?: ExtraContextMenuItem[];
+  UNSTABLE_contextMenuOptions?: contextMenuOptions;
   children?: React.ReactNode;
 };
 
@@ -190,12 +172,38 @@ type EntityLayoutProps = {
  */
 export const EntityLayout = ({
   UNSTABLE_extraContextMenuItems,
+  UNSTABLE_contextMenuOptions,
   children,
 }: EntityLayoutProps) => {
   const { kind, namespace, name } = useEntityCompoundName();
   const { entity, loading, error } = useContext(EntityContext);
+  const routes = useElementFilter(
+    children,
+    elements =>
+      elements
+        .selectByComponentData({
+          key: dataKey,
+          withStrictError:
+            'Child of EntityLayout must be an EntityLayout.Route',
+        })
+        .getElements<SubRoute>() // all nodes, element data, maintain structure or not?
+        .flatMap(({ props }) => {
+          if (props.if && entity && !props.if(entity)) {
+            return [];
+          }
 
-  const routes = createSubRoutesFromChildren(children, entity);
+          return [
+            {
+              path: props.path,
+              title: props.title,
+              children: props.children,
+              tabProps: props.tabProps,
+            },
+          ];
+        }),
+    [entity],
+  );
+
   const { headerTitle, headerType } = headerProps(
     kind,
     namespace,
@@ -224,6 +232,7 @@ export const EntityLayout = ({
             <EntityLabels entity={entity} />
             <EntityContextMenu
               UNSTABLE_extraContextMenuItems={UNSTABLE_extraContextMenuItems}
+              UNSTABLE_contextMenuOptions={UNSTABLE_contextMenuOptions}
               onUnregisterEntity={showRemovalDialog}
             />
           </>
@@ -239,6 +248,19 @@ export const EntityLayout = ({
           <Alert severity="error">{error.toString()}</Alert>
         </Content>
       )}
+
+      {!loading && !error && !entity && (
+        <Content>
+          <WarningPanel title="Entity not found">
+            There is no {kind} with the requested{' '}
+            <Link to="https://backstage.io/docs/features/software-catalog/references">
+              kind, namespace, and name
+            </Link>
+            .
+          </WarningPanel>
+        </Content>
+      )}
+
       <UnregisterEntityDialog
         open={confirmationDialogOpen}
         entity={entity!}

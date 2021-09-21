@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,19 +27,19 @@ import {
 } from '@material-ui/core';
 import DoneIcon from '@material-ui/icons/Done';
 import DoneAllIcon from '@material-ui/icons/DoneAll';
-import {
-  StatusError,
-  StatusWarning,
-  StatusOK,
-  useApi,
-  alertApiRef,
-} from '@backstage/core';
 import { DateTime, Duration } from 'luxon';
 import { Incident, IncidentPhase } from '../types';
 import OpenInBrowserIcon from '@material-ui/icons/OpenInBrowser';
 import { splunkOnCallApiRef } from '../../api/client';
 import { useAsyncFn } from 'react-use';
 import { TriggerAlarmRequest } from '../../api/types';
+
+import {
+  StatusError,
+  StatusWarning,
+  StatusOK,
+} from '@backstage/core-components';
+import { useApi, alertApiRef } from '@backstage/core-plugin-api';
 
 const useStyles = makeStyles({
   denseListIcon: {
@@ -160,17 +160,15 @@ export const IncidentListItem = ({
     return incident.monitorName;
   };
 
-  const [
-    { value: resolveValue, error: resolveError },
-    handleResolveIncident,
-  ] = useAsyncFn(
-    async ({ incidentId, incidentType }: TriggerAlarmRequest) =>
-      await api.incidentAction({
-        routingKey: team,
-        incidentType,
-        incidentId,
-      }),
-  );
+  const [{ value: resolveValue, error: resolveError }, handleResolveIncident] =
+    useAsyncFn(
+      async ({ incidentId, incidentType }: TriggerAlarmRequest) =>
+        await api.incidentAction({
+          routingKey: team,
+          incidentType,
+          incidentId,
+        }),
+    );
 
   const [
     { value: acknowledgeValue, error: acknowledgeError },

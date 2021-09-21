@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,8 @@
  * Implementations of the discovery API can be as simple as a URL pattern
  * using the pluginId, but could also have overrides for individual plugins,
  * or query a separate discovery service.
+ *
+ * @public
  */
 export type PluginEndpointDiscovery = {
   /**

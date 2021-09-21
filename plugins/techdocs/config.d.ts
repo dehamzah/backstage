@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,13 @@ export interface Config {
      * @visibility frontend
      */
     builder: 'local' | 'external';
+
+    /**
+     * Allows fallback to case-sensitive triplets in case of migration issues.
+     * @visibility frontend
+     * @see https://backstage.io/docs/features/techdocs/how-to-guides#how-to-migrate-from-techdocs-alpha-to-beta
+     */
+    legacyUseCaseSensitiveTripletPaths?: boolean;
 
     /**
      * @example http://localhost:7000/api/techdocs

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-import React, { useMemo } from 'react';
+import React, { ComponentType } from 'react';
 import { Routes, Route, useOutlet } from 'react-router';
+import { TemplateEntityV1beta2 } from '@backstage/catalog-model';
 import { ScaffolderPage } from './ScaffolderPage';
 import { TemplatePage } from './TemplatePage';
 import { TaskPage } from './TaskPage';
@@ -27,25 +28,45 @@ import {
   FIELD_EXTENSION_KEY,
   DEFAULT_SCAFFOLDER_FIELD_EXTENSIONS,
 } from '../extensions';
-import { collectComponentData, collectChildren } from '../extensions/helpers';
+import { useElementFilter } from '@backstage/core-plugin-api';
 
-export const Router = () => {
+type RouterProps = {
+  TemplateCardComponent?:
+    | ComponentType<{ template: TemplateEntityV1beta2 }>
+    | undefined;
+};
+
+export const Router = ({ TemplateCardComponent }: RouterProps) => {
   const outlet = useOutlet();
 
-  const fieldExtensions = useMemo(() => {
-    const registeredExtensions = collectComponentData<FieldExtensionOptions>(
-      collectChildren(outlet, FIELD_EXTENSION_WRAPPER_KEY).flat(),
-      FIELD_EXTENSION_KEY,
-    );
+  const customFieldExtensions = useElementFilter(outlet, elements =>
+    elements
+      .selectByComponentData({
+        key: FIELD_EXTENSION_WRAPPER_KEY,
+      })
+      .findComponentData<FieldExtensionOptions>({
+        key: FIELD_EXTENSION_KEY,
+      }),
+  );
 
-    return registeredExtensions.length
-      ? registeredExtensions
-      : DEFAULT_SCAFFOLDER_FIELD_EXTENSIONS;
-  }, [outlet]);
+  const fieldExtensions = [
+    ...customFieldExtensions,
+    ...DEFAULT_SCAFFOLDER_FIELD_EXTENSIONS.filter(
+      ({ name }) =>
+        !customFieldExtensions.some(
+          customFieldExtension => customFieldExtension.name === name,
+        ),
+    ),
+  ];
 
   return (
     <Routes>
-      <Route path="/" element={<ScaffolderPage />} />
+      <Route
+        path="/"
+        element={
+          <ScaffolderPage TemplateCardComponent={TemplateCardComponent} />
+        }
+      />
       <Route
         path="/templates/:templateName"
         element={<TemplatePage customFieldExtensions={fieldExtensions} />}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 import type { Transformer } from './transformer';
 
 type OnCssReadyOptions = {
-  docStorageUrl: Promise<string>;
+  docStorageUrl: string;
   onLoading: (dom: Element) => void;
   onLoaded: (dom: Element) => void;
 };
@@ -30,9 +30,7 @@ export const onCssReady = ({
   return dom => {
     const cssPages = Array.from(
       dom.querySelectorAll('head > link[rel="stylesheet"]'),
-    ).filter(async elem =>
-      elem.getAttribute('href')?.startsWith(await docStorageUrl),
-    );
+    ).filter(elem => elem.getAttribute('href')?.startsWith(docStorageUrl));
 
     let count = cssPages.length;
 

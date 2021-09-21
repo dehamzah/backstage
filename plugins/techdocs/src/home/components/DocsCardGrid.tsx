@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,19 +15,32 @@
  */
 
 import React from 'react';
-import { generatePath } from 'react-router-dom';
 
 import { Entity } from '@backstage/catalog-model';
-import { Button, ItemCardGrid, ItemCardHeader } from '@backstage/core';
+import { configApiRef, useApi, useRouteRef } from '@backstage/core-plugin-api';
 import { Card, CardActions, CardContent, CardMedia } from '@material-ui/core';
-
 import { rootDocsRouteRef } from '../../routes';
+
+import {
+  Button,
+  ItemCardGrid,
+  ItemCardHeader,
+} from '@backstage/core-components';
 
 export const DocsCardGrid = ({
   entities,
 }: {
   entities: Entity[] | undefined;
 }) => {
+  const getRouteToReaderPageFor = useRouteRef(rootDocsRouteRef);
+
+  // Lower-case entity triplets by default, but allow override.
+  const toLowerMaybe = useApi(configApiRef).getOptionalBoolean(
+    'techdocs.legacyUseCaseSensitiveTripletPaths',
+  )
+    ? (str: string) => str
+    : (str: string) => str.toLocaleLowerCase();
+
   if (!entities) return null;
   return (
     <ItemCardGrid data-testid="docs-explore">
@@ -41,10 +54,12 @@ export const DocsCardGrid = ({
               <CardContent>{entity.metadata.description}</CardContent>
               <CardActions>
                 <Button
-                  to={generatePath(rootDocsRouteRef.path, {
-                    namespace: entity.metadata.namespace ?? 'default',
-                    kind: entity.kind,
-                    name: entity.metadata.name,
+                  to={getRouteToReaderPageFor({
+                    namespace: toLowerMaybe(
+                      entity.metadata.namespace ?? 'default',
+                    ),
+                    kind: toLowerMaybe(entity.kind),
+                    name: toLowerMaybe(entity.metadata.name),
                   })}
                   color="primary"
                 >

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,13 @@
 
 import React, { PropsWithChildren } from 'react';
 import { ApiRef, ApiHolder, TypesToApiRefs } from './types';
-import { useVersionedContext } from '../../lib/versionedValues';
+import { useVersionedContext } from '@backstage/version-bridge';
 
 export function useApiHolder(): ApiHolder {
   const versionedHolder = useVersionedContext<{ 1: ApiHolder }>('api-context');
+  if (!versionedHolder) {
+    throw new Error('API context is not available');
+  }
 
   const apiHolder = versionedHolder.atVersion(1);
   if (!apiHolder) {

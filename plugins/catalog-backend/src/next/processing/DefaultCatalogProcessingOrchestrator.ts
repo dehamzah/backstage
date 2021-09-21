@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,8 @@ type Context = {
 };
 
 export class DefaultCatalogProcessingOrchestrator
-  implements CatalogProcessingOrchestrator {
+  implements CatalogProcessingOrchestrator
+{
   constructor(
     private readonly options: {
       processors: CatalogProcessor[];
@@ -68,7 +69,6 @@ export class DefaultCatalogProcessingOrchestrator
   async process(
     request: EntityProcessingRequest,
   ): Promise<EntityProcessingResult> {
-    // TODO: implement dryRun/eager
     return this.processSingleEntity(request.entity);
   }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ const defaultKnownFields = ['apiVersion', 'kind', 'metadata', 'spec'];
 
 /**
  * Ensures that there are no foreign root fields in the entity.
+ *
+ * @public
  */
 export class NoForeignRootFieldsEntityPolicy implements EntityPolicy {
   private readonly knownFields: string[];

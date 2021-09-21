@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ export const sidebarConfig = {
   drawerWidthOpen: 224,
   // As per NN/g's guidance on timing for exposing hidden content
   // See https://www.nngroup.com/articles/timing-exposing-content/
-  defaultOpenDelayMs: 300,
+  defaultOpenDelayMs: 100,
   defaultCloseDelayMs: 0,
   defaultFadeDuration: 200,
   logoHeight: 32,

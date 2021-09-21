@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,12 +93,8 @@ type Placement = {
   textWidth: number;
 };
 
-export const FeatureCalloutCircular = ({
-  featureId,
-  title,
-  description,
-  children,
-}: PropsWithChildren<Props>) => {
+export function FeatureCalloutCircular(props: PropsWithChildren<Props>) {
+  const { featureId, title, description, children } = props;
   const { show, hide } = useShowCallout(featureId);
   const portalElement = usePortal('core.callout');
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -196,4 +192,4 @@ export const FeatureCalloutCircular = ({
       )}
     </>
   );
-};
+}

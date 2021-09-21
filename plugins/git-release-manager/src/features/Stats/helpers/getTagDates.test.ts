@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,10 @@
 import {
   createMockCommit,
   createMockTag,
-  mockApiClient,
   mockSemverProject,
 } from '../../../test-helpers/test-helpers';
 import { getTagDates } from './getTagDates';
+import { mockApiClient } from '../../../test-helpers/mock-api-client';
 
 describe('getTagDates', () => {
   beforeEach(() => {

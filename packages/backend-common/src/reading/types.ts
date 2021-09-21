@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,13 +20,28 @@ import { Config } from '@backstage/config';
 
 /**
  * A generic interface for fetching plain data from URLs.
+ *
+ * @public
  */
 export type UrlReader = {
+  /* Used to read a single file and return its content. */
   read(url: string): Promise<Buffer>;
+
+  /**
+   * A replacement for the read method that supports options and complex responses.
+   *
+   * Use this whenever it is available, as the read method will be deprecated and
+   * eventually removed in the future.
+   */
+  readUrl?(url: string, options?: ReadUrlOptions): Promise<ReadUrlResponse>;
+
+  /* Used to read a file tree and download as a directory. */
   readTree(url: string, options?: ReadTreeOptions): Promise<ReadTreeResponse>;
+  /* Used to search a file in a tree using a glob pattern. */
   search(url: string, options?: SearchOptions): Promise<SearchResponse>;
 };
 
+/** @public */
 export type UrlReaderPredicateTuple = {
   predicate: (url: URL) => boolean;
   reader: UrlReader;
@@ -35,6 +50,8 @@ export type UrlReaderPredicateTuple = {
 /**
  * A factory function that can read config to construct zero or more
  * UrlReaders along with a predicate for when it should be used.
+ *
+ * @public
  */
 export type ReaderFactory = (options: {
   config: Config;
@@ -43,7 +60,47 @@ export type ReaderFactory = (options: {
 }) => UrlReaderPredicateTuple[];
 
 /**
+ * An options object for readUrl operations.
+ *
+ * @public
+ */
+export type ReadUrlOptions = {
+  /**
+   * An etag can be provided to check whether readUrl's response has changed from a previous execution.
+   *
+   * In the readUrl() response, an etag is returned along with the data. The etag is a unique identifer
+   * of the data, usually the commit SHA or etag from the target.
+   *
+   * When an etag is given in ReadUrlOptions, readUrl will first compare the etag against the etag
+   * on the target. If they match, readUrl will throw a NotModifiedError indicating that the readUrl
+   * response will not differ from the previous response which included this particular etag. If they
+   * do not match, readUrl will return the rest of ReadUrlResponse along with a new etag.
+   */
+  etag?: string;
+};
+
+/**
+ * A response object for readUrl operations.
+ *
+ * @public
+ */
+export type ReadUrlResponse = {
+  /**
+   * Returns the data that was read from the remote URL.
+   */
+  buffer(): Promise<Buffer>;
+
+  /**
+   * Etag returned by content provider.
+   * Can be used to compare and cache responses when doing subsequent calls.
+   */
+  etag?: string;
+};
+
+/**
  * An options object for readTree operations.
+ *
+ * @public
  */
 export type ReadTreeOptions = {
   /**
@@ -58,7 +115,7 @@ export type ReadTreeOptions = {
    *
    * If no filter is provided all files are extracted.
    */
-  filter?(path: string): boolean;
+  filter?(path: string, info?: { size: number }): boolean;
 
   /**
    * An etag can be provided to check whether readTree's response has changed from a previous execution.
@@ -66,14 +123,25 @@ export type ReadTreeOptions = {
    * In the readTree() response, an etag is returned along with the tree blob. The etag is a unique identifer
    * of the tree blob, usually the commit SHA or etag from the target.
    *
-   * When a etag is given in ReadTreeOptions, readTree will first compare the etag against the etag
+   * When an etag is given in ReadTreeOptions, readTree will first compare the etag against the etag
    * on the target branch. If they match, readTree will throw a NotModifiedError indicating that the readTree
-   * response will not differ from the previous response which included this particular etag. If they mismatch,
-   * readTree will return the rest of ReadTreeResponse along with a new etag.
+   * response will not differ from the previous response which included this particular etag. If they
+   * do not match, readTree will return the rest of ReadTreeResponse along with a new etag.
    */
   etag?: string;
 };
 
+/** @public */
+export type ReadTreeResponseDirOptions = {
+  /** The directory to write files to. Defaults to the OS tmpdir or `backend.workingDirectory` if set in config */
+  targetDir?: string;
+};
+
+/**
+ * A response object for readTree operations.
+ *
+ * @public
+ */
 export type ReadTreeResponse = {
   /**
    * files() returns an array of all the files inside the tree and corresponding functions to read their content.
@@ -87,25 +155,24 @@ export type ReadTreeResponse = {
   dir(options?: ReadTreeResponseDirOptions): Promise<string>;
 
   /**
-   * A unique identifer of the tree blob, usually the commit SHA or etag from the target.
+   * Etag returned by content provider.
+   * Can be used to compare and cache responses when doing subsequent calls.
    */
   etag: string;
 };
 
-export type ReadTreeResponseDirOptions = {
-  /** The directory to write files to. Defaults to the OS tmpdir or `backend.workingDirectory` if set in config */
-  targetDir?: string;
-};
-
 /**
  * Represents a single file in a readTree response.
+ *
+ * @public
  */
 export type ReadTreeResponseFile = {
   path: string;
   content(): Promise<Buffer>;
 };
 
-export type FromArchiveOptions = {
+/** @public */
+export type ReadTreeResponseFactoryOptions = {
   // A binary stream of a tar archive.
   stream: Readable;
   // If unset, the files at the root of the tree will be read.
@@ -114,16 +181,33 @@ export type FromArchiveOptions = {
   // etag of the blob
   etag: string;
   // Filter passed on from the ReadTreeOptions
-  filter?: (path: string) => boolean;
+  filter?: (path: string, info?: { size: number }) => boolean;
 };
+/** @public */
+export type FromReadableArrayOptions = Array<{
+  // Data in the form of a readable
+  data: Readable;
+  // A string containing the filepath of the data
+  path: string;
+}>;
 
+/** @public */
 export interface ReadTreeResponseFactory {
-  fromTarArchive(options: FromArchiveOptions): Promise<ReadTreeResponse>;
-  fromZipArchive(options: FromArchiveOptions): Promise<ReadTreeResponse>;
+  fromTarArchive(
+    options: ReadTreeResponseFactoryOptions,
+  ): Promise<ReadTreeResponse>;
+  fromZipArchive(
+    options: ReadTreeResponseFactoryOptions,
+  ): Promise<ReadTreeResponse>;
+  fromReadableArray(
+    options: FromReadableArrayOptions,
+  ): Promise<ReadTreeResponse>;
 }
 
 /**
  * An options object for search operations.
+ *
+ * @public
  */
 export type SearchOptions = {
   /**
@@ -142,6 +226,8 @@ export type SearchOptions = {
 
 /**
  * The output of a search operation.
+ *
+ * @public
  */
 export type SearchResponse = {
   /**
@@ -157,6 +243,8 @@ export type SearchResponse = {
 
 /**
  * Represents a single file in a search response.
+ *
+ * @public
  */
 export type SearchResponseFile = {
   /**

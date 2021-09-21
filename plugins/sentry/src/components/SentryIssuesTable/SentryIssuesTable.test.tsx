@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,5 +68,24 @@ describe('SentryIssuesTable', () => {
     expect(await table.findByText('exception was thrown')).toBeInTheDocument();
     expect(await table.findByText('101')).toBeInTheDocument();
     expect(await table.findByText('202')).toBeInTheDocument();
+  });
+  it('should render statsFor in table subtitle', async () => {
+    const issues: SentryIssue[] = [
+      {
+        ...mockIssue,
+        metadata: {
+          type: 'Exception',
+          value: 'exception was thrown',
+        },
+        count: '101',
+        userCount: 202,
+      },
+    ];
+    const table = await render(
+      <ThemeProvider theme={lightTheme}>
+        <SentryIssuesTable sentryIssues={issues} statsFor="24h" />
+      </ThemeProvider>,
+    );
+    expect(await table.findByText('Last 24h')).toBeInTheDocument();
   });
 });

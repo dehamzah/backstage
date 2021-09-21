@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,7 @@ export type UnboxPromise<T extends Promise<any>> = T extends Promise<infer U>
   ? U
   : never;
 
-export type UnboxReturnedPromise<
-  T extends (...args: any) => Promise<any>
-> = UnboxPromise<ReturnType<T>>;
+export type UnboxReturnedPromise<T extends (...args: any) => Promise<any>> =
+  UnboxPromise<ReturnType<T>>;
 
 export type UnboxArray<T> = T extends (infer U)[] ? U : T;

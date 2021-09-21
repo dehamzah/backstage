@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { Incident, OnCall, Service } from '../components/types';
-import { DiscoveryApi } from '@backstage/core';
+import { Incident, ChangeEvent, OnCall, Service } from '../components/types';
+import { DiscoveryApi } from '@backstage/core-plugin-api';
 
 export type TriggerAlarmRequest = {
   integrationKey: string;
@@ -38,6 +38,12 @@ export interface PagerDutyApi {
   getIncidentsByServiceId(serviceId: string): Promise<Incident[]>;
 
   /**
+   * Fetches a list of change events a provided service has.
+   *
+   */
+  getChangeEventsByServiceId(serviceId: string): Promise<ChangeEvent[]>;
+
+  /**
    * Fetches the list of users in an escalation policy.
    *
    */
@@ -55,6 +61,10 @@ export type ServicesResponse = {
 
 export type IncidentsResponse = {
   incidents: Incident[];
+};
+
+export type ChangeEventsResponse = {
+  change_events: ChangeEvent[];
 };
 
 export type OnCallsResponse = {

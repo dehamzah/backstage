@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import { AlertMessage, useApi, alertApiRef } from '@backstage/core-plugin-api';
 import pluralize from 'pluralize';
 
 // TODO: improve on this and promote to a shared component for use by all apps.
-export const AlertDisplay = () => {
+export function AlertDisplay(_props: {}) {
   const [messages, setMessages] = useState<Array<AlertMessage>>([]);
   const alertApi = useApi(alertApiRef);
 
@@ -73,4 +73,4 @@ export const AlertDisplay = () => {
       </Alert>
     </Snackbar>
   );
-};
+}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,24 +28,20 @@ type CostInsightsTabsLoadingProps = {
   dispatchReset: (loadingActions: string[]) => void;
 };
 
-export const mapFiltersToProps: MapFiltersToProps<CostInsightsTabsFilterProps> = ({
-  pageFilters,
-  setPageFilters,
-}) => ({
-  ...pageFilters,
-  setGroup: (group: Group) =>
-    setPageFilters({
-      ...pageFilters,
-      group: group.id,
-      project: null,
-    }),
-});
+export const mapFiltersToProps: MapFiltersToProps<CostInsightsTabsFilterProps> =
+  ({ pageFilters, setPageFilters }) => ({
+    ...pageFilters,
+    setGroup: (group: Group) =>
+      setPageFilters({
+        ...pageFilters,
+        group: group.id,
+        project: null,
+      }),
+  });
 
-export const mapLoadingToProps: MapLoadingToProps<CostInsightsTabsLoadingProps> = ({
-  actions,
-  dispatch,
-}) => ({
-  loadingActions: actions,
-  dispatchReset: (loadingActions: string[]) =>
-    dispatch(getResetStateWithoutInitial(loadingActions)),
-});
+export const mapLoadingToProps: MapLoadingToProps<CostInsightsTabsLoadingProps> =
+  ({ actions, dispatch }) => ({
+    loadingActions: actions,
+    dispatchReset: (loadingActions: string[]) =>
+      dispatch(getResetStateWithoutInitial(loadingActions)),
+  });

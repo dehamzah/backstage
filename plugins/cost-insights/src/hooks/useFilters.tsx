@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,9 +54,8 @@ export const FilterProvider = ({ children }: PropsWithChildren<{}>) => {
   const groups = useGroups();
   const [error, setError] = useState<Maybe<Error>>(null);
   const [pageFilters, setPageFilters] = useState<Maybe<PageFilters>>(null);
-  const [productFilters, setProductFilters] = useState<Maybe<ProductFilters>>(
-    null,
-  );
+  const [productFilters, setProductFilters] =
+    useState<Maybe<ProductFilters>>(null);
 
   useEffect(() => {
     async function setPageFiltersFromLocation() {

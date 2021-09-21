@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,6 +61,13 @@ export default async (cmd: Command) => {
   // https://github.com/facebook/jest/blob/cd8828f7bbec6e55b4df5e41e853a5133c4a3ee1/packages/jest-cli/bin/jest.js#L12
   if (!process.env.NODE_ENV) {
     (process.env as any).NODE_ENV = 'test';
+  }
+
+  // This is to have a consistent timezone for when running tests that involve checking
+  // the formatting of date/times.
+  // https://stackoverflow.com/questions/56261381/how-do-i-set-a-timezone-in-my-jest-config
+  if (!process.env.TZ) {
+    process.env.TZ = 'UTC';
   }
 
   // eslint-disable-next-line jest/no-jest-import

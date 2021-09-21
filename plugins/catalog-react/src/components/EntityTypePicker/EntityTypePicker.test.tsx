@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,20 +15,18 @@
  */
 
 import React from 'react';
-import { fireEvent, render, waitFor } from '@testing-library/react';
+import { fireEvent, waitFor } from '@testing-library/react';
 import { capitalize } from 'lodash';
-import {
-  AlertApi,
-  alertApiRef,
-  ApiProvider,
-  ApiRegistry,
-} from '@backstage/core';
 import { CatalogApi } from '@backstage/catalog-client';
 import { Entity } from '@backstage/catalog-model';
 import { EntityTypePicker } from './EntityTypePicker';
 import { MockEntityListContextProvider } from '../../testUtils/providers';
 import { catalogApiRef } from '../../api';
-import { EntityKindFilter, EntityTypeFilter } from '../../types';
+import { EntityKindFilter, EntityTypeFilter } from '../../filters';
+
+import { AlertApi, alertApiRef } from '@backstage/core-plugin-api';
+import { ApiProvider, ApiRegistry } from '@backstage/core-app-api';
+import { renderWithEffects } from '@backstage/test-utils';
 
 const entities: Entity[] = [
   {
@@ -63,26 +61,15 @@ const entities: Entity[] = [
   },
 ];
 
-const apis = ApiRegistry.from([
-  [
-    catalogApiRef,
-    ({
-      getEntities: jest
-        .fn()
-        .mockImplementation(() => Promise.resolve({ items: entities })),
-    } as unknown) as CatalogApi,
-  ],
-  [
-    alertApiRef,
-    ({
-      post: jest.fn(),
-    } as unknown) as AlertApi,
-  ],
-]);
+const apis = ApiRegistry.with(catalogApiRef, {
+  getEntities: jest.fn().mockResolvedValue({ items: entities }),
+} as unknown as CatalogApi).with(alertApiRef, {
+  post: jest.fn(),
+} as unknown as AlertApi);
 
 describe('<EntityTypePicker/>', () => {
   it('renders available entity types', async () => {
-    const rendered = render(
+    const rendered = await renderWithEffects(
       <ApiProvider apis={apis}>
         <MockEntityListContextProvider
           value={{ filters: { kind: new EntityKindFilter('component') } }}
@@ -107,7 +94,7 @@ describe('<EntityTypePicker/>', () => {
 
   it('sets the selected type filter', async () => {
     const updateFilters = jest.fn();
-    const rendered = render(
+    const rendered = await renderWithEffects(
       <ApiProvider apis={apis}>
         <MockEntityListContextProvider
           value={{
@@ -126,7 +113,7 @@ describe('<EntityTypePicker/>', () => {
     fireEvent.click(rendered.getByText('Service'));
 
     expect(updateFilters).toHaveBeenLastCalledWith({
-      type: new EntityTypeFilter('service'),
+      type: new EntityTypeFilter(['service']),
     });
 
     fireEvent.click(input);

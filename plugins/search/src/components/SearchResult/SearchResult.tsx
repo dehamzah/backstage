@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,20 @@
  * limitations under the License.
  */
 
-import React from 'react';
-import { EmptyState, Progress } from '@backstage/core';
+import {
+  EmptyState,
+  Progress,
+  ResponseErrorPanel,
+} from '@backstage/core-components';
 import { SearchResult } from '@backstage/search-common';
-import { Alert } from '@material-ui/lab';
-
+import React from 'react';
 import { useSearch } from '../SearchContext';
 
 type Props = {
   children: (results: { results: SearchResult[] }) => JSX.Element;
 };
 
-const SearchResultComponent = ({ children }: Props) => {
+export const SearchResultComponent = ({ children }: Props) => {
   const {
     result: { loading, error, value },
   } = useSearch();
@@ -35,17 +37,18 @@ const SearchResultComponent = ({ children }: Props) => {
   }
   if (error) {
     return (
-      <Alert severity="error">
-        Error encountered while fetching search results. {error.toString()}
-      </Alert>
+      <ResponseErrorPanel
+        title="Error encountered while fetching search results"
+        error={error}
+      />
     );
   }
 
-  if (!value) {
+  if (!value?.results.length) {
     return <EmptyState missing="data" title="Sorry, no results were found" />;
   }
 
-  return children({ results: value.results });
+  return <>{children({ results: value.results })}</>;
 };
 
 export { SearchResultComponent as SearchResult };

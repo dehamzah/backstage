@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,11 +49,8 @@ export async function startStandaloneServer(
     config,
     reader,
   });
-  const {
-    entitiesCatalog,
-    locationsCatalog,
-    higherOrderOperation,
-  } = await builder.build();
+  const { entitiesCatalog, locationsCatalog, higherOrderOperation } =
+    await builder.build();
 
   logger.debug('Starting application server...');
   const router = await createRouter({
@@ -63,9 +60,12 @@ export async function startStandaloneServer(
     logger,
     config,
   });
-  const service = createServiceBuilder(module)
-    .enableCors({ origin: 'http://localhost:3000' })
+  let service = createServiceBuilder(module)
+    .setPort(options.port)
     .addRouter('/catalog', router);
+  if (options.enableCors) {
+    service = service.enableCors({ origin: 'http://localhost:3000' });
+  }
   return await service.start().catch(err => {
     logger.error(err);
     process.exit(1);

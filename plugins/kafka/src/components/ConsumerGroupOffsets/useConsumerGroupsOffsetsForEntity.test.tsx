@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 import { Entity } from '@backstage/catalog-model';
-import { ApiProvider, ApiRegistry, errorApiRef } from '@backstage/core';
-import { EntityContext } from '@backstage/plugin-catalog-react';
+import { EntityProvider } from '@backstage/plugin-catalog-react';
 import { renderHook } from '@testing-library/react-hooks';
 import { when } from 'jest-when';
 import React, { PropsWithChildren } from 'react';
@@ -26,6 +25,9 @@ import {
 } from '../../api/types';
 import { useConsumerGroupsOffsetsForEntity } from './useConsumerGroupsOffsetsForEntity';
 import * as data from './__fixtures__/consumer-group-offsets.json';
+
+import { ApiProvider, ApiRegistry } from '@backstage/core-app-api';
+import { errorApiRef } from '@backstage/core-plugin-api';
 
 const consumerGroupOffsets = data as ConsumerGroupOffsetsResponse;
 
@@ -63,9 +65,7 @@ describe('useConsumerGroupOffsets', () => {
           mockKafkaApi,
         )}
       >
-        <EntityContext.Provider value={{ entity: entity, loading: false }}>
-          {children}
-        </EntityContext.Provider>
+        <EntityProvider entity={entity}>{children}</EntityProvider>
       </ApiProvider>
     );
   };

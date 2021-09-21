@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,14 +47,13 @@ import MTable, {
   MTableHeader,
   MTableToolbar,
   Options,
-} from 'material-table';
+} from '@material-table/core';
 import React, {
   forwardRef,
   MutableRefObject,
   ReactNode,
   useCallback,
   useEffect,
-  useRef,
   useState,
 } from 'react';
 import { CheckboxTreeProps } from '../CheckboxTree/CheckboxTree';
@@ -192,7 +191,7 @@ export interface TableColumn<T extends object = {}> extends Column<T> {
 
 export type TableFilter = {
   column: string;
-  type: 'select' | 'multiple-select' | 'checkbox-tree';
+  type: 'select' | 'multiple-select' | /** @deprecated */ 'checkbox-tree';
 };
 
 export type TableState = {
@@ -264,20 +263,20 @@ export function TableToolbar(toolbarProps: {
   );
 }
 
-export function Table<T extends object = {}>({
-  columns,
-  options,
-  title,
-  subtitle,
-  filters,
-  initialState,
-  emptyContent,
-  onStateChange,
-  ...props
-}: TableProps<T>) {
+export function Table<T extends object = {}>(props: TableProps<T>) {
+  const {
+    data,
+    columns,
+    options,
+    title,
+    subtitle,
+    filters,
+    initialState,
+    emptyContent,
+    onStateChange,
+    ...restProps
+  } = props;
   const tableClasses = useTableStyles();
-
-  const { data, ...propsWithoutData } = props;
 
   const theme = useTheme<BackstageTheme>();
 
@@ -286,9 +285,10 @@ export function Table<T extends object = {}>({
   const [filtersOpen, setFiltersOpen] = useState(
     calculatedInitialState.filtersOpen,
   );
-  const toggleFilters = useCallback(() => setFiltersOpen(v => !v), [
-    setFiltersOpen,
-  ]);
+  const toggleFilters = useCallback(
+    () => setFiltersOpen(v => !v),
+    [setFiltersOpen],
+  );
   const [selectedFiltersLength, setSelectedFiltersLength] = useState(0);
   const [tableData, setTableData] = useState(data as any[]);
   const [selectedFilters, setSelectedFilters] = useState(
@@ -298,13 +298,6 @@ export function Table<T extends object = {}>({
   const MTColumns = convertColumns(columns, theme);
 
   const [search, setSearch] = useState(calculatedInitialState.search);
-  const toolbarRef = useRef<any>();
-
-  useEffect(() => {
-    if (toolbarRef.current) {
-      toolbarRef.current.onSearchChange(search);
-    }
-  }, [search, toolbarRef]);
 
   useEffect(() => {
     if (onStateChange) {
@@ -371,6 +364,14 @@ export function Table<T extends object = {}>({
     }
     setSelectedFiltersLength(selectedFiltersArray.flat().length);
   }, [data, selectedFilters, getFieldByTitle]);
+
+  // Check for deprecated checkbox-tree filter
+  useEffect(() => {
+    if (filters?.some(filter => filter.type === 'checkbox-tree')) {
+      // eslint-disable-next-line no-console
+      console.warn('"checkbox-tree" filter type is deprecated');
+    }
+  }, [filters]);
 
   const constructFilters = (
     filterConfig: TableFilter[],
@@ -440,7 +441,6 @@ export function Table<T extends object = {}>({
     toolbarProps => {
       return (
         <TableToolbar
-          toolbarRef={toolbarRef}
           setSearch={setSearch}
           hasFilters={hasFilters}
           selectedFiltersLength={selectedFiltersLength}
@@ -449,7 +449,7 @@ export function Table<T extends object = {}>({
         />
       );
     },
-    [toggleFilters, hasFilters, selectedFiltersLength, setSearch, toolbarRef],
+    [toggleFilters, hasFilters, selectedFiltersLength, setSearch],
   );
 
   const hasNoRows = typeof data !== 'function' && data.length === 0;
@@ -491,7 +491,9 @@ export function Table<T extends object = {}>({
         icons={tableIcons}
         title={
           <>
-            <Typography variant="h5">{title}</Typography>
+            <Typography variant="h5" component="h3">
+              {title}
+            </Typography>
             {subtitle && (
               <Typography color="textSecondary" variant="body1">
                 {subtitle}
@@ -501,7 +503,7 @@ export function Table<T extends object = {}>({
         }
         data={typeof data === 'function' ? data : tableData}
         style={{ width: '100%' }}
-        {...propsWithoutData}
+        {...restProps}
       />
     </div>
   );

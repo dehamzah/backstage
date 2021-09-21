@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ import type { Entity } from '../entity/Entity';
 import schema from '../schema/kinds/System.v1alpha1.schema.json';
 import { ajvCompiledJsonSchemaValidator } from './util';
 
+/** @public */
 export interface SystemEntityV1alpha1 extends Entity {
   apiVersion: 'backstage.io/v1alpha1' | 'backstage.io/v1beta1';
   kind: 'System';
@@ -27,6 +28,6 @@ export interface SystemEntityV1alpha1 extends Entity {
   };
 }
 
-export const systemEntityV1alpha1Validator = ajvCompiledJsonSchemaValidator(
-  schema,
-);
+/** @public */
+export const systemEntityV1alpha1Validator =
+  ajvCompiledJsonSchemaValidator(schema);

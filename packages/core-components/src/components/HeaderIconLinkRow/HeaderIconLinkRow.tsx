@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,8 @@ type Props = {
   links: IconLinkVerticalProps[];
 };
 
-export const HeaderIconLinkRow = ({ links }: Props) => {
+export function HeaderIconLinkRow(props: Props) {
+  const { links } = props;
   const classes = useStyles();
   return (
     <nav className={classes.links}>
@@ -40,4 +41,4 @@ export const HeaderIconLinkRow = ({ links }: Props) => {
       ))}
     </nav>
   );
-};
+}

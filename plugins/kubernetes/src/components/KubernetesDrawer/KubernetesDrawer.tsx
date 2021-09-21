@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import React, { ChangeEvent, useState } from 'react';
+import React, { ChangeEvent, useContext, useState } from 'react';
 import {
   Button,
   Typography,
@@ -28,10 +28,20 @@ import {
   Grid,
 } from '@material-ui/core';
 import Close from '@material-ui/icons/Close';
+import OpenInNewIcon from '@material-ui/icons/OpenInNew';
 import { V1ObjectMeta } from '@kubernetes/client-node';
 import { withStyles } from '@material-ui/core/styles';
-import { CodeSnippet, StructuredMetadataTable } from '@backstage/core';
 import jsYaml from 'js-yaml';
+import {
+  Button as BackstageButton,
+  CodeSnippet,
+  StructuredMetadataTable,
+  WarningPanel,
+} from '@backstage/core-components';
+import { ClusterContext } from '../../hooks';
+import { formatClusterLink } from '../../utils/clusterLinks';
+import { ClusterAttributes } from '@backstage/plugin-kubernetes-common';
+import { FormatClusterLinkOptions } from '../../utils/clusterLinks/formatClusterLink';
 
 const useDrawerStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -50,10 +60,14 @@ const useDrawerContentStyles = makeStyles((_: Theme) =>
       flexDirection: 'row',
       justifyContent: 'space-between',
     },
+    errorMessage: {
+      marginTop: '1em',
+      marginBottom: '1em',
+    },
     options: {
       display: 'flex',
       flexDirection: 'row',
-      justifyContent: 'flex-end',
+      justifyContent: 'space-between',
     },
     icon: {
       fontSize: 20,
@@ -72,6 +86,27 @@ const PodDrawerButton = withStyles({
     textTransform: 'none',
   },
 })(Button);
+
+type ErrorPanelProps = {
+  cluster: ClusterAttributes;
+  errorMessage?: string;
+  children?: React.ReactNode;
+};
+
+export const ErrorPanel = ({ cluster, errorMessage }: ErrorPanelProps) => (
+  <WarningPanel
+    title="There was a problem formatting the link to the Kubernetes dashboard"
+    message={`Could not format the link to the dashboard of your cluster named '${
+      cluster.name
+    }'. Its dashboardApp property has been set to '${
+      cluster.dashboardApp || 'standard'
+    }.'`}
+  >
+    {errorMessage && (
+      <Typography variant="body2">Errors: {errorMessage}</Typography>
+    )}
+  </WarningPanel>
+);
 
 interface KubernetesDrawerable {
   metadata?: V1ObjectMeta;
@@ -93,6 +128,20 @@ function replaceNullsWithUndefined(someObj: any) {
   return JSON.parse(JSON.stringify(someObj, replacer));
 }
 
+function tryFormatClusterLink(options: FormatClusterLinkOptions) {
+  try {
+    return {
+      clusterLink: formatClusterLink(options),
+      errorMessage: '',
+    };
+  } catch (err) {
+    return {
+      clusterLink: '',
+      errorMessage: err.message || err.toString(),
+    };
+  }
+}
+
 const KubernetesDrawerContent = <T extends KubernetesDrawerable>({
   toggleDrawer,
   object,
@@ -102,6 +151,13 @@ const KubernetesDrawerContent = <T extends KubernetesDrawerable>({
   const [isYaml, setIsYaml] = useState<boolean>(false);
 
   const classes = useDrawerContentStyles();
+  const cluster = useContext(ClusterContext);
+  const { clusterLink, errorMessage } = tryFormatClusterLink({
+    dashboardUrl: cluster.dashboardUrl,
+    dashboardApp: cluster.dashboardApp,
+    object,
+    kind,
+  });
 
   return (
     <>
@@ -109,7 +165,7 @@ const KubernetesDrawerContent = <T extends KubernetesDrawerable>({
         <Grid
           container
           direction="column"
-          justify="flex-start"
+          justifyContent="flex-start"
           alignItems="flex-start"
         >
           <Grid item>
@@ -132,7 +188,25 @@ const KubernetesDrawerContent = <T extends KubernetesDrawerable>({
           <Close className={classes.icon} />
         </IconButton>
       </div>
+      {errorMessage && (
+        <div className={classes.errorMessage}>
+          <ErrorPanel cluster={cluster} errorMessage={errorMessage} />
+        </div>
+      )}
       <div className={classes.options}>
+        <div>
+          {clusterLink && (
+            <BackstageButton
+              variant="outlined"
+              color="primary"
+              size="small"
+              to={clusterLink}
+              endIcon={<OpenInNewIcon />}
+            >
+              Open Kubernetes Dashboard
+            </BackstageButton>
+          )}
+        </div>
         <FormControlLabel
           control={
             <Switch

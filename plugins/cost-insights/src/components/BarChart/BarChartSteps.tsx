@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,12 +30,12 @@ export const BarChartSteps = ({
   onClick,
 }: BarChartStepsProps) => {
   const classes = useStyles();
-  const handleOnClick = (index: number) => (
-    event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
-  ) => {
-    event.preventDefault();
-    onClick(index);
-  };
+  const handleOnClick =
+    (index: number) =>
+    (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+      event.preventDefault();
+      onClick(index);
+    };
 
   return (
     <div className={classes.steps}>

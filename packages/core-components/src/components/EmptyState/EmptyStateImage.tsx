@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ const useStyles = makeStyles({
   generalImg: {
     width: '95%',
     zIndex: 2,
-    position: 'absolute',
+    position: 'relative',
     left: '50%',
     top: '50%',
     transform: 'translate(-50%, 15%)',

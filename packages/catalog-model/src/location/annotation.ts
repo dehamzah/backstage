@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 
+/** @public */
 export const LOCATION_ANNOTATION = 'backstage.io/managed-by-location';
+/** @public */
 export const ORIGIN_LOCATION_ANNOTATION =
   'backstage.io/managed-by-origin-location';
 
+/** @public */
 export const SOURCE_LOCATION_ANNOTATION = 'backstage.io/source-location';

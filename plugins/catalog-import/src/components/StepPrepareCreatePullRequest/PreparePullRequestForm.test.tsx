@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ import { FormHelperText, TextField } from '@material-ui/core';
 import { act, render } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
+import { asInputRef } from '../helpers';
 import { PreparePullRequestForm } from './PreparePullRequestForm';
 
 describe('<PreparePullRequestForm />', () => {
@@ -29,7 +30,7 @@ describe('<PreparePullRequestForm />', () => {
         defaultValues={{ main: 'default' }}
         render={({ register }) => (
           <>
-            <TextField name="main" inputRef={register()} />
+            <TextField {...asInputRef(register('main'))} />
             <button type="submit">Submit</button>{' '}
           </>
         )}
@@ -54,10 +55,9 @@ describe('<PreparePullRequestForm />', () => {
         render={({ register }) => (
           <>
             <TextField
+              {...asInputRef(register('main'))}
               id="main"
-              name="main"
               label="Main Field"
-              inputRef={register()}
             />
             <button type="submit">Submit</button>
           </>
@@ -82,14 +82,14 @@ describe('<PreparePullRequestForm />', () => {
     const { queryByText, getByRole } = render(
       <PreparePullRequestForm<{ main: string }>
         defaultValues={{}}
-        render={({ errors, register }) => (
+        render={({ formState, register }) => (
           <>
             <TextField
+              {...asInputRef(register('main', { required: true }))}
               name="main"
               required
-              inputRef={register({ required: true })}
             />
-            {errors.main && (
+            {formState.errors.main && (
               <FormHelperText error>
                 Error in required main field
               </FormHelperText>

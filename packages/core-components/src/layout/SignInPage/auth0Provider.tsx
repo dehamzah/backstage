@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ const Component: ProviderComponent = ({ onResult }) => {
         userId: identity!.id,
         profile: profile!,
         getIdToken: () =>
-          auth0AuthApi.getBackstageIdentity().then(i => i!.idToken),
+          auth0AuthApi.getBackstageIdentity().then(i => i!.token ?? i!.idToken),
         signOut: async () => {
           await auth0AuthApi.signOut();
         },
@@ -82,7 +82,8 @@ const loader: ProviderLoader = async apis => {
   return {
     userId: identity.id,
     profile: profile!,
-    getIdToken: () => auth0AuthApi.getBackstageIdentity().then(i => i!.idToken),
+    getIdToken: () =>
+      auth0AuthApi.getBackstageIdentity().then(i => i!.token ?? i!.idToken),
     signOut: async () => {
       await auth0AuthApi.signOut();
     },

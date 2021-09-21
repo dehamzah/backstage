@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,8 +65,8 @@ type Props = {
 };
 
 const renderers = {
-  code: ({ language, value }: { language: string; value: string }) => {
-    return <CodeSnippet language={language} text={value} />;
+  code: ({ language, value }: { language: string; value?: string }) => {
+    return <CodeSnippet language={language} text={value ?? ''} />;
   },
 };
 
@@ -76,7 +76,8 @@ const renderers = {
  * Renders markdown with the default dialect [gfm - GitHub flavored Markdown](https://github.github.com/gfm/) to backstage theme styled HTML.
  * If you just want to render to plain [CommonMark](https://commonmark.org/), set the dialect to `'common-mark'`
  */
-export const MarkdownContent = ({ content, dialect = 'gfm' }: Props) => {
+export function MarkdownContent(props: Props) {
+  const { content, dialect = 'gfm' } = props;
   const classes = useStyles();
   return (
     <ReactMarkdown
@@ -86,4 +87,4 @@ export const MarkdownContent = ({ content, dialect = 'gfm' }: Props) => {
       renderers={renderers}
     />
   );
-};
+}

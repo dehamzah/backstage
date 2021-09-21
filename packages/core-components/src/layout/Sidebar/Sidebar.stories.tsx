@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ const handleSearch = (input: string) => {
 
 export const SampleSidebar = () => (
   <Sidebar>
-    <SidebarSearchField onSearch={handleSearch} />
+    <SidebarSearchField onSearch={handleSearch} to="/search" />
     <SidebarDivider />
     <SidebarItem icon={HomeOutlinedIcon} to="#" text="Home" />
     <SidebarItem icon={HomeOutlinedIcon} to="#" text="Plugins" />

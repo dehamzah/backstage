@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -108,6 +108,8 @@ export function compileConfigSchemas(
 /**
  * Given a list of configuration schemas from packages, merge them
  * into a single json schema.
+ *
+ * @public
  */
 export function mergeConfigSchemas(schemas: JSONSchema[]): JSONSchema {
   const merged = mergeAllOf(

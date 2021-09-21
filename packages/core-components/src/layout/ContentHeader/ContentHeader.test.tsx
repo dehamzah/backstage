@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ describe('<ContentHeader/>', () => {
 
   it('should render with titleComponent', async () => {
     const title = 'Custom title';
-    const titleComponent = () => <h1>{title}</h1>;
+    const titleComponent = <h1>{title}</h1>;
     const rendered = await renderInTestApp(
       <ContentHeader titleComponent={titleComponent} />,
     );

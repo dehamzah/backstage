@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,9 +25,9 @@ import {
 } from '@material-ui/core';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import { V1Service } from '@kubernetes/client-node';
-import { StructuredMetadataTable } from '@backstage/core';
 import { ServiceDrawer } from './ServiceDrawer';
 import { GroupedResponsesContext } from '../../hooks';
+import { StructuredMetadataTable } from '@backstage/core-components';
 
 type ServiceSummaryProps = {
   service: V1Service;
@@ -35,7 +35,12 @@ type ServiceSummaryProps = {
 
 const ServiceSummary = ({ service }: ServiceSummaryProps) => {
   return (
-    <Grid container direction="row" justify="flex-start" alignItems="center">
+    <Grid
+      container
+      direction="row"
+      justifyContent="flex-start"
+      alignItems="center"
+    >
       <Grid xs={3} item>
         <ServiceDrawer service={service} />
       </Grid>
@@ -107,7 +112,7 @@ export const ServicesAccordions = ({}: ServicesAccordionsProps) => {
     <Grid
       container
       direction="row"
-      justify="flex-start"
+      justifyContent="flex-start"
       alignItems="flex-start"
     >
       {groupedResponses.services.map((service, i) => (

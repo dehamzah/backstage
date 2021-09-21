@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,16 @@
  * limitations under the License.
  */
 
-import { ContentHeader, InfoCard, MarkdownContent } from '@backstage/core';
 import { Button, Grid, makeStyles, Tab, Tabs } from '@material-ui/core';
 import CloseIcon from '@material-ui/icons/Close';
 import React, { useState } from 'react';
 import { useLocalStorage } from 'react-use';
 import LighthouseSupportButton from '../SupportButton';
+import {
+  ContentHeader,
+  InfoCard,
+  MarkdownContent,
+} from '@backstage/core-components';
 
 // TODO(freben): move all of this out of index
 
@@ -101,7 +105,7 @@ function GettingStartedCard() {
       divider
       actions={
         <>
-          <Grid container direction="row" justify="flex-end">
+          <Grid container direction="row" justifyContent="flex-end">
             <Grid item>
               <Button
                 component="a"
@@ -151,7 +155,7 @@ export default function LighthouseIntro({ onDismiss = () => {} }: Props) {
         <Grid item xs={12} sm={6} md={8}>
           <Grid
             container
-            justify="flex-end"
+            justifyContent="flex-end"
             alignItems="flex-end"
             className={classes.closeButtonContainer}
           >

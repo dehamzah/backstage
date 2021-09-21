@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,8 @@
 import {
   Entity,
   RELATION_OWNED_BY,
-  TemplateEntityV1alpha1,
+  TemplateEntityV1beta2,
 } from '@backstage/catalog-model';
-import { Button, ItemCardHeader, useApi, useRouteRef } from '@backstage/core';
 import {
   ScmIntegrationIcon,
   scmIntegrationsApiRef,
@@ -28,7 +27,7 @@ import {
   getEntityRelations,
   getEntitySourceLocation,
 } from '@backstage/plugin-catalog-react';
-import { BackstageTheme, pageTheme } from '@backstage/theme';
+import { BackstageTheme } from '@backstage/theme';
 import {
   Box,
   Card,
@@ -48,6 +47,9 @@ import React from 'react';
 import { generatePath } from 'react-router';
 import { rootRouteRef } from '../../routes';
 import { FavouriteTemplate } from '../FavouriteTemplate/FavouriteTemplate';
+
+import { Button, ItemCardHeader } from '@backstage/core-components';
+import { useApi, useRouteRef } from '@backstage/core-plugin-api';
 
 const useStyles = makeStyles(theme => ({
   cardHeader: {
@@ -91,7 +93,7 @@ const useDeprecationStyles = makeStyles(theme => ({
 }));
 
 export type TemplateCardProps = {
-  template: TemplateEntityV1alpha1;
+  template: TemplateEntityV1beta2;
   deprecated?: boolean;
 };
 
@@ -104,7 +106,7 @@ type TemplateProps = {
 };
 
 const getTemplateCardProps = (
-  template: TemplateEntityV1alpha1,
+  template: TemplateEntityV1beta2,
 ): TemplateProps & { key: string } => {
   return {
     key: template.metadata.uid!,
@@ -147,7 +149,9 @@ export const TemplateCard = ({ template, deprecated }: TemplateCardProps) => {
     template as Entity,
     RELATION_OWNED_BY,
   );
-  const themeId = pageTheme[templateProps.type] ? templateProps.type : 'other';
+  const themeId = backstageTheme.getPageTheme({ themeId: templateProps.type })
+    ? templateProps.type
+    : 'other';
   const theme = backstageTheme.getPageTheme({ themeId });
   const classes = useStyles({ backgroundImage: theme.backgroundImage });
   const href = generatePath(`${rootLink()}/templates/:templateName`, {

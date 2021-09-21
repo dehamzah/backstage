@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,70 +14,76 @@
  * limitations under the License.
  */
 
-import React from 'react';
-import { makeStyles } from '@material-ui/core';
 import {
   Content,
   ContentHeader,
+  CreateButton,
+  PageWithHeader,
   SupportButton,
   TableColumn,
-} from '@backstage/core';
+  TableProps,
+} from '@backstage/core-components';
+import { configApiRef, useApi, useRouteRef } from '@backstage/core-plugin-api';
 import {
-  EntityKindPicker,
+  EntityLifecyclePicker,
   EntityListProvider,
+  EntityOwnerPicker,
   EntityTagPicker,
   EntityTypePicker,
   UserListFilterKind,
   UserListPicker,
 } from '@backstage/plugin-catalog-react';
-
+import React from 'react';
+import { createComponentRouteRef } from '../../routes';
 import { CatalogTable } from '../CatalogTable';
 import { EntityRow } from '../CatalogTable/types';
-import CatalogLayout from './CatalogLayout';
-import { CreateComponentButton } from '../CreateComponentButton';
-
-const useStyles = makeStyles(theme => ({
-  contentWrapper: {
-    display: 'grid',
-    gridTemplateAreas: "'filters' 'table'",
-    gridTemplateColumns: '250px 1fr',
-    gridColumnGap: theme.spacing(2),
-  },
-  buttonSpacing: {
-    marginLeft: theme.spacing(2),
-  },
-}));
+import {
+  FilteredEntityLayout,
+  EntityListContainer,
+  FilterContainer,
+} from '../FilteredEntityLayout';
+import { CatalogKindHeader } from '../CatalogKindHeader';
 
 export type CatalogPageProps = {
   initiallySelectedFilter?: UserListFilterKind;
   columns?: TableColumn<EntityRow>[];
+  actions?: TableProps<EntityRow>['actions'];
 };
 
 export const CatalogPage = ({
-  initiallySelectedFilter = 'owned',
   columns,
+  actions,
+  initiallySelectedFilter = 'owned',
 }: CatalogPageProps) => {
-  const styles = useStyles();
+  const orgName =
+    useApi(configApiRef).getOptionalString('organization.name') ?? 'Backstage';
+  const createComponentLink = useRouteRef(createComponentRouteRef);
 
   return (
-    <CatalogLayout>
-      <Content>
-        <ContentHeader title="Components">
-          <CreateComponentButton />
-          <SupportButton>All your software catalog entities</SupportButton>
-        </ContentHeader>
-        <div className={styles.contentWrapper}>
-          <EntityListProvider>
-            <div>
-              <EntityKindPicker initialFilter="component" hidden />
+    <PageWithHeader title={`${orgName} Catalog`} themeId="home">
+      <EntityListProvider>
+        <Content>
+          <ContentHeader titleComponent={<CatalogKindHeader />}>
+            <CreateButton
+              title="Create Component"
+              to={createComponentLink && createComponentLink()}
+            />
+            <SupportButton>All your software catalog entities</SupportButton>
+          </ContentHeader>
+          <FilteredEntityLayout>
+            <FilterContainer>
               <EntityTypePicker />
               <UserListPicker initialFilter={initiallySelectedFilter} />
+              <EntityOwnerPicker />
+              <EntityLifecyclePicker />
               <EntityTagPicker />
-            </div>
-            <CatalogTable columns={columns} />
-          </EntityListProvider>
-        </div>
-      </Content>
-    </CatalogLayout>
+            </FilterContainer>
+            <EntityListContainer>
+              <CatalogTable columns={columns} actions={actions} />
+            </EntityListContainer>
+          </FilteredEntityLayout>
+        </Content>
+      </EntityListProvider>
+    </PageWithHeader>
   );
 };

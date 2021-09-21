@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Breadcrumbs, Content, Link, useRouteRefParams } from '@backstage/core';
 import {
   Box,
   Link as MaterialLink,
@@ -31,7 +30,9 @@ import React from 'react';
 import { buildRouteRef } from '../../plugin';
 import { JenkinsRunStatus } from '../BuildsPage/lib/Status';
 import { useBuildWithSteps } from '../useBuildWithSteps';
-import { useProjectSlugFromEntity } from '../useProjectSlugFromEntity';
+
+import { Breadcrumbs, Content, Link } from '@backstage/core-components';
+import { useRouteRefParams } from '@backstage/core-plugin-api';
 
 const useStyles = makeStyles(theme => ({
   root: {
@@ -47,15 +48,16 @@ const useStyles = makeStyles(theme => ({
 }));
 
 const BuildWithStepsView = () => {
-  const projectName = useProjectSlugFromEntity();
-  const { branch, buildNumber } = useRouteRefParams(buildRouteRef);
+  // TODO: Add a test that react-router decodes this (even though `generatePath` doesn't encode it for you!)
+  const { jobFullName, buildNumber } = useRouteRefParams(buildRouteRef);
   const classes = useStyles();
-  const buildPath = `${projectName}/${branch}/${buildNumber}`;
-  const [{ value }] = useBuildWithSteps(buildPath);
+
+  const [{ value }] = useBuildWithSteps({ jobFullName, buildNumber });
 
   return (
     <div className={classes.root}>
       <Breadcrumbs aria-label="breadcrumb">
+        {/* TODO: don't hardcode this link */}
         <Link to="../../..">Projects</Link>
         <Typography>Run</Typography>
       </Breadcrumbs>
@@ -100,7 +102,7 @@ const BuildWithStepsView = () => {
                 <Typography noWrap>Jenkins</Typography>
               </TableCell>
               <TableCell>
-                <MaterialLink target="_blank" href={value?.buildUrl}>
+                <MaterialLink target="_blank" href={value?.url}>
                   View on Jenkins{' '}
                   <ExternalLinkIcon className={classes.externalLinkIcon} />
                 </MaterialLink>
@@ -108,10 +110,11 @@ const BuildWithStepsView = () => {
             </TableRow>
             <TableRow>
               <TableCell>
+                {/* TODO: be SCM agnostic */}
                 <Typography noWrap>GitHub</Typography>
               </TableCell>
               <TableCell>
-                <MaterialLink target="_blank" href={value?.source.url}>
+                <MaterialLink target="_blank" href={value?.source?.url}>
                   View on GitHub{' '}
                   <ExternalLinkIcon className={classes.externalLinkIcon} />
                 </MaterialLink>

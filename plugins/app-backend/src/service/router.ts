@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -104,8 +104,7 @@ export async function createRouter(
         // The Cache-Control header instructs the browser to not cache html files since it might
         // link to static assets from recently deployed versions.
         if (
-          ((express.static.mime as unknown) as Mime).lookup(path) ===
-          'text/html'
+          (express.static.mime as unknown as Mime).lookup(path) === 'text/html'
         ) {
           res.setHeader('Cache-Control', 'no-store, max-age=0');
         }

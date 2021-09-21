@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 import React, { ComponentProps } from 'react';
 import { Alert, AlertTitle } from '@material-ui/lab';
-import { ErrorBoundary, Progress, useApi } from '@backstage/core';
 
 import { CreateReleaseCandidate } from './CreateReleaseCandidate/CreateReleaseCandidate';
 import { GitReleaseManager } from '../GitReleaseManager';
@@ -29,6 +28,9 @@ import { useGetGitBatchInfo } from '../hooks/useGetGitBatchInfo';
 import { useProjectContext } from '../contexts/ProjectContext';
 import { useVersioningStrategyMatchesRepoTags } from '../hooks/useVersioningStrategyMatchesRepoTags';
 import { validateTagName } from '../helpers/tagParts/validateTagName';
+
+import { ErrorBoundary, Progress } from '@backstage/core-components';
+import { useApi } from '@backstage/core-plugin-api';
 
 export function Features({
   features,
@@ -87,6 +89,21 @@ export function Features({
     );
   }
 
+  let CustomFeatures =
+    features?.custom?.factory({
+      latestRelease: gitBatchInfo.value.latestRelease,
+      project,
+      releaseBranch: gitBatchInfo.value.releaseBranch,
+      repository: gitBatchInfo.value.repository,
+    }) ?? null;
+  if (Array.isArray(CustomFeatures)) {
+    CustomFeatures = CustomFeatures.map((CustomFeature, index) => (
+      <React.Fragment key={`grm--custom-feature--${index}`}>
+        {CustomFeature}
+      </React.Fragment>
+    ));
+  }
+
   return (
     <RefetchContext.Provider value={{ fetchGitBatchInfo }}>
       <ErrorBoundary>
@@ -140,6 +157,8 @@ export function Features({
             onSuccess={features?.patch?.onSuccess}
           />
         )}
+
+        {CustomFeatures}
       </ErrorBoundary>
     </RefetchContext.Provider>
   );

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,9 @@ import { AnyApiFactory } from '../apis';
 
 export class PluginImpl<
   Routes extends AnyRoutes,
-  ExternalRoutes extends AnyExternalRoutes
-> implements BackstagePlugin<Routes, ExternalRoutes> {
+  ExternalRoutes extends AnyExternalRoutes,
+> implements BackstagePlugin<Routes, ExternalRoutes>
+{
   private storedOutput?: PluginOutput[];
 
   constructor(private readonly config: PluginConfig<Routes, ExternalRoutes>) {}
@@ -81,7 +82,7 @@ export class PluginImpl<
 
 export function createPlugin<
   Routes extends AnyRoutes = {},
-  ExternalRoutes extends AnyExternalRoutes = {}
+  ExternalRoutes extends AnyExternalRoutes = {},
 >(
   config: PluginConfig<Routes, ExternalRoutes>,
 ): BackstagePlugin<Routes, ExternalRoutes> {

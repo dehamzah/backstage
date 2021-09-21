@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-import { ApiProvider, ApiRegistry, errorApiRef } from '@backstage/core';
+import { ApiProvider, ApiRegistry } from '@backstage/core-app-api';
+import { errorApiRef } from '@backstage/core-plugin-api';
 import { act, render } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
@@ -380,7 +381,7 @@ describe('<StepInitAnalyzeUrl />', () => {
     );
 
     catalogImportApi.analyzeUrl.mockReturnValueOnce(
-      Promise.resolve(({ type: 'unknown' } as any) as AnalyzeResult),
+      Promise.resolve({ type: 'unknown' } as any as AnalyzeResult),
     );
 
     await act(async () => {

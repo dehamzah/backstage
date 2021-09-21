@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,13 +20,6 @@ import {
   UserEntity,
 } from '@backstage/catalog-model';
 import {
-  Avatar,
-  InfoCard,
-  Progress,
-  ResponseErrorPanel,
-  useApi,
-} from '@backstage/core';
-import {
   catalogApiRef,
   entityRouteParams,
   useEntity,
@@ -44,6 +37,14 @@ import Pagination from '@material-ui/lab/Pagination';
 import React from 'react';
 import { generatePath, Link as RouterLink } from 'react-router-dom';
 import { useAsync } from 'react-use';
+
+import {
+  Avatar,
+  InfoCard,
+  Progress,
+  ResponseErrorPanel,
+} from '@backstage/core-components';
+import { useApi } from '@backstage/core-plugin-api';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -127,7 +128,11 @@ export const MembersListCard = (_props: {
   };
   const pageSize = 50;
 
-  const { loading, error, value: members } = useAsync(async () => {
+  const {
+    loading,
+    error,
+    value: members,
+  } = useAsync(async () => {
     const membersList = await catalogApi.getEntities({
       filter: { kind: 'User' },
     });
@@ -169,7 +174,7 @@ export const MembersListCard = (_props: {
       <InfoCard
         title={`Members (${members?.length || 0}${paginationLabel})`}
         subheader={`of ${displayName}`}
-        actions={pagination}
+        {...(nbPages <= 1 ? {} : { actions: pagination })}
       >
         <Grid container spacing={3}>
           {members && members.length > 0 ? (

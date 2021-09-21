@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import {
   createRoutableExtension,
 } from '@backstage/core-plugin-api';
 import { generateBoundRoutes, PrivateAppImpl } from './App';
+import { AppThemeProvider } from './AppThemeProvider';
 
 describe('generateBoundRoutes', () => {
   it('runs happy path', () => {
@@ -160,6 +161,7 @@ describe('Integration Test', () => {
     Progress: () => null,
     Router: BrowserRouter,
     ErrorBoundaryFallback: () => null,
+    ThemeProvider: AppThemeProvider,
   };
 
   it('runs happy paths', async () => {

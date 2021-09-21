@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -113,12 +113,10 @@ export class GithubOrgReaderProcessor implements CatalogProcessor {
     }
 
     const credentialsProvider = GithubCredentialsProvider.create(gitHubConfig);
-    const {
-      headers,
-      type: tokenType,
-    } = await credentialsProvider.getCredentials({
-      url: orgUrl,
-    });
+    const { headers, type: tokenType } =
+      await credentialsProvider.getCredentials({
+        url: orgUrl,
+      });
 
     const client = graphql.defaults({
       baseUrl: gitHubConfig.apiBaseUrl,

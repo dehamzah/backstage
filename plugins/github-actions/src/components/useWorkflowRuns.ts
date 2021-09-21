@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 import { useState } from 'react';
 import { useAsyncRetry } from 'react-use';
 import { githubActionsApiRef } from '../api/GithubActionsApi';
-import { useApi, errorApiRef } from '@backstage/core';
+import { useApi, errorApiRef } from '@backstage/core-plugin-api';
 
 export type WorkflowRun = {
   workflowName: string;
@@ -57,9 +57,12 @@ export function useWorkflowRuns({
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(initialPageSize);
 
-  const { loading, value: runs, retry, error } = useAsyncRetry<
-    WorkflowRun[]
-  >(async () => {
+  const {
+    loading,
+    value: runs,
+    retry,
+    error,
+  } = useAsyncRetry<WorkflowRun[]>(async () => {
     // GitHub API pagination count starts from 1
     const workflowRunsData = await api.listWorkflowRuns({
       hostname,

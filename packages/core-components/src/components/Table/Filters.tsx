@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ const useSubvalueCellStyles = makeStyles<BackstageTheme>(theme => ({
 export type Without<T, K> = Pick<T, Exclude<keyof T, K>>;
 
 export type Filter = {
-  type: 'select' | 'checkbox-tree' | 'multiple-select';
+  type: 'select' | /** @deprecated */ 'checkbox-tree' | 'multiple-select';
   element:
     | Without<CheckboxTreeProps, 'onChange'>
     | Without<SelectProps, 'onChange'>;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,28 +15,30 @@
  */
 
 import { useApp } from '@backstage/core-plugin-api';
-import { HelpIcon } from '../../icons';
+import { BackstageTheme } from '@backstage/theme';
 import {
   Box,
   Button,
   DialogActions,
+  IconButton,
   List,
   ListItem,
   ListItemIcon,
   ListItemText,
   makeStyles,
   Popover,
+  Typography,
+  useMediaQuery,
 } from '@material-ui/core';
-import React, {
-  Fragment,
-  MouseEventHandler,
-  PropsWithChildren,
-  useState,
-} from 'react';
+import React, { MouseEventHandler, useState } from 'react';
 import { SupportItem, SupportItemLink, useSupportConfig } from '../../hooks';
+import { HelpIcon } from '../../icons';
 import { Link } from '../Link';
 
-type Props = {};
+type SupportButtonProps = {
+  title?: string;
+  children?: React.ReactNode;
+};
 
 const useStyles = makeStyles({
   popoverList: {
@@ -78,12 +80,16 @@ const SupportListItem = ({ item }: { item: SupportItem }) => {
   );
 };
 
-export const SupportButton = ({ children }: PropsWithChildren<Props>) => {
+export function SupportButton(props: SupportButtonProps) {
+  const { title, children } = props;
   const { items } = useSupportConfig();
 
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<Element | null>(null);
   const classes = useStyles();
+  const isSmallScreen = useMediaQuery<BackstageTheme>(theme =>
+    theme.breakpoints.down('sm'),
+  );
 
   const onClickHandler: MouseEventHandler = event => {
     setAnchorEl(event.currentTarget);
@@ -95,17 +101,28 @@ export const SupportButton = ({ children }: PropsWithChildren<Props>) => {
   };
 
   return (
-    <Fragment>
-      <Button
-        data-testid="support-button"
-        color="primary"
-        onClick={onClickHandler}
-      >
-        <Box marginRight={1}>
-          <HelpIcon />
-        </Box>
-        Support
-      </Button>
+    <>
+      <Box display="flex" ml={1}>
+        {isSmallScreen ? (
+          <IconButton
+            color="primary"
+            size="small"
+            onClick={onClickHandler}
+            data-testid="support-button"
+          >
+            <HelpIcon />
+          </IconButton>
+        ) : (
+          <Button
+            data-testid="support-button"
+            color="primary"
+            onClick={onClickHandler}
+            startIcon={<HelpIcon />}
+          >
+            Support
+          </Button>
+        )}
+      </Box>
       <Popover
         data-testid="support-button-popover"
         open={popoverOpen}
@@ -121,13 +138,20 @@ export const SupportButton = ({ children }: PropsWithChildren<Props>) => {
         onClose={popoverCloseHandler}
       >
         <List className={classes.popoverList}>
+          {title && (
+            <ListItem alignItems="flex-start">
+              <Typography variant="subtitle1">{title}</Typography>
+            </ListItem>
+          )}
           {React.Children.map(children, (child, i) => (
-            <ListItem alignItems="flex-start" key={i}>
+            <ListItem alignItems="flex-start" key={`child-${i}`}>
               {child}
             </ListItem>
           ))}
           {items &&
-            items.map((item, i) => <SupportListItem item={item} key={i} />)}
+            items.map((item, i) => (
+              <SupportListItem item={item} key={`item-${i}`} />
+            ))}
         </List>
         <DialogActions>
           <Button color="primary" onClick={popoverCloseHandler}>
@@ -135,6 +159,6 @@ export const SupportButton = ({ children }: PropsWithChildren<Props>) => {
           </Button>
         </DialogActions>
       </Popover>
-    </Fragment>
+    </>
   );
-};
+}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ const useStyles = makeStyles({
   },
 });
 
-export const Lifecycle = (props: Props) => {
+export function Lifecycle(props: Props) {
   const classes = useStyles(props);
   const { shorthand, alpha } = props;
   return shorthand ? (
@@ -53,4 +53,4 @@ export const Lifecycle = (props: Props) => {
       {alpha ? 'Alpha' : 'Beta'}
     </span>
   );
-};
+}

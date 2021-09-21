@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,6 @@
  */
 
 import { Entity } from '@backstage/catalog-model';
-import {
-  EmptyState,
-  InfoCard,
-  InfoCardVariants,
-  MissingAnnotationEmptyState,
-  Progress,
-  useApi,
-} from '@backstage/core';
 import { useEntity } from '@backstage/plugin-catalog-react';
 import { Chip, Grid } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
@@ -41,6 +33,16 @@ import { Percentage } from './Percentage';
 import { Rating } from './Rating';
 import { RatingCard } from './RatingCard';
 import { Value } from './Value';
+
+import {
+  EmptyState,
+  InfoCard,
+  InfoCardVariants,
+  MissingAnnotationEmptyState,
+  Progress,
+} from '@backstage/core-components';
+
+import { useApi } from '@backstage/core-plugin-api';
 
 const useStyles = makeStyles(theme => ({
   badgeLabel: {
@@ -181,12 +183,12 @@ export const SonarQubeCard = ({
             item
             container
             direction="column"
-            justify="space-between"
+            justifyContent="space-between"
             alignItems="center"
             style={{ height: '100%' }}
             spacing={0}
           >
-            <Grid item container justify="space-around">
+            <Grid item container justifyContent="space-around">
               <RatingCard
                 titleIcon={<BugReport />}
                 title="Bugs"

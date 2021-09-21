@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -117,8 +117,8 @@ export class Cobertura implements Converter {
     const lines = [classLines, methodLines].flat().filter(Boolean);
     const lineHits = lines.map(l => {
       return {
-        number: parseInt((l.$.number as unknown) as string, 10),
-        hits: parseInt((l.$.hits as unknown) as string, 10),
+        number: parseInt(l.$.number as unknown as string, 10),
+        hits: parseInt(l.$.hits as unknown as string, 10),
         'condition-coverage': l.$['condition-coverage'],
         branch: l.$.branch,
       };

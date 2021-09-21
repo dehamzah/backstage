@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-export type Transformer = (dom: Element) => Element;
+export type Transformer = (dom: Element) => Element | Promise<Element>;
 
-export const transform = (
+export const transform = async (
   html: string | Element,
   transformers: Transformer[],
-): Element => {
+): Promise<Element> => {
   let dom: Element;
 
   if (typeof html === 'string') {
@@ -30,9 +30,9 @@ export const transform = (
     throw new Error('dom is not a recognized type');
   }
 
-  transformers.forEach(transformer => {
-    dom = transformer(dom);
-  });
+  for (const transformer of transformers) {
+    dom = await transformer(dom);
+  }
 
   return dom;
 };

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,18 +19,21 @@ import {
   ENTITY_DEFAULT_NAMESPACE,
   RELATION_CONSUMES_API,
   RELATION_PROVIDES_API,
+  stringifyEntityRef,
 } from '@backstage/catalog-model';
 import {
   HeaderIconLinkRow,
   IconLinkVerticalProps,
   InfoCardVariants,
-  useApi,
-} from '@backstage/core';
+  Link,
+} from '@backstage/core-components';
+import { alertApiRef, useApi, useRouteRef } from '@backstage/core-plugin-api';
 import {
   ScmIntegrationIcon,
   scmIntegrationsApiRef,
 } from '@backstage/integration-react';
 import {
+  catalogApiRef,
   getEntityMetadataEditUrl,
   getEntityRelations,
   getEntitySourceLocation,
@@ -44,10 +47,12 @@ import {
   IconButton,
   makeStyles,
 } from '@material-ui/core';
+import CachedIcon from '@material-ui/icons/Cached';
 import DocsIcon from '@material-ui/icons/Description';
 import EditIcon from '@material-ui/icons/Edit';
 import ExtensionIcon from '@material-ui/icons/Extension';
-import React from 'react';
+import React, { useCallback } from 'react';
+import { viewTechDocRouteRef } from '../../routes';
 import { AboutContent } from './AboutContent';
 
 const useStyles = makeStyles({
@@ -80,6 +85,10 @@ export function AboutCard({ variant }: AboutCardProps) {
   const classes = useStyles();
   const { entity } = useEntity();
   const scmIntegrationsApi = useApi(scmIntegrationsApiRef);
+  const catalogApi = useApi(catalogApiRef);
+  const alertApi = useApi(alertApiRef);
+  const viewTechdocLink = useRouteRef(viewTechDocRouteRef);
+
   const entitySourceLocation = getEntitySourceLocation(
     entity,
     scmIntegrationsApi,
@@ -104,11 +113,17 @@ export function AboutCard({ variant }: AboutCardProps) {
   };
   const viewInTechDocs: IconLinkVerticalProps = {
     label: 'View TechDocs',
-    disabled: !entity.metadata.annotations?.['backstage.io/techdocs-ref'],
+    disabled:
+      !entity.metadata.annotations?.['backstage.io/techdocs-ref'] ||
+      !viewTechdocLink,
     icon: <DocsIcon />,
-    href: `/docs/${entity.metadata.namespace || ENTITY_DEFAULT_NAMESPACE}/${
-      entity.kind
-    }/${entity.metadata.name}`,
+    href:
+      viewTechdocLink &&
+      viewTechdocLink({
+        namespace: entity.metadata.namespace || ENTITY_DEFAULT_NAMESPACE,
+        kind: entity.kind,
+        name: entity.metadata.name,
+      }),
   };
   const viewApi: IconLinkVerticalProps = {
     title: hasApis ? '' : 'No APIs available',
@@ -132,21 +147,34 @@ export function AboutCard({ variant }: AboutCardProps) {
     cardContentClass = classes.fullHeightCardContent;
   }
 
+  const refreshEntity = useCallback(async () => {
+    await catalogApi.refreshEntity(stringifyEntityRef(entity));
+    alertApi.post({ message: 'Refresh scheduled', severity: 'info' });
+  }, [catalogApi, alertApi, entity]);
+
   return (
     <Card className={cardClass}>
       <CardHeader
         title="About"
         action={
-          <IconButton
-            aria-label="Edit"
-            disabled={!entityMetadataEditUrl}
-            title="Edit Metadata"
-            onClick={() => {
-              window.open(entityMetadataEditUrl ?? '#', '_blank');
-            }}
-          >
-            <EditIcon />
-          </IconButton>
+          <>
+            <IconButton
+              aria-label="Refresh"
+              title="Schedule entity refresh"
+              onClick={refreshEntity}
+            >
+              <CachedIcon />
+            </IconButton>
+            <IconButton
+              component={Link}
+              aria-label="Edit"
+              disabled={!entityMetadataEditUrl}
+              title="Edit Metadata"
+              to={entityMetadataEditUrl ?? '#'}
+            >
+              <EditIcon />
+            </IconButton>
+          </>
         }
         subheader={
           <HeaderIconLinkRow links={[viewInSource, viewInTechDocs, viewApi]} />

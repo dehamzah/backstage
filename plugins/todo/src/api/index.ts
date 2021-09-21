@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,5 +15,12 @@
  */
 
 export { TodoClient } from './TodoClient';
+export type { TodoClientOptions } from './TodoClient';
 export { todoApiRef } from './types';
-export type { TodoApi } from './types';
+export type {
+  TodoApi,
+  TodoListOptions,
+  TodoListResult,
+  TodoItem,
+  TodoListFields,
+} from './types';

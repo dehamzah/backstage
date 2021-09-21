@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,13 +67,14 @@ export class TokenFactory implements TokenIssuer {
 
     const iss = this.issuer;
     const sub = params.claims.sub;
+    const ent = params.claims.ent;
     const aud = 'backstage';
     const iat = Math.floor(Date.now() / MS_IN_S);
     const exp = iat + this.keyDurationSeconds;
 
-    this.logger.info(`Issuing token for ${sub}`);
+    this.logger.info(`Issuing token for ${sub}, with entities ${ent ?? []}`);
 
-    return JWS.sign({ iss, sub, aud, iat, exp }, key, {
+    return JWS.sign({ iss, sub, aud, iat, exp, ent }, key, {
       alg: key.alg,
       kid: key.kid,
     });
@@ -149,7 +150,7 @@ export class TokenFactory implements TokenIssuer {
       //       the new one. This also needs to be implemented cross-service though, meaning new services
       //       that boot up need to be able to grab an existing key to use for signing.
       this.logger.info(`Created new signing key ${key.kid}`);
-      await this.keyStore.addKey((key.toJWK(false) as unknown) as AnyJWK);
+      await this.keyStore.addKey(key.toJWK(false) as unknown as AnyJWK);
 
       // At this point we are allowed to start using the new key
       return key as JSONWebKey;

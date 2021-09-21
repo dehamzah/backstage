@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,5 +14,19 @@
  * limitations under the License.
  */
 
-export { todoApiRef } from './api';
+/**
+ * A Backstage plugin that lets you browse TODO comments in your source code
+ *
+ * @packageDocumentation
+ */
+
+export { todoApiRef, TodoClient } from './api';
+export type {
+  TodoApi,
+  TodoListOptions,
+  TodoListResult,
+  TodoItem,
+  TodoListFields,
+  TodoClientOptions,
+} from './api';
 export { todoPlugin, EntityTodoContent } from './plugin';

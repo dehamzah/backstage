@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 import React from 'react';
 import { Button, makeStyles, Typography } from '@material-ui/core';
 import { BackstageTheme } from '@backstage/theme';
+import { Link } from '../Link';
 import { EmptyState } from './EmptyState';
 import { CodeSnippet } from '../CodeSnippet';
 
@@ -44,7 +45,8 @@ const useStyles = makeStyles<BackstageTheme>(theme => ({
   },
 }));
 
-export const MissingAnnotationEmptyState = ({ annotation }: Props) => {
+export function MissingAnnotationEmptyState(props: Props) {
+  const { annotation } = props;
   const classes = useStyles();
   const description = (
     <>
@@ -73,9 +75,9 @@ export const MissingAnnotationEmptyState = ({ annotation }: Props) => {
             />
           </div>
           <Button
-            variant="contained"
             color="primary"
-            href="https://backstage.io/docs/features/software-catalog/well-known-annotations"
+            component={Link}
+            to="https://backstage.io/docs/features/software-catalog/well-known-annotations"
           >
             Read more
           </Button>
@@ -83,4 +85,4 @@ export const MissingAnnotationEmptyState = ({ annotation }: Props) => {
       }
     />
   );
-};
+}

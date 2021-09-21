@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,20 +22,20 @@ import { compileAjvSchema, throwAjvError } from './ajv';
  * Creates a validation function that takes some arbitrary data, and either
  * returns that data cast to a `T` if it matches that schema, or `false` if the
  * schema apiVersion/kind didn't apply to that data, or throws a
- * {@link TypeError} describing actual errors.
+ * {@link globals#TypeError} describing actual errors.
  *
  * This validator is highly specialized, in that it has special treatment of
  * the `kind` and `apiVersion` root keys. This only works if your schema has
  * their rule set to `"enum"`:
  *
- * <pre>
- *   "apiVersion": {
- *      "enum": ["backstage.io/v1alpha1", "backstage.io/v1beta1"]
- *   },
- *   "kind": {
- *     "enum": ["Group"]
- *   },
- * </pre>
+ * ```
+ * "apiVersion": {
+ *    "enum": ["backstage.io/v1alpha1", "backstage.io/v1beta1"]
+ * },
+ * "kind": {
+ *   "enum": ["Group"]
+ * },
+ * ```
  *
  * In the above example, the created validator will return `false` if and only
  * if the kind and/or apiVersion mismatch.
@@ -52,6 +52,7 @@ import { compileAjvSchema, throwAjvError } from './ajv';
  * - EntityMeta
  * - common#<id>
  *
+ * @public
  * @see https://github.com/backstage/backstage/tree/master/packages/catalog-model/src/schema
  */
 export function entityKindSchemaValidator<T extends Entity>(

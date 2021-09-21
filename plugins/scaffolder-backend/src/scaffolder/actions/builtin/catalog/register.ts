@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,10 +76,8 @@ export function createCatalogRegisterAction(options: {
       if ('catalogInfoUrl' in input) {
         catalogInfoUrl = input.catalogInfoUrl;
       } else {
-        const {
-          repoContentsUrl,
-          catalogInfoPath = '/catalog-info.yaml',
-        } = input;
+        const { repoContentsUrl, catalogInfoPath = '/catalog-info.yaml' } =
+          input;
         const integration = integrations.byUrl(repoContentsUrl);
         if (!integration) {
           throw new InputError(

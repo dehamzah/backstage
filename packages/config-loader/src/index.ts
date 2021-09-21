@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,20 @@
  * limitations under the License.
  */
 
+/**
+ * Config loading functionality used by Backstage backend, and CLI
+ *
+ * @packageDocumentation
+ */
+
 export { readEnvConfig, loadConfigSchema, mergeConfigSchemas } from './lib';
-export type { ConfigSchema, ConfigVisibility } from './lib';
+export type {
+  ConfigSchema,
+  ConfigSchemaProcessingOptions,
+  ConfigVisibility,
+  EnvFunc,
+  LoadConfigSchemaOptions,
+  TransformFunc,
+} from './lib';
 export { loadConfig } from './loader';
 export type { LoadConfigOptions } from './loader';

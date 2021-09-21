@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import {
   SubRouteRef,
   ExternalRouteRef,
 } from '@backstage/core-plugin-api';
-import { getOrCreateGlobalSingleton } from '../lib/globalObject';
+import { getOrCreateGlobalSingleton } from '@backstage/version-bridge';
 
 type RouteRefType = Exclude<
   keyof RouteRef,
@@ -75,7 +75,7 @@ export function isSubRouteRef<Params extends AnyParams>(
 
 export function isExternalRouteRef<
   Params extends AnyParams,
-  Optional extends boolean
+  Optional extends boolean,
 >(
   routeRef:
     | RouteRef<Params>

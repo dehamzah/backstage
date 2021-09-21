@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,16 @@
  */
 
 import React from 'react';
-import { ErrorPage, useApi, configApiRef } from '@backstage/core';
+import { useApi, configApiRef } from '@backstage/core-plugin-api';
+import { ErrorPage } from '@backstage/core-components';
 
 type Props = {
   errorMessage?: string;
 };
 
 export const TechDocsNotFound = ({ errorMessage }: Props) => {
-  const techdocsBuilder = useApi(configApiRef).getOptionalString(
-    'techdocs.builder',
-  );
+  const techdocsBuilder =
+    useApi(configApiRef).getOptionalString('techdocs.builder');
 
   let additionalInfo = '';
   if (techdocsBuilder !== 'local') {

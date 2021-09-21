@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,13 @@ import { EntityFilter } from '../types';
 
 export function reduceCatalogFilters(
   filters: EntityFilter[],
-): Record<string, string | string[]> {
+): Record<string, string | symbol | (string | symbol)[]> {
   return filters.reduce((compoundFilter, filter) => {
     return {
       ...compoundFilter,
       ...(filter.getCatalogFilters ? filter.getCatalogFilters() : {}),
     };
-  }, {} as Record<string, string | string[]>);
+  }, {} as Record<string, string | symbol | (string | symbol)[]>);
 }
 
 export function reduceEntityFilters(

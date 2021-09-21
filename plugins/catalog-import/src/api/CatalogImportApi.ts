@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 
 import { EntityName } from '@backstage/catalog-model';
-import { createApiRef } from '@backstage/core';
+import { createApiRef } from '@backstage/core-plugin-api';
 import { PartialEntity } from '../types';
 
 export const catalogImportApiRef = createApiRef<CatalogImportApi>({
@@ -42,6 +42,10 @@ export type AnalyzeResult =
 export interface CatalogImportApi {
   analyzeUrl(url: string): Promise<AnalyzeResult>;
 
+  preparePullRequest?(): Promise<{
+    title: string;
+    body: string;
+  }>;
   submitPullRequest(options: {
     repositoryUrl: string;
     fileContent: string;

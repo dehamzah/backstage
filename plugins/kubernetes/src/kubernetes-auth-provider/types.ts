@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { createApiRef } from '@backstage/core';
 import { KubernetesRequestBody } from '@backstage/plugin-kubernetes-common';
+import { createApiRef } from '@backstage/core-plugin-api';
 
 export interface KubernetesAuthProvider {
   decorateRequestBodyForAuth(
@@ -23,13 +23,12 @@ export interface KubernetesAuthProvider {
   ): Promise<KubernetesRequestBody>;
 }
 
-export const kubernetesAuthProvidersApiRef = createApiRef<KubernetesAuthProvidersApi>(
-  {
+export const kubernetesAuthProvidersApiRef =
+  createApiRef<KubernetesAuthProvidersApi>({
     id: 'plugin.kubernetes-auth-providers.service',
     description:
       'Used by the Kubernetes plugin to fetch KubernetesAuthProviders',
-  },
-);
+  });
 
 export interface KubernetesAuthProvidersApi {
   decorateRequestBodyForAuth(

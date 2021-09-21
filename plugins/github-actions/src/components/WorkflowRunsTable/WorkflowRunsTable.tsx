@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,13 +25,6 @@ import {
 import RetryIcon from '@material-ui/icons/Replay';
 import GitHubIcon from '@material-ui/icons/GitHub';
 import { Link as RouterLink, generatePath } from 'react-router-dom';
-import {
-  EmptyState,
-  Table,
-  TableColumn,
-  configApiRef,
-  useApi,
-} from '@backstage/core';
 import { useWorkflowRuns, WorkflowRun } from '../useWorkflowRuns';
 import { WorkflowRunStatus } from '../WorkflowRunStatus';
 import SyncIcon from '@material-ui/icons/Sync';
@@ -39,6 +32,9 @@ import { buildRouteRef } from '../../routes';
 import { useProjectName } from '../useProjectName';
 import { Entity } from '@backstage/catalog-model';
 import { readGitHubIntegrationConfigs } from '@backstage/integration';
+
+import { EmptyState, Table, TableColumn } from '@backstage/core-components';
+import { configApiRef, useApi } from '@backstage/core-plugin-api';
 
 const generatedColumns: TableColumn[] = [
   {
@@ -134,8 +130,8 @@ export const WorkflowRunsTableView = ({
         },
       ]}
       data={runs ?? []}
-      onChangePage={onChangePage}
-      onChangeRowsPerPage={onChangePageSize}
+      onPageChange={onChangePage}
+      onRowsPerPageChange={onChangePageSize}
       style={{ width: '100%' }}
       title={
         <Box display="flex" alignItems="center">
@@ -163,15 +159,13 @@ export const WorkflowRunsTable = ({
     config.getOptionalConfigArray('integrations.github') ?? [],
   )[0].host;
   const [owner, repo] = (projectName ?? '/').split('/');
-  const [
-    { runs, ...tableProps },
-    { retry, setPage, setPageSize },
-  ] = useWorkflowRuns({
-    hostname,
-    owner,
-    repo,
-    branch,
-  });
+  const [{ runs, ...tableProps }, { retry, setPage, setPageSize }] =
+    useWorkflowRuns({
+      hostname,
+      owner,
+      repo,
+      branch,
+    });
 
   const githubHost = hostname || 'github.com';
 

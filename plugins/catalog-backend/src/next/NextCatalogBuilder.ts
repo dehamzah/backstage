@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,7 @@
  * limitations under the License.
  */
 
-import {
-  PluginDatabaseManager,
-  resolvePackagePath,
-  UrlReader,
-} from '@backstage/backend-common';
+import { resolvePackagePath } from '@backstage/backend-common';
 import {
   DefaultNamespaceEntityPolicy,
   EntityPolicies,
@@ -29,10 +25,10 @@ import {
   SchemaValidEntityPolicy,
   Validators,
 } from '@backstage/catalog-model';
-import { Config } from '@backstage/config';
 import { ScmIntegrations } from '@backstage/integration';
+import { createHash } from 'crypto';
+import { Router } from 'express';
 import lodash from 'lodash';
-import { Logger } from 'winston';
 import {
   DatabaseLocationsCatalog,
   EntitiesCatalog,
@@ -49,8 +45,7 @@ import {
   FileReaderProcessor,
   GithubDiscoveryProcessor,
   GithubOrgReaderProcessor,
-  LdapOrgReaderProcessor,
-  MicrosoftGraphOrgReaderProcessor,
+  GitLabDiscoveryProcessor,
   PlaceholderProcessor,
   PlaceholderResolver,
   UrlReaderProcessor,
@@ -63,7 +58,11 @@ import {
 } from '../ingestion/processors/PlaceholderProcessor';
 import { defaultEntityDataParser } from '../ingestion/processors/util/parse';
 import { LocationAnalyzer } from '../ingestion/types';
-import { CatalogProcessingEngine, LocationService } from '../next/types';
+import {
+  CatalogProcessingEngine,
+  EntityProvider,
+  LocationService,
+} from '../next/types';
 import { ConfigLocationEntityProvider } from './ConfigLocationEntityProvider';
 import { DefaultProcessingDatabase } from './database/DefaultProcessingDatabase';
 import { DefaultCatalogProcessingEngine } from './DefaultCatalogProcessingEngine';
@@ -72,13 +71,13 @@ import { DefaultLocationStore } from './DefaultLocationStore';
 import { NextEntitiesCatalog } from './NextEntitiesCatalog';
 import { DefaultCatalogProcessingOrchestrator } from './processing/DefaultCatalogProcessingOrchestrator';
 import { Stitcher } from './stitching/Stitcher';
-
-export type CatalogEnvironment = {
-  logger: Logger;
-  database: PluginDatabaseManager;
-  config: Config;
-  reader: UrlReader;
-};
+import {
+  createRandomRefreshInterval,
+  RefreshIntervalFunction,
+} from './refresh';
+import { CatalogEnvironment } from '../service/CatalogBuilder';
+import { createNextRouter } from './NextRouter';
+import { DefaultRefreshService } from './DefaultRefreshService';
 
 /**
  * A builder that helps wire up all of the component parts of the catalog.
@@ -105,9 +104,15 @@ export class NextCatalogBuilder {
   private entityPoliciesReplace: boolean;
   private placeholderResolvers: Record<string, PlaceholderResolver>;
   private fieldFormatValidators: Partial<Validators>;
+  private entityProviders: EntityProvider[];
   private processors: CatalogProcessor[];
   private processorsReplace: boolean;
   private parser: CatalogProcessorParser | undefined;
+  private refreshInterval: RefreshIntervalFunction =
+    createRandomRefreshInterval({
+      minSeconds: 100,
+      maxSeconds: 150,
+    });
 
   constructor(env: CatalogEnvironment) {
     this.env = env;
@@ -115,6 +120,7 @@ export class NextCatalogBuilder {
     this.entityPoliciesReplace = false;
     this.placeholderResolvers = {};
     this.fieldFormatValidators = {};
+    this.entityProviders = [];
     this.processors = [];
     this.processorsReplace = false;
     this.parser = undefined;
@@ -133,6 +139,31 @@ export class NextCatalogBuilder {
    */
   addEntityPolicy(...policies: EntityPolicy[]): NextCatalogBuilder {
     this.entityPolicies.push(...policies);
+    return this;
+  }
+
+  /**
+   * Refresh interval determines how often entities should be refreshed.
+   * Seconds provided will be multiplied by 1.5
+   * The default refresh duration is 100-150 seconds.
+   * setting this too low will potentially deplete request quotas to upstream services.
+   */
+  setRefreshIntervalSeconds(seconds: number): NextCatalogBuilder {
+    this.refreshInterval = createRandomRefreshInterval({
+      minSeconds: seconds,
+      maxSeconds: seconds * 1.5,
+    });
+    return this;
+  }
+
+  /**
+   * Overwrites the default refresh interval function used to spread
+   * entity updates in the catalog.
+   */
+  setRefreshInterval(
+    refreshInterval: RefreshIntervalFunction,
+  ): NextCatalogBuilder {
+    this.refreshInterval = refreshInterval;
     return this;
   }
 
@@ -188,6 +219,20 @@ export class NextCatalogBuilder {
   }
 
   /**
+   * Adds or replaces entity providers. These are responsible for bootstrapping
+   * the list of entities out of original data sources. For example, there is
+   * one entity source for the config locations, and one for the database
+   * stored locations. If you ingest entities out of a third party system, you
+   * may want to implement that in terms of an entity provider as well.
+   *
+   * @param providers One or more entity providers
+   */
+  addEntityProvider(...providers: EntityProvider[]): NextCatalogBuilder {
+    this.entityProviders.push(...providers);
+    return this;
+  }
+
+  /**
    * Adds entity processors. These are responsible for reading, parsing, and
    * processing entities before they are persisted in the catalog.
    *
@@ -235,6 +280,7 @@ export class NextCatalogBuilder {
     locationAnalyzer: LocationAnalyzer;
     processingEngine: CatalogProcessingEngine;
     locationService: LocationService;
+    router: Router;
   }> {
     const { config, database, logger } = this.env;
 
@@ -246,13 +292,17 @@ export class NextCatalogBuilder {
     await dbClient.migrate.latest({
       directory: resolvePackagePath(
         '@backstage/plugin-catalog-backend',
-        'migrationsv2',
+        'migrations',
       ),
     });
 
     const db = new CommonDatabase(dbClient, logger);
 
-    const processingDatabase = new DefaultProcessingDatabase(dbClient, logger);
+    const processingDatabase = new DefaultProcessingDatabase({
+      database: dbClient,
+      logger,
+      refreshInterval: this.refreshInterval,
+    });
     const integrations = ScmIntegrations.fromConfig(config);
     const orchestrator = new DefaultCatalogProcessingOrchestrator({
       processors,
@@ -262,16 +312,22 @@ export class NextCatalogBuilder {
       policy,
     });
     const entitiesCatalog = new NextEntitiesCatalog(dbClient);
+    const stitcher = new Stitcher(dbClient, logger);
 
     const locationStore = new DefaultLocationStore(dbClient);
-    const stitcher = new Stitcher(dbClient, logger);
     const configLocationProvider = new ConfigLocationEntityProvider(config);
+    const entityProviders = lodash.uniqBy(
+      [...this.entityProviders, locationStore, configLocationProvider],
+      provider => provider.getProviderName(),
+    );
+
     const processingEngine = new DefaultCatalogProcessingEngine(
       logger,
-      [locationStore, configLocationProvider],
+      entityProviders,
       processingDatabase,
       orchestrator,
       stitcher,
+      () => createHash('sha1'),
     );
 
     const locationsCatalog = new DatabaseLocationsCatalog(db);
@@ -280,12 +336,25 @@ export class NextCatalogBuilder {
       locationStore,
       orchestrator,
     );
+    const refreshService = new DefaultRefreshService({
+      database: processingDatabase,
+    });
+    const router = await createNextRouter({
+      entitiesCatalog,
+      locationAnalyzer,
+      locationService,
+      refreshService,
+      logger,
+      config,
+    });
+
     return {
       entitiesCatalog,
       locationsCatalog,
       locationAnalyzer,
       processingEngine,
       locationService,
+      router,
     };
   }
 
@@ -320,7 +389,11 @@ export class NextCatalogBuilder {
 
     // These are always there no matter what
     const processors: CatalogProcessor[] = [
-      new PlaceholderProcessor({ resolvers: placeholderResolvers, reader }),
+      new PlaceholderProcessor({
+        resolvers: placeholderResolvers,
+        reader,
+        integrations,
+      }),
       new BuiltinKindsEntityProcessor(),
     ];
 
@@ -331,8 +404,7 @@ export class NextCatalogBuilder {
         BitbucketDiscoveryProcessor.fromConfig(config, { logger }),
         GithubDiscoveryProcessor.fromConfig(config, { logger }),
         GithubOrgReaderProcessor.fromConfig(config, { logger }),
-        LdapOrgReaderProcessor.fromConfig(config, { logger }),
-        MicrosoftGraphOrgReaderProcessor.fromConfig(config, { logger }),
+        GitLabDiscoveryProcessor.fromConfig(config, { logger }),
         new UrlReaderProcessor({ reader, logger }),
         CodeOwnersProcessor.fromConfig(config, { logger, reader }),
         new AnnotateLocationEntityProcessor({ integrations }),

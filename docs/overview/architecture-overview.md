@@ -25,7 +25,7 @@ different ways.
 
 The following diagram shows how Backstage might look when deployed inside a
 company which uses the Tech Radar plugin, the Lighthouse plugin, the CircleCI
-plugin and the service catalog.
+plugin and the software catalog.
 
 There are 3 main components in this architecture:
 
@@ -142,7 +142,7 @@ Its architecture looks like this:
 
 ![lighthouse plugin backed to microservice and database](../assets/architecture-overview/lighthouse-plugin-architecture.png)
 
-The service catalog in Backstage is another example of a service backed plugin.
+The software catalog in Backstage is another example of a service backed plugin.
 It retrieves a list of services, or "entities", from the Backstage Backend
 service and renders them in a table for the user.
 
@@ -194,6 +194,23 @@ stores: memory, which is mainly used for local testing, and memcache, which is a
 cache store better suited for production deployment. The right cache store for
 your Backstage instance will depend on your own run-time constraints and those
 required of the plugins you're running.
+
+### Use memory for cache
+
+```yaml
+backend:
+  cache:
+    store: memory
+```
+
+### Use memcache for cache
+
+```yaml
+backend:
+  cache:
+    store: memcache
+    connection: user:pass@cache.example.com:11211
+```
 
 Contributions supporting other cache stores are welcome!
 

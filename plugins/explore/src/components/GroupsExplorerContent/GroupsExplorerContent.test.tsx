@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,12 @@
  */
 
 import { Entity } from '@backstage/catalog-model';
-import { ApiProvider, ApiRegistry } from '@backstage/core';
 import { catalogApiRef, entityRouteRef } from '@backstage/plugin-catalog-react';
 import { renderInTestApp } from '@backstage/test-utils';
 import { waitFor } from '@testing-library/react';
 import React from 'react';
 import { GroupsExplorerContent } from '../GroupsExplorerContent';
+import { ApiProvider, ApiRegistry } from '@backstage/core-app-api';
 
 describe('<GroupsExplorerContent />', () => {
   const catalogApi: jest.Mocked<typeof catalogApiRef.T> = {
@@ -32,6 +32,7 @@ describe('<GroupsExplorerContent />', () => {
     removeLocationById: jest.fn(),
     removeEntityByUid: jest.fn(),
     getEntityByName: jest.fn(),
+    refreshEntity: jest.fn(),
   };
 
   const Wrapper = ({ children }: { children?: React.ReactNode }) => (
@@ -39,6 +40,12 @@ describe('<GroupsExplorerContent />', () => {
       {children}
     </ApiProvider>
   );
+
+  const mountedRoutes = {
+    mountedRoutes: {
+      '/catalog/:namespace/:kind/:name': entityRouteRef,
+    },
+  };
 
   beforeEach(() => {
     jest.resetAllMocks();
@@ -69,35 +76,44 @@ describe('<GroupsExplorerContent />', () => {
       <Wrapper>
         <GroupsExplorerContent />
       </Wrapper>,
-      {
-        mountedRoutes: {
-          '/catalog/:namespace/:kind/:name': entityRouteRef,
-        },
-      },
+      mountedRoutes,
     );
 
     await waitFor(() => {
-      expect(getByText('my-namespace/group-a')).toBeInTheDocument();
+      expect(
+        getByText('my-namespace/group-a', { selector: 'div' }),
+      ).toBeInTheDocument();
     });
+  });
+
+  it('renders a custom title', async () => {
+    catalogApi.getEntities.mockResolvedValue({ items: [] });
+
+    const { getByText } = await renderInTestApp(
+      <Wrapper>
+        <GroupsExplorerContent title="Our Teams" />
+      </Wrapper>,
+      mountedRoutes,
+    );
+
+    await waitFor(() =>
+      expect(getByText('Our Teams', { selector: 'h2' })).toBeInTheDocument(),
+    );
   });
 
   it('renders a friendly error if it cannot collect domains', async () => {
     const catalogError = new Error('Network timeout');
     catalogApi.getEntities.mockRejectedValueOnce(catalogError);
 
-    const { getByText } = await renderInTestApp(
+    const { getAllByText } = await renderInTestApp(
       <Wrapper>
         <GroupsExplorerContent />
       </Wrapper>,
-      {
-        mountedRoutes: {
-          '/catalog/:namespace/:kind/:name': entityRouteRef,
-        },
-      },
+      mountedRoutes,
     );
 
     await waitFor(() =>
-      expect(getByText(/Warning: Network timeout/)).toBeInTheDocument(),
+      expect(getAllByText(/Error: Network timeout/).length).not.toBe(0),
     );
   });
 });

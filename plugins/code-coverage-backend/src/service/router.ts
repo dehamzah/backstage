@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -189,12 +189,8 @@ export const makeRouter = async (
       throw new InputError(`Unsupported coverage type '${coverageType}`);
     }
 
-    const {
-      sourceLocation,
-      vcs,
-      scmFiles,
-      body,
-    } = await utils.processCoveragePayload(entityLookup, req);
+    const { sourceLocation, vcs, scmFiles, body } =
+      await utils.processCoveragePayload(entityLookup, req);
 
     const files = converter.convert(body, scmFiles);
     if (!files || files.length === 0) {

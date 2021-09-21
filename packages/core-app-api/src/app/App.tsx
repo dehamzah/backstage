@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,6 +57,7 @@ import {
 } from '../extensions/traversal';
 import { pluginCollector } from '../plugins/collectors';
 import {
+  featureFlagCollector,
   routeObjectCollector,
   routeParentCollector,
   routePathCollector,
@@ -65,7 +66,6 @@ import { RoutingProvider } from '../routing/RoutingProvider';
 import { validateRoutes } from '../routing/validation';
 import { AppContextProvider } from './AppContext';
 import { AppIdentity } from './AppIdentity';
-import { AppThemeProvider } from './AppThemeProvider';
 import {
   AppComponents,
   AppConfigLoader,
@@ -106,6 +106,20 @@ export function generateBoundRoutes(bindRoutes: AppOptions['bindRoutes']) {
   return result;
 }
 
+/**
+ * Get the app base path from the configured app baseUrl.
+ *
+ * The returned path does not have a trailing slash.
+ */
+function getBasePath(configApi: Config) {
+  let { pathname } = new URL(
+    configApi.getOptionalString('app.baseUrl') ?? '/',
+    'http://dummy.dev', // baseUrl can be specified as just a path
+  );
+  pathname = pathname.replace(/\/*$/, '');
+  return pathname;
+}
+
 type FullAppOptions = {
   apis: Iterable<AnyApiFactory>;
   icons: NonNullable<AppOptions['icons']>;
@@ -136,12 +150,14 @@ function useConfigLoader(
     noConfigNode = <BootErrorPage step="load-config" error={config.error} />;
   }
 
+  const { ThemeProvider } = components;
+
   // Before the config is loaded we can't use a router, so exit early
   if (noConfigNode) {
     return {
       node: (
         <ApiProvider apis={ApiRegistry.from([[appThemeApiRef, appThemeApi]])}>
-          <AppThemeProvider>{noConfigNode}</AppThemeProvider>
+          <ThemeProvider>{noConfigNode}</ThemeProvider>
         </ApiProvider>
       ),
     };
@@ -215,32 +231,33 @@ export class PrivateAppImpl implements BackstageApp {
         [],
       );
 
-      const { routePaths, routeParents, routeObjects } = useMemo(() => {
-        const result = traverseElementTree({
-          root: children,
-          discoverers: [childDiscoverer, routeElementDiscoverer],
-          collectors: {
-            routePaths: routePathCollector,
-            routeParents: routeParentCollector,
-            routeObjects: routeObjectCollector,
-            collectedPlugins: pluginCollector,
-          },
-        });
+      const { routePaths, routeParents, routeObjects, featureFlags } =
+        useMemo(() => {
+          const result = traverseElementTree({
+            root: children,
+            discoverers: [childDiscoverer, routeElementDiscoverer],
+            collectors: {
+              routePaths: routePathCollector,
+              routeParents: routeParentCollector,
+              routeObjects: routeObjectCollector,
+              collectedPlugins: pluginCollector,
+              featureFlags: featureFlagCollector,
+            },
+          });
 
-        validateRoutes(result.routePaths, result.routeParents);
+          validateRoutes(result.routePaths, result.routeParents);
 
-        // TODO(Rugvip): Restructure the public API so that we can get an immediate view of
-        //               the app, rather than having to wait for the provider to render.
-        //               For now we need to push the additional plugins we find during
-        //               collection and then make sure we initialize things afterwards.
-        result.collectedPlugins.forEach(plugin => this.plugins.add(plugin));
-        this.verifyPlugins(this.plugins);
+          // TODO(Rugvip): Restructure the public API so that we can get an immediate view of
+          //               the app, rather than having to wait for the provider to render.
+          //               For now we need to push the additional plugins we find during
+          //               collection and then make sure we initialize things afterwards.
+          result.collectedPlugins.forEach(plugin => this.plugins.add(plugin));
+          this.verifyPlugins(this.plugins);
 
-        // Initialize APIs once all plugins are available
-        this.getApiHolder();
-
-        return result;
-      }, [children]);
+          // Initialize APIs once all plugins are available
+          this.getApiHolder();
+          return result;
+        }, [children]);
 
       const loadedConfig = useConfigLoader(
         this.configLoader,
@@ -273,27 +290,36 @@ export class PrivateAppImpl implements BackstageApp {
               }
             }
           }
+
+          // Go through the featureFlags returned from the traversal and
+          // register those now the configApi has been loaded
+          for (const name of featureFlags) {
+            featureFlagsApi.registerFlag({ name, pluginId: '' });
+          }
         }
-      }, [hasConfigApi, loadedConfig]);
+      }, [hasConfigApi, loadedConfig, featureFlags]);
 
       if ('node' in loadedConfig) {
         // Loading or error
         return loadedConfig.node;
       }
 
+      const { ThemeProvider } = this.components;
+
       return (
         <ApiProvider apis={this.getApiHolder()}>
           <AppContextProvider appContext={appContext}>
-            <AppThemeProvider>
+            <ThemeProvider>
               <RoutingProvider
                 routePaths={routePaths}
                 routeParents={routeParents}
                 routeObjects={routeObjects}
                 routeBindings={generateBoundRoutes(this.bindRoutes)}
+                basePath={getBasePath(loadedConfig.api)}
               >
                 {children}
               </RoutingProvider>
-            </AppThemeProvider>
+            </ThemeProvider>
           </AppContextProvider>
         </ApiProvider>
       );
@@ -302,10 +328,8 @@ export class PrivateAppImpl implements BackstageApp {
   }
 
   getRouter(): ComponentType<{}> {
-    const {
-      Router: RouterComponent,
-      SignInPage: SignInPageComponent,
-    } = this.components;
+    const { Router: RouterComponent, SignInPage: SignInPageComponent } =
+      this.components;
 
     // This wraps the sign-in page and waits for sign-in to be completed before rendering the app
     const SignInPageWrapper = ({
@@ -327,14 +351,7 @@ export class PrivateAppImpl implements BackstageApp {
 
     const AppRouter = ({ children }: PropsWithChildren<{}>) => {
       const configApi = useApi(configApiRef);
-
-      let { pathname } = new URL(
-        configApi.getOptionalString('app.baseUrl') ?? '/',
-        'http://dummy.dev', // baseUrl can be specified as just a path
-      );
-      if (pathname.endsWith('/')) {
-        pathname = pathname.replace(/\/$/, '');
-      }
+      const mountPath = `${getBasePath(configApi)}/*`;
 
       // If the app hasn't configured a sign-in page, we just continue as guest.
       if (!SignInPageComponent) {
@@ -349,7 +366,7 @@ export class PrivateAppImpl implements BackstageApp {
         return (
           <RouterComponent>
             <Routes>
-              <Route path={`${pathname}/*`} element={<>{children}</>} />
+              <Route path={mountPath} element={<>{children}</>} />
             </Routes>
           </RouterComponent>
         );
@@ -359,7 +376,7 @@ export class PrivateAppImpl implements BackstageApp {
         <RouterComponent>
           <SignInPageWrapper component={SignInPageComponent}>
             <Routes>
-              <Route path={`${pathname}/*`} element={<>{children}</>} />
+              <Route path={mountPath} element={<>{children}</>} />
             </Routes>
           </SignInPageWrapper>
         </RouterComponent>

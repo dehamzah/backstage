@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,12 @@ const useStyles = makeStyles(theme => ({
   selected: {
     color: theme.palette.text.primary,
   },
+  tabRoot: {
+    '&:hover': {
+      backgroundColor: theme.palette.background.default,
+      color: theme.palette.text.primary,
+    },
+  },
 }));
 
 export type Tab = {
@@ -49,11 +55,8 @@ type HeaderTabsProps = {
   onChange?: (index: number) => void;
   selectedIndex?: number;
 };
-export const HeaderTabs = ({
-  tabs,
-  onChange,
-  selectedIndex,
-}: HeaderTabsProps) => {
+export function HeaderTabs(props: HeaderTabsProps) {
+  const { tabs, onChange, selectedIndex } = props;
   const [selectedTab, setSelectedTab] = useState<number>(selectedIndex ?? 0);
   const styles = useStyles();
 
@@ -73,6 +76,7 @@ export const HeaderTabs = ({
   return (
     <div className={styles.tabsWrapper}>
       <Tabs
+        selectionFollowsFocus
         indicatorColor="primary"
         textColor="inherit"
         variant="scrollable"
@@ -88,10 +92,10 @@ export const HeaderTabs = ({
             key={tab.id}
             value={index}
             className={styles.defaultTab}
-            classes={{ selected: styles.selected }}
+            classes={{ selected: styles.selected, root: styles.tabRoot }}
           />
         ))}
       </Tabs>
     </div>
   );
-};
+}

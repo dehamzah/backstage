@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ const useStyles = makeStyles({
   },
 });
 
-export const OverflowTooltip = (props: Props) => {
+export function OverflowTooltip(props: Props) {
   const [hover, setHover] = useState(false);
   const classes = useStyles();
 
@@ -54,4 +54,4 @@ export const OverflowTooltip = (props: Props) => {
       />
     </Tooltip>
   );
-};
+}

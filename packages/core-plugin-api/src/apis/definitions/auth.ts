@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -151,9 +151,14 @@ export type BackstageIdentity = {
   id: string;
 
   /**
-   * An ID token that can be used to authenticate the user within Backstage.
+   * @deprecated This is deprecated, use `token` instead.
    */
   idToken: string;
+
+  /**
+   * The token used to authenticate the user within Backstage.
+   */
+  token: string;
 };
 
 /**

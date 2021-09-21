@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import {
 } from '@material-ui/core';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import { V1Pod, V1HorizontalPodAutoscaler } from '@kubernetes/client-node';
-import { StatusError, StatusOK } from '@backstage/core';
 import { PodsTable } from '../../Pods';
 import { HorizontalPodAutoscalerDrawer } from '../../HorizontalPodAutoscalers';
 import { RolloutDrawer } from './RolloutDrawer';
@@ -41,6 +40,7 @@ import {
   getMatchingHpa,
   getOwnedPodsThroughReplicaSets,
 } from '../../../utils/owner';
+import { StatusError, StatusOK } from '@backstage/core-components';
 
 type RolloutAccordionsProps = {
   rollouts: any[];
@@ -97,7 +97,12 @@ const RolloutSummary = ({
   const abortedMessage = findAbortedMessage(rollout);
 
   return (
-    <Grid container direction="row" justify="flex-start" alignItems="center">
+    <Grid
+      container
+      direction="row"
+      justifyContent="flex-start"
+      alignItems="center"
+    >
       <Grid xs={3} item>
         <RolloutDrawer rollout={rollout} />
       </Grid>
@@ -111,7 +116,7 @@ const RolloutSummary = ({
               item
               container
               direction="column"
-              justify="flex-start"
+              justifyContent="flex-start"
               alignItems="flex-start"
               spacing={0}
             >
@@ -142,7 +147,7 @@ const RolloutSummary = ({
         container
         xs={3}
         direction="column"
-        justify="flex-start"
+        justifyContent="flex-start"
         alignItems="flex-start"
       >
         <Grid item>
@@ -250,7 +255,7 @@ export const RolloutAccordions = ({
     <Grid
       container
       direction="column"
-      justify="flex-start"
+      justifyContent="flex-start"
       alignItems="flex-start"
     >
       {rollouts.map((rollout, i) => (

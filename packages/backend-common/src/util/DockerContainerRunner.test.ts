@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,6 +58,7 @@ describe('DockerContainerRunner', () => {
   });
 
   afterEach(() => {
+    jest.clearAllMocks();
     mockFs.restore();
   });
 
@@ -83,6 +84,17 @@ describe('DockerContainerRunner', () => {
       expect.any(Function),
     );
 
+    expect(mockDocker.run).toHaveBeenCalled();
+  });
+
+  it('should not pull the docker container when pullImage is false', async () => {
+    await containerTaskApi.runContainer({
+      imageName,
+      args,
+      pullImage: false,
+    });
+
+    expect(mockDocker.pull).not.toHaveBeenCalled();
     expect(mockDocker.run).toHaveBeenCalled();
   });
 

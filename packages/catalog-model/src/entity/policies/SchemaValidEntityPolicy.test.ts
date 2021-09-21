@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,7 +58,7 @@ describe('SchemaValidEntityPolicy', () => {
   //
 
   it('rejects wrong root type', async () => {
-    await expect(policy.enforce((7 as unknown) as Entity)).rejects.toThrow(
+    await expect(policy.enforce(7 as unknown as Entity)).rejects.toThrow(
       /object/,
     );
   });

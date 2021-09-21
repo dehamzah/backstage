@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,6 @@
  * limitations under the License.
  */
 
-import {
-  CodeSnippet,
-  Progress,
-  ResponseErrorPanel,
-  useApi,
-} from '@backstage/core';
 import { useEntity } from '@backstage/plugin-catalog-react';
 import {
   Box,
@@ -36,6 +30,13 @@ import React from 'react';
 import { useAsync } from 'react-use';
 import { badgesApiRef } from '../api';
 
+import {
+  CodeSnippet,
+  Progress,
+  ResponseErrorPanel,
+} from '@backstage/core-components';
+import { useApi } from '@backstage/core-plugin-api';
+
 type Props = {
   open: boolean;
   onClose?: () => any;
@@ -47,7 +48,11 @@ export const EntityBadgesDialog = ({ open, onClose }: Props) => {
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const badgesApi = useApi(badgesApiRef);
 
-  const { value: badges, loading, error } = useAsync(async () => {
+  const {
+    value: badges,
+    loading,
+    error,
+  } = useAsync(async () => {
     if (open && entity) {
       return await badgesApi.getEntityBadgeSpecs(entity);
     }

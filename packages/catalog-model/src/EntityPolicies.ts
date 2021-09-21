@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,11 +52,12 @@ class AnyEntityPolicy implements EntityPolicy {
   }
 }
 
+/** @public */
 export const EntityPolicies = {
-  allOf(policies: EntityPolicy[]) {
+  allOf(policies: EntityPolicy[]): EntityPolicy {
     return new AllEntityPolicies(policies);
   },
-  oneOf(policies: EntityPolicy[]) {
+  oneOf(policies: EntityPolicy[]): EntityPolicy {
     return new AnyEntityPolicy(policies);
   },
 };

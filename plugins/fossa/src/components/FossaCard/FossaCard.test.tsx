@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,12 @@
  */
 
 import { Entity } from '@backstage/catalog-model';
-import { ApiProvider, ApiRegistry } from '@backstage/core';
 import { EntityProvider } from '@backstage/plugin-catalog-react';
 import { renderInTestApp } from '@backstage/test-utils';
 import React from 'react';
 import { FossaApi, fossaApiRef } from '../../api';
 import { FossaCard } from './FossaCard';
+import { ApiProvider, ApiRegistry } from '@backstage/core-app-api';
 
 describe('<FossaCard />', () => {
   const fossaApi: jest.Mocked<FossaApi> = {
@@ -74,7 +74,7 @@ describe('<FossaCard />', () => {
 
     fossaApi.getFindingSummary.mockRejectedValue(new Error('My Error'));
 
-    const { getByText } = await renderInTestApp(
+    const { getAllByText } = await renderInTestApp(
       <Wrapper>
         <EntityProvider entity={entity}>
           <FossaCard />
@@ -82,7 +82,7 @@ describe('<FossaCard />', () => {
       </Wrapper>,
     );
 
-    expect(getByText(/Warning: My Error/i)).toBeInTheDocument();
+    expect(getAllByText(/Error: My Error/i).length).not.toBe(0);
   });
 
   it('shows empty', async () => {

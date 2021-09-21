@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,12 @@
  */
 
 import { Entity } from '@backstage/catalog-model';
-import { ApiProvider, ApiRegistry } from '@backstage/core';
 import { CatalogApi, catalogApiRef } from '@backstage/plugin-catalog-react';
 import { renderInTestApp } from '@backstage/test-utils';
 import { FieldProps } from '@rjsf/core';
 import React from 'react';
 import { OwnerPicker } from './OwnerPicker';
+import { ApiProvider, ApiRegistry } from '@backstage/core-app-api';
 
 const makeEntity = (kind: string, namespace: string, name: string): Entity => ({
   apiVersion: 'backstage.io/v1beta1',
@@ -66,14 +66,14 @@ describe('<OwnerPicker />', () => {
   describe('without allowedKinds', () => {
     beforeEach(() => {
       uiSchema = { 'ui:options': {} };
-      props = ({
+      props = {
         onChange,
         schema,
         required,
         uiSchema,
         rawErrors,
         formData,
-      } as unknown) as FieldProps<any>;
+      } as unknown as FieldProps<any>;
 
       catalogApi.getEntities.mockResolvedValue({ items: entities });
     });
@@ -96,14 +96,14 @@ describe('<OwnerPicker />', () => {
   describe('with allowedKinds', () => {
     beforeEach(() => {
       uiSchema = { 'ui:options': { allowedKinds: ['User'] } };
-      props = ({
+      props = {
         onChange,
         schema,
         required,
         uiSchema,
         rawErrors,
         formData,
-      } as unknown) as FieldProps<any>;
+      } as unknown as FieldProps<any>;
 
       catalogApi.getEntities.mockResolvedValue({ items: entities });
     });

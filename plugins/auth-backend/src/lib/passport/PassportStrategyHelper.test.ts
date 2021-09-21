@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import {
   executeRefreshTokenStrategy,
 } from './PassportStrategyHelper';
 
-const mockRequest = ({} as unknown) as express.Request;
+const mockRequest = {} as unknown as express.Request;
 
 describe('PassportStrategyHelper', () => {
   class MyCustomRedirectStrategy extends passport.Strategy {

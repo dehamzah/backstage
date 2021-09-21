@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,9 +71,8 @@ export class AnnotateLocationEntityProcessor implements CatalogProcessor {
           annotations: pickBy(
             {
               [LOCATION_ANNOTATION]: stringifyLocationReference(location),
-              [ORIGIN_LOCATION_ANNOTATION]: stringifyLocationReference(
-                originLocation,
-              ),
+              [ORIGIN_LOCATION_ANNOTATION]:
+                stringifyLocationReference(originLocation),
               [VIEW_URL_ANNOTATION]: viewUrl,
               [EDIT_URL_ANNOTATION]: editUrl,
               [SOURCE_LOCATION_ANNOTATION]: sourceLocation,

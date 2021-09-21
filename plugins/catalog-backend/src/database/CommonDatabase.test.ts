@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -484,6 +484,98 @@ describe('CommonDatabase', () => {
             locationId: undefined,
             entity: expect.objectContaining({ kind: 'k2' }),
           },
+          {
+            locationId: undefined,
+            entity: expect.objectContaining({ kind: 'k3' }),
+          },
+        ]),
+      );
+    });
+
+    it('can get all specific entities for matching existence filters', async () => {
+      const entities: Entity[] = [
+        {
+          apiVersion: 'A',
+          kind: 'K1',
+          metadata: {
+            name: 'N',
+            annotations: {
+              foo: 'bar',
+            },
+          },
+          spec: { c: 'SOME' },
+        },
+        {
+          apiVersion: 'a',
+          kind: 'k2',
+          metadata: {
+            name: 'N',
+            annotations: {
+              foo: 'bar',
+            },
+          },
+          spec: { c: 'Some' },
+        },
+        {
+          apiVersion: 'a',
+          kind: 'k3',
+          metadata: { name: 'n' },
+          spec: { c: 'somE' },
+        },
+      ];
+
+      await db.transaction(async tx => {
+        await db.addEntities(
+          tx,
+          entities.map(entity => ({ entity, relations: [] })),
+        );
+      });
+
+      const existRows = await db.transaction(async tx =>
+        db.entities(tx, {
+          filter: {
+            anyOf: [
+              {
+                allOf: [
+                  { key: 'metadata.annotations.foo', matchValueExists: true },
+                ],
+              },
+            ],
+          },
+        }),
+      );
+
+      expect(existRows.entities.length).toEqual(2);
+      expect(existRows.entities).toEqual(
+        expect.arrayContaining([
+          {
+            locationId: undefined,
+            entity: expect.objectContaining({ kind: 'K1' }),
+          },
+          {
+            locationId: undefined,
+            entity: expect.objectContaining({ kind: 'k2' }),
+          },
+        ]),
+      );
+
+      const nonExistRows = await db.transaction(async tx =>
+        db.entities(tx, {
+          filter: {
+            anyOf: [
+              {
+                allOf: [
+                  { key: 'metadata.annotations.foo', matchValueExists: false },
+                ],
+              },
+            ],
+          },
+        }),
+      );
+
+      expect(nonExistRows.entities.length).toEqual(1);
+      expect(nonExistRows.entities).toEqual(
+        expect.arrayContaining([
           {
             locationId: undefined,
             entity: expect.objectContaining({ kind: 'k3' }),

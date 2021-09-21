@@ -60,13 +60,13 @@ small update to show this provider as a login option. The `SignInPage` component
 handles this, and takes either a `provider` or `providers` (array) prop of
 `SignInProviderConfig` definitions.
 
-These reference the [ApiRef](../reference/utility-apis/README.md) exported by
-the provider. Again, an example using GitHub that can be adapted to any of the
-built-in providers:
+These reference the `ApiRef` exported by the provider. Again, an example using
+GitHub that can be adapted to any of the built-in providers:
 
 ```diff
 # packages/app/src/App.tsx
-+ import { githubAuthApiRef, SignInProviderConfig, SignInPage } from '@backstage/core';
++ import { githubAuthApiRef } from '@backstage/core-plugin-api';
++ import { SignInProviderConfig, SignInPage } from '@backstage/core-components';
 
 + const githubProvider: SignInProviderConfig = {
 +  id: 'github-auth-provider',

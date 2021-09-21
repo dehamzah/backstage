@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,10 @@
  */
 
 import { createTestShadowDom } from '../../test-utils';
-import { injectCss } from '../transformers';
+import { injectCss } from './injectCss';
 
 describe('injectCss', () => {
-  it('should inject style with passed css in head', () => {
+  it('should inject style with passed css in head', async () => {
     const html = `
         <html>
             <head></head>
@@ -27,7 +27,7 @@ describe('injectCss', () => {
     `;
     const injectedCss = '* {background-color: #fff}';
 
-    const shadowDom = createTestShadowDom(html, {
+    const shadowDom = await createTestShadowDom(html, {
       preTransformers: [injectCss({ css: injectedCss })],
       postTransformers: [],
     });

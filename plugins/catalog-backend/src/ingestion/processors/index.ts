@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,17 +19,26 @@ import * as results from './results';
 export { AnnotateLocationEntityProcessor } from './AnnotateLocationEntityProcessor';
 export { AnnotateScmSlugEntityProcessor } from './AnnotateScmSlugEntityProcessor';
 export { AwsOrganizationCloudAccountProcessor } from './AwsOrganizationCloudAccountProcessor';
+export type { AwsOrganizationProviderConfig } from './awsOrganization/config';
+export { AwsS3DiscoveryProcessor } from './AwsS3DiscoveryProcessor';
 export { BitbucketDiscoveryProcessor } from './BitbucketDiscoveryProcessor';
 export { BuiltinKindsEntityProcessor } from './BuiltinKindsEntityProcessor';
 export { CodeOwnersProcessor } from './CodeOwnersProcessor';
 export { FileReaderProcessor } from './FileReaderProcessor';
 export { GithubDiscoveryProcessor } from './GithubDiscoveryProcessor';
 export { GithubOrgReaderProcessor } from './GithubOrgReaderProcessor';
-export { LdapOrgReaderProcessor } from './LdapOrgReaderProcessor';
+export { GithubMultiOrgReaderProcessor } from './GithubMultiOrgReaderProcessor';
+export { GitLabDiscoveryProcessor } from './GitLabDiscoveryProcessor';
 export { LocationEntityProcessor } from './LocationEntityProcessor';
-export { MicrosoftGraphOrgReaderProcessor } from './MicrosoftGraphOrgReaderProcessor';
+export type { LocationEntityProcessorOptions } from './LocationEntityProcessor';
 export { PlaceholderProcessor } from './PlaceholderProcessor';
-export type { PlaceholderResolver } from './PlaceholderProcessor';
+export type {
+  PlaceholderProcessorOptions,
+  PlaceholderResolver,
+  PlaceholderResolverParams,
+  PlaceholderResolverRead,
+  PlaceholderResolverResolveUrl,
+} from './PlaceholderProcessor';
 export { StaticLocationProcessor } from './StaticLocationProcessor';
 export * from './types';
 export { UrlReaderProcessor } from './UrlReaderProcessor';

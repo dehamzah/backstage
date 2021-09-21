@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ import React from 'react';
 import { render, waitFor, screen } from '@testing-library/react';
 
 import {
-  mockApiClient,
   mockBumpedTag,
   mockCalverProject,
   mockReleaseBranch,
@@ -26,11 +25,12 @@ import {
   mockReleaseVersionCalver,
   mockTagParts,
 } from '../../test-helpers/test-helpers';
+import { mockApiClient } from '../../test-helpers/mock-api-client';
 import { PatchBody } from './PatchBody';
 import { TEST_IDS } from '../../test-helpers/test-ids';
 
-jest.mock('@backstage/core', () => ({
-  ...jest.requireActual('@backstage/core'),
+jest.mock('@backstage/core-plugin-api', () => ({
+  ...jest.requireActual('@backstage/core-plugin-api'),
   useApi: () => mockApiClient,
 }));
 jest.mock('../../contexts/ProjectContext', () => ({

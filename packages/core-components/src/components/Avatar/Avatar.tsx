@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,8 @@ export type AvatarProps = {
   customStyles?: CSSProperties;
 };
 
-export const Avatar = ({ displayName, picture, customStyles }: AvatarProps) => {
+export function Avatar(props: AvatarProps) {
+  const { displayName, picture, customStyles } = props;
   const classes = useStyles();
   return (
     <MaterialAvatar
@@ -56,4 +57,4 @@ export const Avatar = ({ displayName, picture, customStyles }: AvatarProps) => {
       {displayName && extractInitials(displayName)}
     </MaterialAvatar>
   );
-};
+}

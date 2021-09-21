@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,13 @@ import {
   getDefaultState as getDefaultLoadingState,
 } from '../utils/loading';
 
-export const MockDefaultLoadingActions = ([
-  DefaultLoadingAction.UserGroups,
-  DefaultLoadingAction.CostInsightsInitial,
-  DefaultLoadingAction.CostInsightsPage,
-] as string[]).concat(MockProducts.map(product => product.kind));
+export const MockDefaultLoadingActions = (
+  [
+    DefaultLoadingAction.UserGroups,
+    DefaultLoadingAction.CostInsightsInitial,
+    DefaultLoadingAction.CostInsightsPage,
+  ] as string[]
+).concat(MockProducts.map(product => product.kind));
 
 export const mockDefaultLoadingState = getDefaultLoadingState(
   MockDefaultLoadingActions,

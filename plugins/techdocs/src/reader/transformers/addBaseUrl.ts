@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 import { EntityName } from '@backstage/catalog-model';
-import type { Transformer } from './transformer';
 import { TechDocsStorageApi } from '../../api';
+import type { Transformer } from './transformer';
 
 type AddBaseUrlOptions = {
   techdocsStorageApi: TechDocsStorageApi;
@@ -23,19 +23,36 @@ type AddBaseUrlOptions = {
   path: string;
 };
 
+/**
+ * TechDocs backend serves SVGs with text/plain content-type for security. This
+ * helper determines if an SVG is being loaded from the backend, and thus needs
+ * inlining to be displayed properly.
+ */
+const isSvgNeedingInlining = (
+  attrName: string,
+  attrVal: string,
+  apiOrigin: string,
+) => {
+  const isSrcToSvg = attrName === 'src' && attrVal.endsWith('.svg');
+  const isRelativeUrl = !attrVal.match(/^([a-z]*:)?\/\//i);
+  const pointsToOurBackend = attrVal.startsWith(apiOrigin);
+  return isSrcToSvg && (isRelativeUrl || pointsToOurBackend);
+};
+
 export const addBaseUrl = ({
   techdocsStorageApi,
   entityId,
   path,
 }: AddBaseUrlOptions): Transformer => {
-  return dom => {
-    const updateDom = <T extends Element>(
+  return async dom => {
+    const apiOrigin = await techdocsStorageApi.getApiOrigin();
+
+    const updateDom = async <T extends Element>(
       list: HTMLCollectionOf<T> | NodeListOf<T>,
       attributeName: string,
-    ): void => {
-      Array.from(list)
-        .filter(elem => !!elem.getAttribute(attributeName))
-        .forEach(async (elem: T) => {
+    ) => {
+      for (const elem of list) {
+        if (elem.hasAttribute(attributeName)) {
           const elemAttribute = elem.getAttribute(attributeName);
           if (!elemAttribute) return;
 
@@ -45,9 +62,10 @@ export const addBaseUrl = ({
             entityId,
             path,
           );
-          if (attributeName === 'src' && elemAttribute.endsWith('.svg')) {
+
+          if (isSvgNeedingInlining(attributeName, elemAttribute, apiOrigin)) {
             try {
-              const svg = await fetch(newValue);
+              const svg = await fetch(newValue, { credentials: 'include' });
               const svgContent = await svg.text();
               elem.setAttribute(
                 attributeName,
@@ -59,13 +77,16 @@ export const addBaseUrl = ({
           } else {
             elem.setAttribute(attributeName, newValue);
           }
-        });
+        }
+      }
     };
 
-    updateDom<HTMLImageElement>(dom.querySelectorAll('img'), 'src');
-    updateDom<HTMLScriptElement>(dom.querySelectorAll('script'), 'src');
-    updateDom<HTMLLinkElement>(dom.querySelectorAll('link'), 'href');
-    updateDom<HTMLAnchorElement>(dom.querySelectorAll('a[download]'), 'href');
+    await Promise.all([
+      updateDom<HTMLImageElement>(dom.querySelectorAll('img'), 'src'),
+      updateDom<HTMLScriptElement>(dom.querySelectorAll('script'), 'src'),
+      updateDom<HTMLLinkElement>(dom.querySelectorAll('link'), 'href'),
+      updateDom<HTMLAnchorElement>(dom.querySelectorAll('a[download]'), 'href'),
+    ]);
 
     return dom;
   };

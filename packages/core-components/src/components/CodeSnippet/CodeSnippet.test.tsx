@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
  */
 
 import React from 'react';
-import { fireEvent } from '@testing-library/react';
-import { act } from 'react-dom/test-utils';
 import { renderInTestApp } from '@backstage/test-utils';
 
 import { CodeSnippet } from './CodeSnippet';
@@ -55,20 +53,5 @@ describe('<CodeSnippet />', () => {
     expect(getByText('1')).toBeInTheDocument();
     expect(getByText('2')).toBeInTheDocument();
     expect(getByText('3')).toBeInTheDocument();
-  });
-
-  it('copy code using button', async () => {
-    jest.useFakeTimers();
-    document.execCommand = jest.fn();
-    const { getByTitle } = await renderInTestApp(
-      <CodeSnippet {...minProps} showCopyCodeButton />,
-    );
-    const button = getByTitle('Text copied to clipboard');
-    fireEvent.click(button);
-    act(() => {
-      jest.runAllTimers();
-    });
-    expect(document.execCommand).toHaveBeenCalled();
-    jest.useRealTimers();
   });
 });

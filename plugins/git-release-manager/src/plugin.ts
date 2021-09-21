@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,13 +20,17 @@ import {
   createApiFactory,
   githubAuthApiRef,
   createRoutableExtension,
-} from '@backstage/core';
+} from '@backstage/core-plugin-api';
 
-import { gitReleaseManagerApiRef } from './api/serviceApiRef';
 import { GitReleaseClient } from './api/GitReleaseClient';
+import { gitReleaseManagerApiRef } from './api/serviceApiRef';
 import { rootRouteRef } from './routes';
+import * as constants from './constants/constants';
+import * as helpers from './helpers';
+import * as components from './components';
+import * as testHelpers from './test-helpers';
 
-export { gitReleaseManagerApiRef };
+export { gitReleaseManagerApiRef, constants, helpers, components, testHelpers };
 
 export const gitReleaseManagerPlugin = createPlugin({
   id: 'git-release-manager',

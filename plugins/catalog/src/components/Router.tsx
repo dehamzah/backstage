@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,20 @@
  * limitations under the License.
  */
 import { ENTITY_DEFAULT_NAMESPACE } from '@backstage/catalog-model';
-import { Content } from '@backstage/core';
 import {
+  AsyncEntityProvider,
   entityRoute,
   rootRoute,
   useEntity,
+  useEntityFromUrl,
 } from '@backstage/plugin-catalog-react';
 import { Link, Typography } from '@material-ui/core';
-import React, { ComponentType } from 'react';
+import React, { ComponentType, ReactNode } from 'react';
 import { Navigate, Route, Routes, useParams } from 'react-router';
 import { CatalogPage } from './CatalogPage';
-import { EntityLoaderProvider } from './EntityLoaderProvider';
 import { EntityNotFound } from './EntityNotFound';
 import { EntityPageLayout } from './EntityPageLayout';
+import { Content } from '@backstage/core-components';
 
 const DefaultEntityPage = () => (
   <EntityPageLayout>
@@ -73,6 +74,13 @@ const OldEntityRouteRedirect = () => {
   );
 };
 
+export const EntityLoader = (props: { children: ReactNode }) => (
+  <AsyncEntityProvider {...useEntityFromUrl()} {...props} />
+);
+
+/**
+ * @deprecated Use plugin extensions instead
+ * */
 export const Router = ({
   EntityPage = DefaultEntityPage,
 }: {
@@ -83,9 +91,9 @@ export const Router = ({
     <Route
       path={`${entityRoute.path}`}
       element={
-        <EntityLoaderProvider>
+        <EntityLoader>
           <EntityPageSwitch EntityPage={EntityPage} />
-        </EntityLoaderProvider>
+        </EntityLoader>
       }
     />
     <Route

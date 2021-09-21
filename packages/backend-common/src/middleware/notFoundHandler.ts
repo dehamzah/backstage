@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import { NextFunction, Request, RequestHandler, Response } from 'express';
  * Should be used as the very last handler in the chain, as it unconditionally
  * returns a 404 status.
  *
+ * @public
  * @returns An Express request handler
  */
 export function notFoundHandler(): RequestHandler {

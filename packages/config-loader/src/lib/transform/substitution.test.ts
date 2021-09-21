@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,12 @@
 import { createSubstitutionTransform } from './substitution';
 
 const env = jest.fn(async (name: string) => {
-  return ({
-    SECRET: 'my-secret',
-    TOKEN: 'my-token',
-  } as { [name: string]: string })[name];
+  return (
+    {
+      SECRET: 'my-secret',
+      TOKEN: 'my-token',
+    } as { [name: string]: string }
+  )[name];
 });
 
 const substituteTransform = createSubstitutionTransform(env);

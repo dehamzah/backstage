@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -225,13 +225,12 @@ const indexer = (
     };
   }, {});
 
-export const CheckboxTree = ({
-  subCategories,
-  label,
-  selected,
-  onChange,
-  triggerReset,
-}: CheckboxTreeProps) => {
+/**
+ *
+ * @deprecated CheckboxTree is no longer used in Table filters
+ */
+export function CheckboxTree(props: CheckboxTreeProps) {
+  const { subCategories, label, selected, onChange, triggerReset } = props;
   const classes = useStyles();
 
   const [state, dispatch] = useReducer(reducer, indexer(subCategories));
@@ -355,4 +354,4 @@ export const CheckboxTree = ({
       </List>
     </div>
   );
-};
+}

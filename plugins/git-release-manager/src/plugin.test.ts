@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,10 @@ describe('git-release-manager', () => {
     expect(Object.keys(plugin)).toMatchInlineSnapshot(`
       Array [
         "gitReleaseManagerApiRef",
+        "constants",
+        "helpers",
+        "components",
+        "testHelpers",
         "gitReleaseManagerPlugin",
         "GitReleaseManagerPage",
       ]

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -137,9 +137,9 @@ export class Lockfile {
       }
 
       // Find all versions currently in use
-      const versions = Array.from(
-        new Set(entries.map(e => e.version)),
-      ).sort((v1, v2) => semver.rcompare(v1, v2));
+      const versions = Array.from(new Set(entries.map(e => e.version))).sort(
+        (v1, v2) => semver.rcompare(v1, v2),
+      );
 
       // If we're not using at least 2 different versions we're done
       if (versions.length < 2) {

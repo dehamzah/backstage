@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -166,7 +166,7 @@ describe('CatalogBuilder', () => {
 
     const { entitiesCatalog, higherOrderOperation } = await builder.build();
     await higherOrderOperation.addLocation({
-      type: 'github',
+      type: 'url',
       target: 'https://github.com/a/b/x.yaml',
     });
     const { entities } = await entitiesCatalog.entities();

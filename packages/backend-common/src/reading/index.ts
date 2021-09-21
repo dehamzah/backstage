@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,22 @@ export { AzureUrlReader } from './AzureUrlReader';
 export { BitbucketUrlReader } from './BitbucketUrlReader';
 export { GithubUrlReader } from './GithubUrlReader';
 export { GitlabUrlReader } from './GitlabUrlReader';
+export { AwsS3UrlReader } from './AwsS3UrlReader';
 export type {
+  ReaderFactory,
+  ReadTreeOptions,
   ReadTreeResponse,
+  ReadTreeResponseFactory,
   ReadTreeResponseFile,
+  ReadTreeResponseDirOptions,
+  ReadTreeResponseFactoryOptions,
+  ReadUrlOptions,
+  ReadUrlResponse,
+  SearchOptions,
   SearchResponse,
   SearchResponseFile,
   UrlReader,
+  UrlReaderPredicateTuple,
 } from './types';
 export { UrlReaders } from './UrlReaders';
+export type { UrlReadersOptions } from './UrlReaders';

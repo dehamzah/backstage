@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,17 @@
 
 import chalk from 'chalk';
 import { diffLines } from 'diff';
+import { sep, posix } from 'path';
 import { FileDiff, PromptFunc, FileHandler, WriteFileFunc } from './types';
+
+function sortObjectKeys(obj: Record<string, unknown>) {
+  const sortedKeys = Object.keys(obj).sort();
+  for (const key of sortedKeys) {
+    const value = obj[key];
+    delete obj[key];
+    obj[key] = value;
+  }
+}
 
 class PackageJsonHandler {
   static async handler(
@@ -74,6 +84,7 @@ class PackageJsonHandler {
     obj: any = this.pkg,
     targetObj: any = this.targetPkg,
     prefix?: string,
+    sort?: boolean,
   ) {
     const fullFieldName = chalk.cyan(
       prefix ? `${prefix}[${fieldName}]` : fieldName,
@@ -91,6 +102,9 @@ class PackageJsonHandler {
       const msg = `package.json has mismatched field, ${fullFieldName}, change from ${coloredOldValue} to ${coloredNewValue}?`;
       if (await this.prompt(msg)) {
         targetObj[fieldName] = newValue;
+        if (sort) {
+          sortObjectKeys(targetObj);
+        }
         await this.write();
       }
     } else if (fieldName in obj) {
@@ -100,6 +114,9 @@ class PackageJsonHandler {
         )
       ) {
         targetObj[fieldName] = newValue;
+        if (sort) {
+          sortObjectKeys(targetObj);
+        }
         await this.write();
       }
     }
@@ -168,16 +185,22 @@ class PackageJsonHandler {
       return;
     }
 
+    // Hardcoded removal of these during migration
+    await this.syncField('@backstage/core', {}, targetDeps, fieldName, true);
+    await this.syncField(
+      '@backstage/core-api',
+      {},
+      targetDeps,
+      fieldName,
+      true,
+    );
+
     for (const key of Object.keys(pkgDeps)) {
       if (this.variant === 'app' && key.startsWith('plugin-')) {
         continue;
       }
-      // Skip checking of the core packages, since we're migrating over
-      if (key.startsWith('@backstage/core')) {
-        continue;
-      }
 
-      await this.syncField(key, pkgDeps, targetDeps, fieldName);
+      await this.syncField(key, pkgDeps, targetDeps, fieldName, true);
     }
   }
 
@@ -259,7 +282,7 @@ export async function handleAllFiles(
   promptFunc: PromptFunc,
 ) {
   for (const file of files) {
-    const { path } = file;
+    const path = file.path.split(sep).join(posix.sep);
     const fileHandler = fileHandlers.find(handler =>
       handler.patterns.some(pattern =>
         typeof pattern === 'string' ? pattern === path : pattern.test(path),

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,44 +15,75 @@
  */
 
 import {
+  GroupEntity,
+  parseEntityRef,
   RELATION_CHILD_OF,
   stringifyEntityRef,
-  parseEntityRef,
 } from '@backstage/catalog-model';
-import {
-  catalogApiRef,
-  entityRouteRef,
-  getEntityRelations,
-  formatEntityRefTitle,
-} from '@backstage/plugin-catalog-react';
 import {
   DependencyGraph,
   DependencyGraphTypes,
-  Progress,
-  useApi,
-  ResponseErrorPanel,
   Link,
-  useRouteRef,
-  configApiRef,
-} from '@backstage/core';
-import { makeStyles, Typography } from '@material-ui/core';
+  Progress,
+  ResponseErrorPanel,
+} from '@backstage/core-components';
+import { configApiRef, useApi, useRouteRef } from '@backstage/core-plugin-api';
+import {
+  catalogApiRef,
+  entityRouteRef,
+  formatEntityRefTitle,
+  getEntityRelations,
+} from '@backstage/plugin-catalog-react';
+import { BackstageTheme } from '@backstage/theme';
+import { makeStyles, Typography, useTheme } from '@material-ui/core';
 import ZoomOutMap from '@material-ui/icons/ZoomOutMap';
+import classNames from 'classnames';
 import React from 'react';
 import { useAsync } from 'react-use';
-import { BackstageTheme } from '@backstage/theme';
 
 const useStyles = makeStyles((theme: BackstageTheme) => ({
+  graph: {
+    flex: 1,
+    minHeight: 0,
+  },
   organizationNode: {
-    fill: 'coral',
-    stroke: theme.palette.border,
+    fill: theme.palette.secondary.light,
+    stroke: theme.palette.secondary.light,
   },
   groupNode: {
-    fill: 'yellowgreen',
-    stroke: theme.palette.border,
+    fill: theme.palette.primary.light,
+    stroke: theme.palette.primary.light,
+  },
+  centeredContent: {
+    padding: theme.spacing(1),
+    height: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: 'black',
+  },
+  textOrganization: {
+    color: theme.palette.secondary.contrastText,
+  },
+  textGroup: {
+    color: theme.palette.primary.contrastText,
+  },
+  textWrapper: {
+    display: '-webkit-box',
+    WebkitBoxOrient: 'vertical',
+    WebkitLineClamp: 2,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    textAlign: 'center',
+    fontWeight: 'bold',
+    fontSize: '20px',
   },
 }));
 
 function RenderNode(props: DependencyGraphTypes.RenderNodeProps<any>) {
+  const nodeWidth = 180;
+  const nodeHeight = 60;
+  const theme = useTheme();
   const classes = useStyles();
   const catalogEntityRoute = useRouteRef(entityRouteRef);
 
@@ -60,20 +91,24 @@ function RenderNode(props: DependencyGraphTypes.RenderNodeProps<any>) {
     return (
       <g>
         <rect
-          width={180}
-          height={80}
-          rx={20}
+          width={nodeWidth}
+          height={nodeHeight}
+          rx={theme.shape.borderRadius}
           className={classes.organizationNode}
         />
-        <text
-          x={90}
-          y={45}
-          textAnchor="middle"
-          alignmentBaseline="baseline"
-          style={{ fontWeight: 'bold' }}
-        >
-          {props.node.name}
-        </text>
+        <title>{props.node.name}</title>
+        <foreignObject width={nodeWidth} height={nodeHeight}>
+          <div className={classes.centeredContent}>
+            <div
+              className={classNames(
+                classes.textWrapper,
+                classes.textOrganization,
+              )}
+            >
+              {props.node.name}
+            </div>
+          </div>
+        </foreignObject>
       </g>
     );
   }
@@ -82,7 +117,14 @@ function RenderNode(props: DependencyGraphTypes.RenderNodeProps<any>) {
 
   return (
     <g>
-      <rect width={180} height={80} rx={20} className={classes.groupNode} />
+      <rect
+        width={nodeWidth}
+        height={nodeHeight}
+        rx={theme.shape.borderRadius}
+        className={classes.groupNode}
+      />
+      <title>{props.node.name}</title>
+
       <Link
         to={catalogEntityRoute({
           kind: ref.kind,
@@ -90,15 +132,13 @@ function RenderNode(props: DependencyGraphTypes.RenderNodeProps<any>) {
           name: ref.name,
         })}
       >
-        <text
-          x={90}
-          y={45}
-          textAnchor="middle"
-          alignmentBaseline="baseline"
-          style={{ fontWeight: 'bold' }}
-        >
-          {props.node.name}
-        </text>
+        <foreignObject width={nodeWidth} height={nodeHeight}>
+          <div className={classes.centeredContent}>
+            <div className={classNames(classes.textWrapper, classes.textGroup)}>
+              {props.node.name}
+            </div>
+          </div>
+        </foreignObject>
       </Link>
     </g>
   );
@@ -108,14 +148,23 @@ function RenderNode(props: DependencyGraphTypes.RenderNodeProps<any>) {
  * Dynamically generates a diagram of groups registered in the catalog.
  */
 export function GroupsDiagram() {
-  const nodes = new Array<{ id: string; kind: string; name: string }>();
+  const nodes = new Array<{
+    id: string;
+    kind: string;
+    name: string;
+  }>();
   const edges = new Array<{ from: string; to: string; label: string }>();
 
+  const classes = useStyles();
   const configApi = useApi(configApiRef);
   const catalogApi = useApi(catalogApiRef);
   const organizationName =
     configApi.getOptionalString('organization.name') ?? 'Backstage';
-  const { loading, error, value: catalogResponse } = useAsync(() => {
+  const {
+    loading,
+    error,
+    value: catalogResponse,
+  } = useAsync(() => {
     return catalogApi.getEntities({
       filter: {
         kind: ['Group'],
@@ -142,7 +191,9 @@ export function GroupsDiagram() {
     nodes.push({
       id: stringifyEntityRef(catalogItem),
       kind: catalogItem.kind,
-      name: formatEntityRefTitle(catalogItem, { defaultKind: 'Group' }),
+      name:
+        (catalogItem as GroupEntity).spec?.profile?.displayName ||
+        formatEntityRefTitle(catalogItem, { defaultKind: 'Group' }),
     });
 
     // Edge to parent
@@ -177,6 +228,7 @@ export function GroupsDiagram() {
         nodeMargin={10}
         direction={DependencyGraphTypes.Direction.RIGHT_LEFT}
         renderNode={RenderNode}
+        className={classes.graph}
       />
       <Typography
         variant="caption"

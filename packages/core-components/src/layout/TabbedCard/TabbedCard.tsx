@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ import {
   TabProps,
 } from '@material-ui/core';
 import { BottomLink, BottomLinkProps } from '../BottomLink';
-import { ErrorBoundary } from '../ErrorBoundary';
+import { ErrorBoundary, ErrorBoundaryProps } from '../ErrorBoundary';
 
 const useTabsStyles = makeStyles(theme => ({
   root: {
@@ -52,7 +52,9 @@ const BoldHeader = withStyles(theme => ({
 }))(CardHeader);
 
 type Props = {
+  /** @deprecated Use errorBoundaryProps instead */
   slackChannel?: string;
+  errorBoundaryProps?: ErrorBoundaryProps;
   children?: ReactElement<TabProps>[];
   onChange?: (event: React.ChangeEvent<{}>, value: number | string) => void;
   title?: string;
@@ -60,14 +62,16 @@ type Props = {
   deepLink?: BottomLinkProps;
 };
 
-const TabbedCard = ({
-  slackChannel = '#backstage',
-  children,
-  title,
-  deepLink,
-  value,
-  onChange,
-}: PropsWithChildren<Props>) => {
+export function TabbedCard(props: PropsWithChildren<Props>) {
+  const {
+    slackChannel,
+    errorBoundaryProps,
+    children,
+    title,
+    deepLink,
+    value,
+    onChange,
+  } = props;
   const tabsClasses = useTabsStyles();
   const [selectedIndex, selectIndex] = useState(0);
 
@@ -87,11 +91,15 @@ const TabbedCard = ({
     });
   }
 
+  const errProps: ErrorBoundaryProps =
+    errorBoundaryProps || (slackChannel ? { slackChannel } : {});
+
   return (
     <Card>
-      <ErrorBoundary slackChannel={slackChannel}>
+      <ErrorBoundary {...errProps}>
         {title && <BoldHeader title={title} />}
         <Tabs
+          selectionFollowsFocus
           classes={tabsClasses}
           value={value || selectedIndex}
           onChange={handleChange}
@@ -104,7 +112,7 @@ const TabbedCard = ({
       </ErrorBoundary>
     </Card>
   );
-};
+}
 
 const useCardTabStyles = makeStyles(theme => ({
   root: {
@@ -113,6 +121,11 @@ const useCardTabStyles = makeStyles(theme => ({
     margin: theme.spacing(0, 2, 0, 0),
     padding: theme.spacing(0.5, 0, 0.5, 0),
     textTransform: 'none',
+    '&:hover': {
+      opacity: 1,
+      backgroundColor: 'transparent',
+      color: theme.palette.text.primary,
+    },
   },
   selected: {
     fontWeight: 'bold',
@@ -123,10 +136,9 @@ type CardTabProps = TabProps & {
   children: ReactNode;
 };
 
-const CardTab = ({ children, ...props }: PropsWithChildren<CardTabProps>) => {
+export function CardTab(props: PropsWithChildren<CardTabProps>) {
+  const { children, ...restProps } = props;
   const classes = useCardTabStyles();
 
-  return <Tab disableRipple classes={classes} {...props} />;
-};
-
-export { TabbedCard, CardTab };
+  return <Tab disableRipple classes={classes} {...restProps} />;
+}

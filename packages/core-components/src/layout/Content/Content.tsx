@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,12 @@ const useStyles = makeStyles((theme: Theme) => ({
     minWidth: 0,
     paddingTop: theme.spacing(3),
     paddingBottom: theme.spacing(3),
-    ...theme.mixins.gutters({}),
+    paddingLeft: theme.spacing(2),
+    paddingRight: theme.spacing(2),
+    [theme.breakpoints.up('sm')]: {
+      paddingLeft: theme.spacing(3),
+      paddingRight: theme.spacing(3),
+    },
   },
   stretch: {
     display: 'flex',
@@ -42,17 +47,12 @@ type Props = {
   className?: string;
 };
 
-export const Content = ({
-  className,
-  stretch,
-  noPadding,
-  children,
-  ...props
-}: PropsWithChildren<Props>) => {
+export function Content(props: PropsWithChildren<Props>) {
+  const { className, stretch, noPadding, children, ...restProps } = props;
   const classes = useStyles();
   return (
     <article
-      {...props}
+      {...restProps}
       className={classNames(classes.root, className, {
         [classes.stretch]: stretch,
         [classes.noPadding]: noPadding,
@@ -61,4 +61,4 @@ export const Content = ({
       {children}
     </article>
   );
-};
+}

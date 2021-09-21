@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,30 @@
  * limitations under the License.
  */
 
+/**
+ * The Backstage plugin that renders technical documentation for your components
+ *
+ * @packageDocumentation
+ */
+
 export * from './api';
 export { techdocsApiRef, techdocsStorageApiRef } from './api';
 export type { TechDocsApi, TechDocsStorageApi } from './api';
 export { TechDocsClient, TechDocsStorageClient } from './client';
-export type { PanelType } from './home/components/TechDocsCustomHome';
+export type { DocsTableRow, PanelType } from './home/components';
+export {
+  EntityListDocsTable,
+  DefaultTechDocsHome,
+  TechDocsPageWrapper,
+  TechDocsPicker,
+} from './home/components';
+export * from './components/DocsResultListItem';
 export {
   DocsCardGrid,
   DocsTable,
   EntityTechdocsContent,
   TechDocsCustomHome,
+  TechDocsIndexPage,
   TechdocsPage,
   techdocsPlugin as plugin,
   techdocsPlugin,

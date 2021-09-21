@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ import { SerializedError } from './error';
 
 /**
  * A standard shape of JSON data returned as the body of backend errors.
+ *
+ * @public
  */
 export type ErrorResponse = {
   /** Details of the error that was caught */
@@ -47,7 +49,8 @@ export type ErrorResponse = {
  * The code is forgiving, and constructs a useful synthetic body as best it can
  * if the response body wasn't on the expected form.
  *
- * @param response The response of a failed request
+ * @public
+ * @param response - The response of a failed request
  */
 export async function parseErrorResponse(
   response: Response,

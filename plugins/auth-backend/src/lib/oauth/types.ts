@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,6 +77,7 @@ export type OAuthState = {
    */
   nonce: string;
   env: string;
+  origin?: string;
 };
 
 export type OAuthStartRequest = express.Request<{}> & {
@@ -106,9 +107,7 @@ export interface OAuthHandlers {
    * Handles the redirect from the auth provider when the user has signed in.
    * @param {express.Request} req
    */
-  handler(
-    req: express.Request,
-  ): Promise<{
+  handler(req: express.Request): Promise<{
     response: AuthResponse<OAuthProviderInfo>;
     refreshToken?: string;
   }>;

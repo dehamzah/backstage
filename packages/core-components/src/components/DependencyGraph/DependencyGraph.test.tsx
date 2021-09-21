@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,28 @@ describe('<DependencyGraph />', () => {
     expect(getByText(nodes[0].id)).toBeInTheDocument();
     expect(getByText(nodes[1].id)).toBeInTheDocument();
     expect(getByText(nodes[2].id)).toBeInTheDocument();
+    expect(queryAllByTestId(EDGE_TEST_ID)).toHaveLength(2);
+    expect(queryAllByTestId(LABEL_TEST_ID)).toHaveLength(0);
+  });
+
+  it('update render if already referenced nodes are added later', async () => {
+    const { getByText, queryAllByTestId, findAllByTestId, rerender } = render(
+      <DependencyGraph nodes={nodes.slice(0, 2)} edges={edges} />,
+    );
+
+    let renderedNodes = await findAllByTestId(NODE_TEST_ID);
+    expect(renderedNodes).toHaveLength(2);
+    expect(getByText(nodes[0].id)).toBeInTheDocument();
+    expect(getByText(nodes[1].id)).toBeInTheDocument();
+    expect(queryAllByTestId(EDGE_TEST_ID)).toHaveLength(2);
+    expect(queryAllByTestId(LABEL_TEST_ID)).toHaveLength(0);
+
+    rerender(<DependencyGraph nodes={nodes} edges={edges} />);
+
+    renderedNodes = await findAllByTestId(NODE_TEST_ID);
+    expect(renderedNodes).toHaveLength(3);
+    expect(getByText(nodes[0].id)).toBeInTheDocument();
+    expect(getByText(nodes[1].id)).toBeInTheDocument();
     expect(queryAllByTestId(EDGE_TEST_ID)).toHaveLength(2);
     expect(queryAllByTestId(LABEL_TEST_ID)).toHaveLength(0);
   });

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,8 +24,9 @@ import {
 
 export class ExternalRouteRefImpl<
   Params extends AnyParams,
-  Optional extends boolean
-> implements ExternalRouteRef<Params, Optional> {
+  Optional extends boolean,
+> implements ExternalRouteRef<Params, Optional>
+{
   readonly [routeRefType] = 'external';
 
   constructor(
@@ -42,7 +43,7 @@ export class ExternalRouteRefImpl<
 export function createExternalRouteRef<
   Params extends { [param in ParamKey]: string },
   Optional extends boolean = false,
-  ParamKey extends string = never
+  ParamKey extends string = never,
 >(options: {
   /**
    * An identifier for this route, used to identify it in error messages

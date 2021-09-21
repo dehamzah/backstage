@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,13 @@
  * limitations under the License.
  */
 
+/**
+ * A Backstage plugin for building an exploration page of your software ecosystem
+ *
+ * @packageDocumentation
+ */
+
+export { ExploreLayout } from './components';
 export * from './extensions';
-export { explorePlugin } from './plugin';
+export { explorePlugin, explorePlugin as plugin } from './plugin';
 export * from './routes';

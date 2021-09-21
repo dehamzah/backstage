@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,8 @@ import { Entity } from '../Entity';
  *
  * This does not take into account machine generated fields such as uid, etag
  * and generation.
+ *
+ * @public
  */
 export class FieldFormatEntityPolicy implements EntityPolicy {
   private readonly validators: Validators;

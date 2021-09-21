@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,8 +30,17 @@ describe('readGitLabIntegrationConfig', () => {
   async function buildFrontendConfig(
     data: Partial<GitLabIntegrationConfig>,
   ): Promise<Config> {
-    const schema = await loadConfigSchema({
+    const fullSchema = await loadConfigSchema({
       dependencies: [require('../../package.json').name],
+    });
+    const serializedSchema = fullSchema.serialize() as {
+      schemas: { path: string }[];
+    };
+    const schema = await loadConfigSchema({
+      serialized: {
+        ...serializedSchema, // grab the schema from this package only
+        schemas: serializedSchema.schemas.filter(s => s.path === 'config.d.ts'),
+      },
     });
     const processed = schema.process(
       [{ data: { integrations: { gitlab: [data] } }, context: 'app' }],

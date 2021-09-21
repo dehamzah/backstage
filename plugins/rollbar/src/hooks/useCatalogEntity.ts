@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,22 @@
  * limitations under the License.
  */
 
-import { useApi } from '@backstage/core';
 import {
   catalogApiRef,
   useEntityCompoundName,
 } from '@backstage/plugin-catalog-react';
 import { useAsync } from 'react-use';
+import { useApi } from '@backstage/core-plugin-api';
 
 export function useCatalogEntity() {
   const catalogApi = useApi(catalogApiRef);
   const { namespace, name } = useEntityCompoundName();
 
-  const { value: entity, error, loading } = useAsync(
+  const {
+    value: entity,
+    error,
+    loading,
+  } = useAsync(
     () => catalogApi.getEntityByName({ kind: 'Component', namespace, name }),
     [catalogApi, namespace, name],
   );

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,8 @@ type SubvalueCellProps = {
   subvalue: React.ReactNode;
 };
 
-export const SubvalueCell = ({ value, subvalue }: SubvalueCellProps) => {
+export function SubvalueCell(props: SubvalueCellProps) {
+  const { value, subvalue } = props;
   const classes = useSubvalueCellStyles();
 
   return (
@@ -42,4 +43,4 @@ export const SubvalueCell = ({ value, subvalue }: SubvalueCellProps) => {
       <div className={classes.subvalue}>{subvalue}</div>
     </>
   );
-};
+}

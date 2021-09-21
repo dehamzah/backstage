@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,5 +14,12 @@
  * limitations under the License.
  */
 
-export * from './service/router';
+/**
+ * The Backstage backend plugin that renders technical documentation for your components
+ *
+ * @packageDocumentation
+ */
+
+export { createRouter } from './service/router';
+export * from './search';
 export * from '@backstage/techdocs-common';

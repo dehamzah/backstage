@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,8 +56,7 @@ describe('GitHubIntegration', () => {
     expect(
       integration.resolveUrl({
         url: '../a.yaml',
-        base:
-          'https://github.com/backstage/backstage/blob/master/test/README.md',
+        base: 'https://github.com/backstage/backstage/blob/master/test/README.md',
         lineNumber: 17,
       }),
     ).toBe('https://github.com/backstage/backstage/tree/master/a.yaml#L17');
@@ -65,8 +64,7 @@ describe('GitHubIntegration', () => {
     expect(
       integration.resolveUrl({
         url: './',
-        base:
-          'https://github.com/backstage/backstage/blob/master/test/README.md',
+        base: 'https://github.com/backstage/backstage/blob/master/test/README.md',
       }),
     ).toBe('https://github.com/backstage/backstage/tree/master/test/');
   });

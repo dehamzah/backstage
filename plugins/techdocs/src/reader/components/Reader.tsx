@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,15 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import { EntityName } from '@backstage/catalog-model';
-import { useApi } from '@backstage/core';
+import { Progress } from '@backstage/core-components';
+import { useApi } from '@backstage/core-plugin-api';
 import { scmIntegrationsApiRef } from '@backstage/integration-react';
 import { BackstageTheme } from '@backstage/theme';
-import { useTheme } from '@material-ui/core';
+import {
+  Button,
+  CircularProgress,
+  Grid,
+  makeStyles,
+  useTheme,
+} from '@material-ui/core';
 import { Alert } from '@material-ui/lab';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useAsync } from 'react-use';
 import { techdocsStorageApiRef } from '../../api';
 import {
   addBaseUrl,
@@ -35,126 +42,105 @@ import {
   simplifyMkdocsFooter,
   transform as transformer,
 } from '../transformers';
+import { TechDocsBuildLogs } from './TechDocsBuildLogs';
 import { TechDocsNotFound } from './TechDocsNotFound';
-import TechDocsProgressBar from './TechDocsProgressBar';
-import { useRawPage } from './useRawPage';
+import { TechDocsSearch } from './TechDocsSearch';
+import { useReaderState } from './useReaderState';
 
 type Props = {
   entityId: EntityName;
   onReady?: () => void;
+  withSearch?: boolean;
 };
 
-export const Reader = ({ entityId, onReady }: Props) => {
+const useStyles = makeStyles<BackstageTheme>(theme => ({
+  message: {
+    // `word-break: break-word` is deprecated, but gives legacy support to browsers not supporting `overflow-wrap` yet
+    // https://developer.mozilla.org/en-US/docs/Web/CSS/word-break
+    wordBreak: 'break-word',
+    overflowWrap: 'anywhere',
+  },
+  searchBar: {
+    marginLeft: '20rem',
+    maxWidth: 'calc(100% - 20rem * 2 - 3rem)',
+    marginTop: theme.spacing(1),
+    '@media screen and (max-width: 76.1875em)': {
+      marginLeft: '10rem',
+      maxWidth: 'calc(100% - 10rem)',
+    },
+  },
+}));
+
+export const Reader = ({ entityId, onReady, withSearch = true }: Props) => {
   const { kind, namespace, name } = entityId;
-  const { '*': path } = useParams();
   const theme = useTheme<BackstageTheme>();
+  const classes = useStyles();
+
+  const {
+    state,
+    path,
+    contentReload,
+    content: rawPage,
+    contentErrorMessage,
+    syncErrorMessage,
+    buildLog,
+  } = useReaderState(kind, namespace, name, useParams()['*']);
 
   const techdocsStorageApi = useApi(techdocsStorageApiRef);
   const [sidebars, setSidebars] = useState<HTMLElement[]>();
   const navigate = useNavigate();
   const shadowDomRef = useRef<HTMLDivElement>(null);
-  const [loadedPath, setLoadedPath] = useState('');
-  const [atInitialLoad, setAtInitialLoad] = useState(true);
-  const [newerDocsExist, setNewerDocsExist] = useState(false);
   const scmIntegrationsApi = useApi(scmIntegrationsApiRef);
 
-  const {
-    value: isSynced,
-    loading: syncInProgress,
-    error: syncError,
-  } = useAsync(async () => {
-    // Attempt to sync only if `techdocs.builder` in app config is set to 'local'
-    if ((await techdocsStorageApi.getBuilder()) !== 'local') {
-      return Promise.resolve({
-        value: true,
-        loading: null,
-        error: null,
+  const updateSidebarPosition = useCallback(() => {
+    if (!!shadowDomRef.current && !!sidebars) {
+      const shadowDiv: HTMLElement = shadowDomRef.current!;
+      const shadowRoot =
+        shadowDiv.shadowRoot || shadowDiv.attachShadow({ mode: 'open' });
+      const mdTabs = shadowRoot.querySelector('.md-container > .md-tabs');
+      sidebars!.forEach(sidebar => {
+        const newTop = Math.max(
+          shadowDomRef.current!.getBoundingClientRect().top,
+          0,
+        );
+        sidebar.style.top = mdTabs
+          ? `${newTop + mdTabs.getBoundingClientRect().height}px`
+          : `${newTop}px`;
       });
     }
-    return techdocsStorageApi.syncEntityDocs({ kind, namespace, name });
-  }, [techdocsStorageApi, kind, namespace, name]);
-
-  const {
-    value: rawPage,
-    loading: docLoading,
-    error: docLoadError,
-    retry,
-  } = useRawPage(path, kind, namespace, name);
-
-  useEffect(() => {
-    if (isSynced && newerDocsExist && path !== loadedPath) {
-      retry();
-    }
-  });
-
-  useEffect(() => {
-    const updateSidebarPosition = () => {
-      if (!!shadowDomRef.current && !!sidebars) {
-        const mdTabs = shadowDomRef.current!.querySelector(
-          '.md-container > .md-tabs',
-        );
-        sidebars!.forEach(sidebar => {
-          const newTop = Math.max(
-            shadowDomRef.current!.getBoundingClientRect().top,
-            0,
-          );
-          sidebar.style.top = mdTabs
-            ? `${newTop + mdTabs.getBoundingClientRect().height}px`
-            : `${newTop}px`;
-        });
-      }
-    };
-    updateSidebarPosition();
-    window.addEventListener('scroll', updateSidebarPosition);
-    window.addEventListener('resize', updateSidebarPosition);
-    return () => {
-      window.removeEventListener('scroll', updateSidebarPosition);
-      window.removeEventListener('resize', updateSidebarPosition);
-    };
   }, [shadowDomRef, sidebars]);
 
   useEffect(() => {
-    if (rawPage) {
-      setLoadedPath(path);
-    }
-  }, [rawPage, path]);
+    updateSidebarPosition();
+    window.addEventListener('scroll', updateSidebarPosition, true);
+    window.addEventListener('resize', updateSidebarPosition);
+    return () => {
+      window.removeEventListener('scroll', updateSidebarPosition, true);
+      window.removeEventListener('resize', updateSidebarPosition);
+    };
+    // an update to "state" might lead to an updated UI so we include it as a trigger
+  }, [updateSidebarPosition, state]);
 
-  useEffect(() => {
-    if (atInitialLoad === false) {
-      return;
-    }
-    setTimeout(() => {
-      setAtInitialLoad(false);
-    }, 5000);
-  });
-
-  useEffect(() => {
-    if (!atInitialLoad && !!rawPage && syncInProgress) {
-      setNewerDocsExist(true);
-    }
-  }, [atInitialLoad, rawPage, syncInProgress]);
-
-  useEffect(() => {
-    if (!rawPage || !shadowDomRef.current) {
-      return;
-    }
-    if (onReady) {
-      onReady();
-    }
-    // Pre-render
-    const transformedElement = transformer(rawPage.content, [
-      sanitizeDOM(),
-      addBaseUrl({
-        techdocsStorageApi,
-        entityId: rawPage.entityId,
-        path: rawPage.path,
-      }),
-      rewriteDocLinks(),
-      removeMkdocsHeader(),
-      simplifyMkdocsFooter(),
-      addGitFeedbackLink(scmIntegrationsApi),
-      injectCss({
-        css: `
+  // a function that performs transformations that are executed prior to adding it to the DOM
+  const preRender = useCallback(
+    (rawContent: string, contentPath: string) =>
+      transformer(rawContent, [
+        sanitizeDOM(),
+        addBaseUrl({
+          techdocsStorageApi,
+          entityId: {
+            kind,
+            name,
+            namespace,
+          },
+          path: contentPath,
+        }),
+        rewriteDocLinks(),
+        removeMkdocsHeader(),
+        simplifyMkdocsFooter(),
+        addGitFeedbackLink(scmIntegrationsApi),
+        injectCss({
+          css: `
         body {
           font-family: ${theme.typography.fontFamily};
           --md-text-color: ${theme.palette.text.primary};
@@ -211,28 +197,39 @@ export const Reader = ({ entityId, onReady }: Props) => {
           }
         }
       `,
-      }),
-      injectCss({
-        // Disable CSS animations on link colors as they lead to issues in dark
-        // mode. The dark mode color theme is applied later and theirfore there
-        // is always an animation from light to dark mode when navigation
-        // between pages.
-        css: `
+        }),
+        injectCss({
+          // Disable CSS animations on link colors as they lead to issues in dark
+          // mode. The dark mode color theme is applied later and theirfore there
+          // is always an animation from light to dark mode when navigation
+          // between pages.
+          css: `
         .md-nav__link, .md-typeset a, .md-typeset a::before, .md-typeset .headerlink {
           transition: none;
         }
         `,
-      }),
-      injectCss({
-        // Admonitions and others are using SVG masks to define icons. These
-        // masks are defined as CSS variables.
-        // As the MkDocs output is rendered in shadow DOM, the CSS variable
-        // definitions on the root selector are not applied. Instead, the have
-        // to be applied on :host.
-        // As there is no way to transform the served main*.css yet (for
-        // example in the backend), we have to copy from main*.css and modify
-        // them.
-        css: `
+        }),
+        injectCss({
+          // Properly style code blocks.
+          css: `
+        .md-typeset pre > code::-webkit-scrollbar-thumb {
+          background-color: hsla(0, 0%, 0%, 0.32);
+        }
+        .md-typeset pre > code::-webkit-scrollbar-thumb:hover {
+          background-color: hsla(0, 0%, 0%, 0.87);
+        }
+        `,
+        }),
+        injectCss({
+          // Admonitions and others are using SVG masks to define icons. These
+          // masks are defined as CSS variables.
+          // As the MkDocs output is rendered in shadow DOM, the CSS variable
+          // definitions on the root selector are not applied. Instead, the have
+          // to be applied on :host.
+          // As there is no way to transform the served main*.css yet (for
+          // example in the backend), we have to copy from main*.css and modify
+          // them.
+          css: `
         :host {
           --md-admonition-icon--note: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>');
           --md-admonition-icon--abstract: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 5h16v2H4V5m0 4h16v2H4V9m0 4h16v2H4v-2m0 4h10v2H4v-2z"/></svg>');
@@ -258,128 +255,202 @@ export const Reader = ({ entityId, onReady }: Props) => {
           --md-tasklist-icon--checked: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2m-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>');
         }
         `,
-      }),
-    ]);
+        }),
+      ]),
+    [
+      kind,
+      name,
+      namespace,
+      scmIntegrationsApi,
+      techdocsStorageApi,
+      theme.palette.background.default,
+      theme.palette.background.paper,
+      theme.palette.primary.main,
+      theme.palette.text.primary,
+      theme.typography.fontFamily,
+    ],
+  );
 
-    if (!transformedElement) {
-      return; // An unexpected error occurred
+  // a function that performs transformations that are executed after adding it to the DOM
+  const postRender = useCallback(
+    async (shadowRoot: ShadowRoot) =>
+      transformer(shadowRoot.children[0], [
+        dom => {
+          setTimeout(() => {
+            // Scoll to the desired anchor on initial navigation
+            if (window.location.hash) {
+              const hash = window.location.hash.slice(1);
+              shadowRoot?.getElementById(hash)?.scrollIntoView();
+            }
+          }, 200);
+          return dom;
+        },
+        addLinkClickListener({
+          baseUrl: window.location.origin,
+          onClick: (_: MouseEvent, url: string) => {
+            const parsedUrl = new URL(url);
+
+            if (parsedUrl.hash) {
+              navigate(`${parsedUrl.pathname}${parsedUrl.hash}`);
+
+              // Scroll to hash if it's on the current page
+              shadowRoot
+                ?.getElementById(parsedUrl.hash.slice(1))
+                ?.scrollIntoView();
+            } else {
+              navigate(parsedUrl.pathname);
+            }
+          },
+        }),
+        onCssReady({
+          docStorageUrl: await techdocsStorageApi.getApiOrigin(),
+          onLoading: (dom: Element) => {
+            (dom as HTMLElement).style.setProperty('opacity', '0');
+          },
+          onLoaded: (dom: Element) => {
+            (dom as HTMLElement).style.removeProperty('opacity');
+            // disable MkDocs drawer toggling ('for' attribute => checkbox mechanism)
+            (dom as HTMLElement)
+              .querySelector('.md-nav__title')
+              ?.removeAttribute('for');
+            const sideDivs: HTMLElement[] = Array.from(
+              shadowRoot!.querySelectorAll('.md-sidebar'),
+            );
+            setSidebars(sideDivs);
+            // set sidebar height so they don't initially render in wrong position
+            const docTopPosition = (dom as HTMLElement).getBoundingClientRect()
+              .top;
+            const mdTabs = dom.querySelector('.md-container > .md-tabs');
+            sideDivs!.forEach(sidebar => {
+              sidebar.style.top = mdTabs
+                ? `${docTopPosition + mdTabs.getBoundingClientRect().height}px`
+                : `${docTopPosition}px`;
+            });
+          },
+        }),
+      ]),
+    [navigate, techdocsStorageApi],
+  );
+
+  useEffect(() => {
+    if (!rawPage || !shadowDomRef.current) {
+      // clear the shadow dom if no content is available
+      if (shadowDomRef.current?.shadowRoot) {
+        shadowDomRef.current.shadowRoot.innerHTML = '';
+      }
+      return () => {};
+    }
+    if (onReady) {
+      onReady();
     }
 
-    const shadowDiv: HTMLElement = shadowDomRef.current!;
-    const shadowRoot =
-      shadowDiv.shadowRoot || shadowDiv.attachShadow({ mode: 'open' });
-    Array.from(shadowRoot.children).forEach(child =>
-      shadowRoot.removeChild(child),
-    );
-    shadowRoot.appendChild(transformedElement);
+    // if false, there is already a newer execution of this effect
+    let shouldReplaceContent = true;
 
-    // Scroll to top after render
-    window.scroll({ top: 0 });
+    // Pre-render
+    preRender(rawPage, path).then(async transformedElement => {
+      if (!transformedElement?.innerHTML) {
+        return; // An unexpected error occurred
+      }
 
-    // Post-render
-    transformer(shadowRoot.children[0], [
-      dom => {
-        setTimeout(() => {
-          // Scoll to the desired anchor on initial navigation
-          if (window.location.hash) {
-            const hash = window.location.hash.slice(1);
-            shadowRoot?.getElementById(hash)?.scrollIntoView();
-          }
-        }, 200);
-        return dom;
-      },
-      addLinkClickListener({
-        baseUrl: window.location.origin,
-        onClick: (_: MouseEvent, url: string) => {
-          const parsedUrl = new URL(url);
-          if (newerDocsExist && isSynced) {
-            // link navigation will load newer docs
-            setNewerDocsExist(false);
-          }
+      // don't manipulate the shadow dom if this isn't the latest effect execution
+      if (!shouldReplaceContent) {
+        return;
+      }
 
-          if (parsedUrl.hash) {
-            navigate(`${parsedUrl.pathname}${parsedUrl.hash}`);
+      const shadowDiv: HTMLElement = shadowDomRef.current!;
+      const shadowRoot =
+        shadowDiv.shadowRoot || shadowDiv.attachShadow({ mode: 'open' });
+      Array.from(shadowRoot.children).forEach(child =>
+        shadowRoot.removeChild(child),
+      );
+      shadowRoot.appendChild(transformedElement);
 
-            // Scroll to hash if it's on the current page
-            shadowRoot
-              ?.getElementById(parsedUrl.hash.slice(1))
-              ?.scrollIntoView();
-          } else {
-            navigate(parsedUrl.pathname);
-          }
-        },
-      }),
-      onCssReady({
-        docStorageUrl: techdocsStorageApi.getApiOrigin(),
-        onLoading: (dom: Element) => {
-          (dom as HTMLElement).style.setProperty('opacity', '0');
-        },
-        onLoaded: (dom: Element) => {
-          (dom as HTMLElement).style.removeProperty('opacity');
-          // disable MkDocs drawer toggling ('for' attribute => checkbox mechanism)
-          (dom as HTMLElement)
-            .querySelector('.md-nav__title')
-            ?.removeAttribute('for');
-          const sideDivs: HTMLElement[] = Array.from(
-            shadowRoot!.querySelectorAll('.md-sidebar'),
-          );
-          setSidebars(sideDivs);
-          // set sidebar height so they don't initially render in wrong position
-          const docTopPosition = (dom as HTMLElement).getBoundingClientRect()
-            .top;
-          const mdTabs = dom.querySelector('.md-container > .md-tabs');
-          sideDivs!.forEach(sidebar => {
-            sidebar.style.top = mdTabs
-              ? `${docTopPosition + mdTabs.getBoundingClientRect().height}px`
-              : `${docTopPosition}px`;
-          });
-        },
-      }),
-    ]);
-  }, [
-    rawPage,
-    navigate,
-    onReady,
-    shadowDomRef,
-    techdocsStorageApi,
-    theme.typography.fontFamily,
-    theme.palette.text.primary,
-    theme.palette.primary.main,
-    theme.palette.background.paper,
-    theme.palette.background.default,
-    newerDocsExist,
-    isSynced,
-    scmIntegrationsApi,
-  ]);
+      // Scroll to top after render
+      window.scroll({ top: 0 });
 
-  // docLoadError not considered an error state if sync request is still ongoing
-  // or sync just completed and doc is loading again
-  if ((docLoadError && !syncInProgress && !docLoading) || syncError) {
-    let errMessage = '';
-    if (docLoadError) {
-      errMessage += ` Load error: ${docLoadError}`;
-    }
-    if (syncError) errMessage += ` Build error: ${syncError}`;
-    return <TechDocsNotFound errorMessage={errMessage} />;
-  }
+      // Post-render
+      await postRender(shadowRoot);
+    });
+
+    // cancel this execution
+    return () => {
+      shouldReplaceContent = false;
+    };
+  }, [onReady, path, postRender, preRender, rawPage]);
 
   return (
     <>
-      {newerDocsExist && !isSynced ? (
-        <Alert variant="outlined" severity="info">
+      {state === 'CHECKING' && <Progress />}
+      {state === 'INITIAL_BUILD' && (
+        <Alert
+          variant="outlined"
+          severity="info"
+          icon={<CircularProgress size="24px" />}
+          action={<TechDocsBuildLogs buildLog={buildLog} />}
+        >
+          Documentation is accessed for the first time and is being prepared.
+          The subsequent loads are much faster.
+        </Alert>
+      )}
+      {state === 'CONTENT_STALE_REFRESHING' && (
+        <Alert
+          variant="outlined"
+          severity="info"
+          icon={<CircularProgress size="24px" />}
+          action={<TechDocsBuildLogs buildLog={buildLog} />}
+        >
           A newer version of this documentation is being prepared and will be
           available shortly.
         </Alert>
-      ) : null}
-      {newerDocsExist && isSynced ? (
-        <Alert variant="outlined" severity="success">
+      )}
+      {state === 'CONTENT_STALE_READY' && (
+        <Alert
+          variant="outlined"
+          severity="success"
+          action={
+            <Button color="inherit" onClick={() => contentReload()}>
+              Refresh
+            </Button>
+          }
+        >
           A newer version of this documentation is now available, please refresh
           to view.
         </Alert>
-      ) : null}
-      {docLoading || (docLoadError && syncInProgress) ? (
-        <TechDocsProgressBar />
-      ) : null}
+      )}
+      {state === 'CONTENT_STALE_ERROR' && (
+        <Alert
+          variant="outlined"
+          severity="error"
+          action={<TechDocsBuildLogs buildLog={buildLog} />}
+          classes={{ message: classes.message }}
+        >
+          Building a newer version of this documentation failed.{' '}
+          {syncErrorMessage}
+        </Alert>
+      )}
+      {state === 'CONTENT_NOT_FOUND' && (
+        <>
+          {syncErrorMessage && (
+            <Alert
+              variant="outlined"
+              severity="error"
+              action={<TechDocsBuildLogs buildLog={buildLog} />}
+              classes={{ message: classes.message }}
+            >
+              Building a newer version of this documentation failed.{' '}
+              {syncErrorMessage}
+            </Alert>
+          )}
+          <TechDocsNotFound errorMessage={contentErrorMessage} />
+        </>
+      )}
+
+      {withSearch && shadowDomRef?.current?.shadowRoot?.innerHTML && (
+        <Grid container className={classes.searchBar}>
+          <TechDocsSearch entityId={entityId} />
+        </Grid>
+      )}
       <div data-testid="techdocs-content-shadowroot" ref={shadowDomRef} />
     </>
   );

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,10 +80,9 @@ async function getConfig() {
     transform: {
       '\\.esm\\.js$': require.resolve('./jestEsmTransform.js'), // See jestEsmTransform.js
       '\\.(js|jsx|ts|tsx)$': require.resolve('@sucrase/jest-plugin'),
-      '\\.(bmp|gif|jpg|jpeg|png|frag|xml|svg)$': require.resolve(
-        './jestFileTransform.js',
-      ),
-      '\\.(yaml)$': require.resolve('yaml-jest'),
+      '\\.(bmp|gif|jpg|jpeg|png|frag|xml|svg|eot|woff|woff2|ttf)$':
+        require.resolve('./jestFileTransform.js'),
+      '\\.(yaml)$': require.resolve('jest-transform-yaml'),
     },
 
     // A bit more opinionated

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,12 @@ export const AlertInsightsSectionHeader = ({
   return (
     <Box position="relative" mb={3} textAlign="left">
       <ScrollAnchor id={`alert-${number}`} />
-      <Grid container spacing={2} justify="space-between" alignItems="center">
+      <Grid
+        container
+        spacing={2}
+        justifyContent="space-between"
+        alignItems="center"
+      >
         <Grid item>
           <Box display="flex" alignItems="center">
             <Box mr={2}>

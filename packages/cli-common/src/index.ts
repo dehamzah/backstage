@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,5 +14,12 @@
  * limitations under the License.
  */
 
+/**
+ * Common functionality used by cli, backend, and create-app
+ *
+ * @packageDocumentation
+ */
+
 export { findPaths } from './paths';
-export type { Paths } from './paths';
+export { isChildPath } from './isChildPath';
+export type { Paths, ResolveFunc } from './paths';

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,26 +20,38 @@ import {
   RELATION_MEMBER_OF,
   RELATION_OWNED_BY,
 } from '@backstage/catalog-model';
-import {
-  ApiProvider,
-  ApiRegistry,
-  IdentityApi,
-  identityApiRef,
-  ProfileInfo,
-  storageApiRef,
-} from '@backstage/core';
+import { TableColumn, TableProps } from '@backstage/core-components';
 import { catalogApiRef } from '@backstage/plugin-catalog-react';
 import {
   MockStorageApi,
   renderWithEffects,
   wrapInTestApp,
+  mockBreakpoint,
 } from '@backstage/test-utils';
 import { fireEvent, screen } from '@testing-library/react';
 import React from 'react';
 import { createComponentRouteRef } from '../../routes';
+import { EntityRow } from '../CatalogTable/types';
 import { CatalogPage } from './CatalogPage';
+import DashboardIcon from '@material-ui/icons/Dashboard';
+
+import { ApiProvider, ApiRegistry } from '@backstage/core-app-api';
+import {
+  IdentityApi,
+  identityApiRef,
+  ProfileInfo,
+  storageApiRef,
+} from '@backstage/core-plugin-api';
 
 describe('CatalogPage', () => {
+  const origReplaceState = window.history.replaceState;
+  beforeEach(() => {
+    window.history.replaceState = jest.fn();
+  });
+  afterEach(() => {
+    window.history.replaceState = origReplaceState;
+  });
+
   const catalogApi: Partial<CatalogApi> = {
     getEntities: () =>
       Promise.resolve({
@@ -51,7 +63,7 @@ describe('CatalogPage', () => {
               name: 'Entity1',
             },
             spec: {
-              owner: 'tools@example.com',
+              owner: 'tools',
               type: 'service',
             },
             relations: [
@@ -68,7 +80,7 @@ describe('CatalogPage', () => {
               name: 'Entity2',
             },
             spec: {
-              owner: 'not-tools@example.com',
+              owner: 'not-tools',
               type: 'service',
             },
             relations: [
@@ -104,7 +116,8 @@ describe('CatalogPage', () => {
     displayName: 'Display Name',
   };
   const identityApi: Partial<IdentityApi> = {
-    getUserId: () => 'tools@example.com',
+    getUserId: () => 'tools',
+    getIdToken: async () => undefined,
     getProfile: () => testProfile,
   };
 
@@ -128,6 +141,85 @@ describe('CatalogPage', () => {
       ),
     );
 
+  // TODO(freben): The test timeouts are bumped in this file, because it seems
+  // page and table rerenders accumulate to occasionally go over the default
+  // limit. We should investigate why these timeouts happen.
+
+  it('should render the default column of the grid', async () => {
+    const { getAllByRole } = await renderWrapped(<CatalogPage />);
+
+    const columnHeader = getAllByRole('button').filter(
+      c => c.tagName === 'SPAN',
+    );
+    const columnHeaderLabels = columnHeader.map(c => c.textContent);
+
+    expect(columnHeaderLabels).toEqual([
+      'Name',
+      'System',
+      'Owner',
+      'Type',
+      'Lifecycle',
+      'Description',
+      'Tags',
+      'Actions',
+    ]);
+  }, 20_000);
+
+  it('should render the custom column passed as prop', async () => {
+    const columns: TableColumn<EntityRow>[] = [
+      { title: 'Foo', field: 'entity.foo' },
+      { title: 'Bar', field: 'entity.bar' },
+      { title: 'Baz', field: 'entity.spec.lifecycle' },
+    ];
+    const { getAllByRole } = await renderWrapped(
+      <CatalogPage columns={columns} />,
+    );
+
+    const columnHeader = getAllByRole('button').filter(
+      c => c.tagName === 'SPAN',
+    );
+    const columnHeaderLabels = columnHeader.map(c => c.textContent);
+
+    expect(columnHeaderLabels).toEqual(['Foo', 'Bar', 'Baz', 'Actions']);
+  }, 20_000);
+
+  it('should render the default actions of an item in the grid', async () => {
+    const { findByTitle, findByText } = await renderWrapped(<CatalogPage />);
+    expect(await findByText(/Owned \(1\)/)).toBeInTheDocument();
+    expect(await findByTitle(/View/)).toBeInTheDocument();
+    expect(await findByTitle(/Edit/)).toBeInTheDocument();
+    expect(await findByTitle(/Add to favorites/)).toBeInTheDocument();
+  }, 20_000);
+
+  it('should render the custom actions of an item passed as prop', async () => {
+    const actions: TableProps<EntityRow>['actions'] = [
+      () => {
+        return {
+          icon: () => <DashboardIcon fontSize="small" />,
+          tooltip: 'Foo Action',
+          disabled: false,
+          onClick: () => jest.fn(),
+        };
+      },
+      () => {
+        return {
+          icon: () => <DashboardIcon fontSize="small" />,
+          tooltip: 'Bar Action',
+          disabled: true,
+          onClick: () => jest.fn(),
+        };
+      },
+    ];
+
+    const { findByTitle, findByText } = await renderWrapped(
+      <CatalogPage actions={actions} />,
+    );
+    expect(await findByText(/Owned \(1\)/)).toBeInTheDocument();
+    expect(await findByTitle(/Foo Action/)).toBeInTheDocument();
+    expect(await findByTitle(/Bar Action/)).toBeInTheDocument();
+    expect((await findByTitle(/Bar Action/)).firstChild).toBeDisabled();
+  }, 20_000);
+
   // this test right now causes some red lines in the log output when running tests
   // related to some theme issues in mui-table
   // https://github.com/mbrn/material-table/issues/1293
@@ -136,14 +228,14 @@ describe('CatalogPage', () => {
     await expect(findByText(/Owned \(1\)/)).resolves.toBeInTheDocument();
     fireEvent.click(getByTestId('user-picker-all'));
     await expect(findByText(/All \(2\)/)).resolves.toBeInTheDocument();
-  });
+  }, 20_000);
 
   it('should set initial filter correctly', async () => {
     const { findByText } = await renderWrapped(
       <CatalogPage initiallySelectedFilter="all" />,
     );
     await expect(findByText(/All \(2\)/)).resolves.toBeInTheDocument();
-  });
+  }, 20_000);
 
   // this test is for fixing the bug after favoriting an entity, the matching
   // entities defaulting to "owned" filter and not based on the selected filter
@@ -165,5 +257,14 @@ describe('CatalogPage', () => {
     await expect(
       screen.findByText(/Starred \(1\)/),
     ).resolves.toBeInTheDocument();
-  });
+  }, 20_000);
+
+  it('should wrap filter in drawer on smaller screens', async () => {
+    mockBreakpoint({ matches: true });
+    const { getByRole } = await renderWrapped(<CatalogPage />);
+    const button = getByRole('button', { name: 'Filters' });
+    expect(getByRole('presentation', { hidden: true })).toBeInTheDocument();
+    fireEvent.click(button);
+    expect(getByRole('presentation')).toBeVisible();
+  }, 20_000);
 });

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-import { errorApiRef, useApi } from '@backstage/core';
+import { errorApiRef, useApi } from '@backstage/core-plugin-api';
 import { FormHelperText, Grid, TextField } from '@material-ui/core';
 import React, { useCallback, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { AnalyzeResult, catalogImportApiRef } from '../../api';
 import { NextButton } from '../Buttons';
+import { asInputRef } from '../helpers';
 import { ImportFlows, PrepareResult } from '../useImportState';
 
 type FormData = {
@@ -52,7 +53,12 @@ export const StepInitAnalyzeUrl = ({
   const errorApi = useApi(errorApiRef);
   const catalogImportApi = useApi(catalogImportApiRef);
 
-  const { register, handleSubmit, errors, watch } = useForm<FormData>({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    watch,
+  } = useForm<FormData>({
     mode: 'onTouched',
     defaultValues: {
       url: analysisUrl,
@@ -118,24 +124,25 @@ export const StepInitAnalyzeUrl = ({
   return (
     <form onSubmit={handleSubmit(handleResult)}>
       <TextField
+        {...asInputRef(
+          register('url', {
+            required: true,
+            validate: {
+              httpsValidator: (value: any) =>
+                (typeof value === 'string' &&
+                  value.match(/^http[s]?:\/\//) !== null) ||
+                'Must start with http:// or https://.',
+            },
+          }),
+        )}
         fullWidth
         id="url"
-        name="url"
         label="Repository URL"
         placeholder="https://github.com/backstage/backstage/blob/master/catalog-info.yaml"
         helperText="Enter the full path to your entity file to start tracking your component"
         margin="normal"
         variant="outlined"
         error={Boolean(errors.url)}
-        inputRef={register({
-          required: true,
-          validate: {
-            httpsValidator: (value: any) =>
-              (typeof value === 'string' &&
-                value.match(/^http[s]?:\/\//) !== null) ||
-              'Must start with http:// or https://.',
-          },
-        })}
         required
       />
 

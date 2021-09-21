@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,22 +14,18 @@
  * limitations under the License.
  */
 
-import {
-  configApiRef,
-  InfoCard,
-  InfoCardVariants,
-  useApi,
-} from '@backstage/core';
+import { InfoCard, InfoCardVariants } from '@backstage/core-components';
+import { useApi } from '@backstage/core-plugin-api';
 import { Step, StepContent, Stepper } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
 import React, { useMemo } from 'react';
+import { catalogImportApiRef } from '../../api';
 import { ImportFlows, ImportState, useImportState } from '../useImportState';
 import {
   defaultGenerateStepper,
   defaultStepper,
   StepConfiguration,
   StepperProvider,
-  StepperProviderOpts,
 } from './defaults';
 
 const useStyles = makeStyles(() => ({
@@ -45,16 +41,14 @@ type Props = {
     defaults: StepperProvider,
   ) => StepperProvider;
   variant?: InfoCardVariants;
-  opts?: StepperProviderOpts;
 };
 
 export const ImportStepper = ({
   initialUrl,
   generateStepper = defaultGenerateStepper,
   variant,
-  opts,
 }: Props) => {
-  const configApi = useApi(configApiRef);
+  const catalogImportApi = useApi(catalogImportApiRef);
   const classes = useStyles();
   const state = useImportState({ initialUrl });
 
@@ -82,25 +76,25 @@ export const ImportStepper = ({
         {render(
           states.analyze(
             state as Extract<ImportState, { activeState: 'analyze' }>,
-            { apis: { configApi }, opts },
+            { apis: { catalogImportApi } },
           ),
         )}
         {render(
           states.prepare(
             state as Extract<ImportState, { activeState: 'prepare' }>,
-            { apis: { configApi }, opts },
+            { apis: { catalogImportApi } },
           ),
         )}
         {render(
           states.review(
             state as Extract<ImportState, { activeState: 'review' }>,
-            { apis: { configApi }, opts },
+            { apis: { catalogImportApi } },
           ),
         )}
         {render(
           states.finish(
             state as Extract<ImportState, { activeState: 'finish' }>,
-            { apis: { configApi }, opts },
+            { apis: { catalogImportApi } },
           ),
         )}
       </Stepper>

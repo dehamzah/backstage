@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -187,6 +187,7 @@ export class RouteResolver {
       ExternalRouteRef,
       RouteRef | SubRouteRef
     >,
+    private readonly appBasePath: string, // base path without a trailing slash
   ) {}
 
   resolve<Params extends AnyParams>(
@@ -209,13 +210,15 @@ export class RouteResolver {
     // Next we figure out the base path, which is the combination of the common parent path
     // between our current location and our target location, as well as the additional path
     // that is the difference between the parent path and the base of our target location.
-    const basePath = resolveBasePath(
-      targetRef,
-      sourceLocation,
-      this.routePaths,
-      this.routeParents,
-      this.routeObjects,
-    );
+    const basePath =
+      this.appBasePath +
+      resolveBasePath(
+        targetRef,
+        sourceLocation,
+        this.routePaths,
+        this.routeParents,
+        this.routeObjects,
+      );
 
     const routeFunc: RouteFunc<Params> = (...[params]) => {
       return basePath + generatePath(targetPath, params);

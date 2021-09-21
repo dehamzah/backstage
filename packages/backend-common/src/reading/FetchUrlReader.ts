@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,21 @@
  * limitations under the License.
  */
 
+import { NotFoundError, NotModifiedError } from '@backstage/errors';
 import fetch from 'cross-fetch';
-import { NotFoundError } from '@backstage/errors';
 import {
   ReaderFactory,
   ReadTreeResponse,
+  ReadUrlOptions,
+  ReadUrlResponse,
   SearchResponse,
   UrlReader,
 } from './types';
 
 /**
  * A UrlReader that does a plain fetch of the URL.
+ *
+ * @public
  */
 export class FetchUrlReader implements UrlReader {
   /**
@@ -55,15 +59,34 @@ export class FetchUrlReader implements UrlReader {
   };
 
   async read(url: string): Promise<Buffer> {
+    const response = await this.readUrl(url);
+    return response.buffer();
+  }
+
+  async readUrl(
+    url: string,
+    options?: ReadUrlOptions,
+  ): Promise<ReadUrlResponse> {
     let response: Response;
     try {
-      response = await fetch(url);
+      response = await fetch(url, {
+        headers: {
+          ...(options?.etag && { 'If-None-Match': options.etag }),
+        },
+      });
     } catch (e) {
       throw new Error(`Unable to read ${url}, ${e}`);
     }
 
+    if (response.status === 304) {
+      throw new NotModifiedError();
+    }
+
     if (response.ok) {
-      return Buffer.from(await response.text());
+      return {
+        buffer: async () => Buffer.from(await response.arrayBuffer()),
+        etag: response.headers.get('ETag') ?? undefined,
+      };
     }
 
     const message = `could not read ${url}, ${response.status} ${response.statusText}`;

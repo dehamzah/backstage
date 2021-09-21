@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import { ApiRef, ApiFactory, TypesToApiRefs } from './types';
 export function createApiFactory<
   Api,
   Impl extends Api,
-  Deps extends { [name in string]: unknown }
+  Deps extends { [name in string]: unknown },
 >(factory: ApiFactory<Api, Impl, Deps>): ApiFactory<Api, Impl, Deps>;
 export function createApiFactory<Api, Impl extends Api>(
   api: ApiRef<Api>,
@@ -33,7 +33,7 @@ export function createApiFactory<Api, Impl extends Api>(
 export function createApiFactory<
   Api,
   Impl extends Api,
-  Deps extends { [name in string]: unknown }
+  Deps extends { [name in string]: unknown },
 >(
   factory: ApiFactory<Api, Impl, Deps> | ApiRef<Api>,
   instance?: Impl,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,7 +74,13 @@ describe('TodoScmReader', () => {
       ],
     };
 
-    await expect(todoReader.readTodos({ url })).resolves.toEqual(expected);
+    // These two reads should only result in a single call to readTree
+    await expect(
+      Promise.all([
+        todoReader.readTodos({ url }),
+        todoReader.readTodos({ url }),
+      ]),
+    ).resolves.toEqual([expected, expected]);
 
     expect(reader.readTree).toHaveBeenCalledTimes(1);
     expect(reader.readTree).toHaveBeenCalledWith(

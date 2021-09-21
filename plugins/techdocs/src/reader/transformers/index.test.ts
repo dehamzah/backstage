@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,14 @@
 import { Transformer, transform } from './transformer';
 
 describe('transform', () => {
-  it('calls the transformers', () => {
+  it('calls the transformers', async () => {
     const fn = jest.fn();
     const mockTransformer = (): Transformer => (dom: Element) => {
       fn(dom);
       return dom;
     };
 
-    transform('<html></html>', [mockTransformer()]);
+    await transform('<html></html>', [mockTransformer()]);
 
     expect(fn).toHaveBeenCalledTimes(1);
     expect(fn).toHaveBeenCalledWith(expect.any(Element));

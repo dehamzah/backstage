@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,6 @@ import {
   V1Pod,
   V1HorizontalPodAutoscaler,
 } from '@kubernetes/client-node';
-import { StatusError, StatusOK } from '@backstage/core';
 import { PodsTable } from '../Pods';
 import { DeploymentDrawer } from './DeploymentDrawer';
 import { HorizontalPodAutoscalerDrawer } from '../HorizontalPodAutoscalers';
@@ -41,6 +40,7 @@ import {
   GroupedResponsesContext,
   PodNamesWithErrorsContext,
 } from '../../hooks';
+import { StatusError, StatusOK } from '@backstage/core-components';
 
 type DeploymentsAccordionsProps = {
   children?: React.ReactNode;
@@ -68,7 +68,12 @@ const DeploymentSummary = ({
   hpa,
 }: DeploymentSummaryProps) => {
   return (
-    <Grid container direction="row" justify="flex-start" alignItems="center">
+    <Grid
+      container
+      direction="row"
+      justifyContent="flex-start"
+      alignItems="center"
+    >
       <Grid xs={3} item>
         <DeploymentDrawer deployment={deployment} />
       </Grid>
@@ -82,7 +87,7 @@ const DeploymentSummary = ({
               item
               container
               direction="column"
-              justify="flex-start"
+              justifyContent="flex-start"
               alignItems="flex-start"
               spacing={0}
             >
@@ -113,7 +118,7 @@ const DeploymentSummary = ({
         container
         xs={3}
         direction="column"
-        justify="flex-start"
+        justifyContent="flex-start"
         alignItems="flex-start"
       >
         <Grid item>
@@ -169,7 +174,7 @@ export const DeploymentsAccordions = ({}: DeploymentsAccordionsProps) => {
     <Grid
       container
       direction="column"
-      justify="flex-start"
+      justifyContent="flex-start"
       alignItems="flex-start"
     >
       {groupedResponses.deployments.map((deployment, i) => (

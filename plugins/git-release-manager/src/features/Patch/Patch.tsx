@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import {
   GetBranchResult,
   GetLatestReleaseResult,
 } from '../../api/GitReleaseClient';
-import { ComponentConfigPatch } from '../../types/types';
+import { ComponentConfig, PatchOnSuccessArgs } from '../../types/types';
 import { getBumpedTag } from '../../helpers/getBumpedTag';
 import { InfoCardPlus } from '../../components/InfoCardPlus';
 import { NoLatestRelease } from '../../components/NoLatestRelease';
@@ -32,7 +32,7 @@ import { useProjectContext } from '../../contexts/ProjectContext';
 interface PatchProps {
   latestRelease: GetLatestReleaseResult['latestRelease'];
   releaseBranch: GetBranchResult['branch'] | null;
-  onSuccess?: ComponentConfigPatch['onSuccess'];
+  onSuccess?: ComponentConfig<PatchOnSuccessArgs>['onSuccess'];
 }
 
 export const Patch = ({

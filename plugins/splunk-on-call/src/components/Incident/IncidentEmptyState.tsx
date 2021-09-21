@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,12 @@ import EmptyStateImage from '../../assets/emptystate.svg';
 
 export const IncidentsEmptyState = () => {
   return (
-    <Grid container justify="center" direction="column" alignItems="center">
+    <Grid
+      container
+      justifyContent="center"
+      direction="column"
+      alignItems="center"
+    >
       <Grid item xs={12}>
         <Typography variant="h5">Nice! No incidents found!</Typography>
       </Grid>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -117,7 +117,7 @@ const DataGrid = () => (
         xs={12}
         container
         spacing={2}
-        justify="space-between"
+        justifyContent="space-between"
         direction="row"
       >
         <Grid item xs={12} md={6}>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,19 +34,20 @@ const columns: TableColumn<TodoItem>[] = [
   {
     title: 'Tag',
     field: 'tag',
+    width: '10%',
     filtering: false,
   },
   {
     title: 'Text',
     field: 'text',
-    width: '100%',
+    width: '55%',
     highlight: true,
     render: ({ text }) => <OverflowTooltip text={text} />,
   },
   {
     title: 'File',
     field: 'repoFilePath',
-    width: '80%',
+    width: '25%',
     render: ({ viewUrl, repoFilePath }) =>
       viewUrl ? (
         <Link to={viewUrl} target="_blank">
@@ -59,7 +60,7 @@ const columns: TableColumn<TodoItem>[] = [
   {
     title: 'Author',
     field: 'author',
-    width: '20%',
+    width: '10%',
     render: ({ author }) => <OverflowTooltip text={author} />,
   },
 ];

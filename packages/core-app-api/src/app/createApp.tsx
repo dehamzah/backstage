@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import {
   useInRouterContext,
 } from 'react-router-dom';
 import { PrivateAppImpl } from './App';
+import { AppThemeProvider } from './AppThemeProvider';
 import { defaultApis } from './defaultApis';
 import { defaultAppIcons } from './icons';
 import {
@@ -60,7 +61,7 @@ export const defaultConfigLoader: AppConfigLoader = async (
   if (!Array.isArray(appConfig)) {
     throw new Error('Static configuration has invalid format');
   }
-  const configs = (appConfig.slice() as unknown) as AppConfig[];
+  const configs = appConfig.slice() as unknown as AppConfig[];
 
   // Avoiding this string also being replaced at runtime
   if (
@@ -149,6 +150,7 @@ export function createApp(options?: AppOptions) {
     Progress: Progress,
     Router: BrowserRouter,
     ErrorBoundaryFallback: DefaultErrorBoundaryFallback,
+    ThemeProvider: AppThemeProvider,
     ...options?.components,
   };
   const themes = options?.themes ?? [

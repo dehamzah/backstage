@@ -106,16 +106,6 @@ Used to load in static configuration, mainly for use by the CLI and
 
 Stability: `1`. Mainly intended for internal use.
 
-### `core` [GitHub](https://github.com/backstage/backstage/tree/master/packages/core/)
-
-The `@backstage/core` and `@backstage/core-api` packages are being phased out
-and replaced by other `@backstage/core-*` packages. They are still in use but
-will not receive any breaking changes.
-
-### `core-api` [GitHub](https://github.com/backstage/backstage/tree/master/packages/core-api/)
-
-Stability: See `@backstage/core` above
-
 ### `core-app-api` [GitHub](https://github.com/backstage/backstage/tree/master/packages/core-app-api/)
 
 The APIs used exclusively in the app, such as `createApp` and the system icons.
@@ -155,12 +145,6 @@ Provides utilities for developing plugins in isolation.
 
 Stability: `0`. This package is largely broken and needs updates.
 
-### `docgen` [GitHub](https://github.com/backstage/backstage/tree/master/packages/docgen/)
-
-Internal CLI utility for generating API Documentation.
-
-Stability: `N/A`
-
 ### `e2e-test` [GitHub](https://github.com/backstage/backstage/tree/master/packages/e2e-test/)
 
 Internal CLI utility for running e2e tests.
@@ -194,8 +178,9 @@ Stability: `2`
 ### `test-utils-core` [GitHub](https://github.com/backstage/backstage/tree/master/packages/test-utils-core/)
 
 Internal testing utilities that are separated out for usage in
-@backstage/core-api. All exports are re-exported by @backstage/test-utils. This
-package should not be depended on directly.
+@backstage/core-app-api and @backstage/core-plugin-api. All exports are
+re-exported by @backstage/test-utils. This package should not be depended on
+directly.
 
 Stability: See @backstage/test-utils
 
@@ -217,9 +202,6 @@ color could be considered a breaking change.
 Stability: `1`
 
 ## Plugins
-
-Plugins are rarely marked as stable as the `@backstage/core` plugin API is under
-heavy development.
 
 Many backend plugins are split into "REST API" and "TypeScript Interface"
 sections. The "TypeScript Interface" refers to the API used to integrate the
@@ -324,14 +306,6 @@ configuration.
 
 Stability: `1`
 
-### `register-component` [GitHub](https://github.com/backstage/backstage/tree/master/plugins/register-component/)
-
-A frontend plugin that allows the user to register entity locations in the
-catalog.
-
-Stability: `0`. This plugin is likely to be replaced by a generic entity import
-plugin instead.
-
 ### `scaffolder` [GitHub](https://github.com/backstage/backstage/tree/master/plugins/scaffolder/)
 
 The frontend scaffolder plugin where one can browse templates and initiate
@@ -344,8 +318,7 @@ Stability: `1`
 The backend scaffolder plugin that provides an implementation for templates in
 the catalog.
 
-Stability: `1`. There is planned work to rework the scaffolder in
-https://github.com/backstage/backstage/issues/2771.
+Stability: `2`.
 
 ### `tech-radar` [GitHub](https://github.com/backstage/backstage/tree/master/plugins/tech-radar/)
 

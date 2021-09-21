@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,8 @@ import { promisify } from 'util';
 
 const execFile = promisify(execFileCb);
 
-const EXPECTED_LOAD_ERRORS = /ECONNREFUSED|ECONNRESET|did not get to load all resources/;
+const EXPECTED_LOAD_ERRORS =
+  /ECONNREFUSED|ECONNRESET|did not get to load all resources/;
 
 export function spawnPiped(cmd: string[], options?: SpawnOptions) {
   function pipeWithPrefix(stream: NodeJS.WriteStream, prefix = '') {
@@ -164,7 +165,6 @@ export async function waitForPageWithText(
     } catch (error) {
       findTextAttempts++;
       if (findTextAttempts <= maxFindTextAttempts) {
-        await browser.visit(path);
         await new Promise(resolve => setTimeout(resolve, intervalMs));
         continue;
       } else {

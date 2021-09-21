@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 
 import { Entity, RELATION_OWNED_BY } from '@backstage/catalog-model';
-import { Content, Header, Page } from '@backstage/core';
 import { createDevApp } from '@backstage/dev-utils';
 import {
   CatalogApi,
@@ -28,6 +27,7 @@ import { EntityFossaCard, fossaPlugin } from '../src';
 import { FindingSummary, FossaApi, fossaApiRef } from '../src/api';
 import { FossaPage } from '../src/components/FossaPage';
 import { FOSSA_PROJECT_NAME_ANNOTATION } from '../src/components/getProjectName';
+import { Content, Header, Page } from '@backstage/core-components';
 
 const entity = (name?: string) =>
   ({
@@ -135,7 +135,7 @@ createDevApp()
     api: catalogApiRef,
     deps: {},
     factory: () =>
-      (({
+      ({
         getEntities: async () => {
           await new Promise(r => setTimeout(r, 1000));
 
@@ -148,7 +148,7 @@ createDevApp()
             ],
           };
         },
-      } as Partial<CatalogApi>) as any),
+      } as Partial<CatalogApi> as any),
   })
   .addPage({
     title: 'Entity Content',

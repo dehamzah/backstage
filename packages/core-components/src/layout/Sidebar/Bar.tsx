@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { makeStyles } from '@material-ui/core';
+import { makeStyles, useMediaQuery } from '@material-ui/core';
 import clsx from 'clsx';
 import React, { useRef, useState, useContext, PropsWithChildren } from 'react';
 import { sidebarConfig, SidebarContext } from './config';
@@ -42,6 +42,7 @@ const useStyles = makeStyles<BackstageTheme>(theme => ({
     msOverflowStyle: 'none',
     scrollbarWidth: 'none',
     width: sidebarConfig.drawerWidthClosed,
+    borderRight: `1px solid #383838`,
     transition: theme.transitions.create('width', {
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.shortest,
@@ -60,14 +61,11 @@ const useStyles = makeStyles<BackstageTheme>(theme => ({
       duration: theme.transitions.duration.shorter,
     }),
   },
-  drawerPeek: {
-    width: sidebarConfig.drawerWidthClosed + 4,
-  },
 }));
 
 enum State {
   Closed,
-  Peek,
+  Idle,
   Open,
 }
 
@@ -76,12 +74,16 @@ type Props = {
   closeDelayMs?: number;
 };
 
-export const Sidebar = ({
-  openDelayMs = sidebarConfig.defaultOpenDelayMs,
-  closeDelayMs = sidebarConfig.defaultCloseDelayMs,
-  children,
-}: PropsWithChildren<Props>) => {
+export function Sidebar(props: PropsWithChildren<Props>) {
+  const {
+    openDelayMs = sidebarConfig.defaultOpenDelayMs,
+    closeDelayMs = sidebarConfig.defaultCloseDelayMs,
+    children,
+  } = props;
   const classes = useStyles();
+  const isSmallScreen = useMediaQuery<BackstageTheme>(theme =>
+    theme.breakpoints.down('md'),
+  );
   const [state, setState] = useState(State.Closed);
   const hoverTimerRef = useRef<number>();
   const { isPinned } = useContext(SidebarPinStateContext);
@@ -94,13 +96,13 @@ export const Sidebar = ({
       clearTimeout(hoverTimerRef.current);
       hoverTimerRef.current = undefined;
     }
-    if (state !== State.Open) {
+    if (state !== State.Open && !isSmallScreen) {
       hoverTimerRef.current = window.setTimeout(() => {
         hoverTimerRef.current = undefined;
         setState(State.Open);
       }, openDelayMs);
 
-      setState(State.Peek);
+      setState(State.Idle);
     }
   };
 
@@ -112,7 +114,7 @@ export const Sidebar = ({
       clearTimeout(hoverTimerRef.current);
       hoverTimerRef.current = undefined;
     }
-    if (state === State.Peek) {
+    if (state === State.Idle) {
       setState(State.Closed);
     } else if (state === State.Open) {
       hoverTimerRef.current = window.setTimeout(() => {
@@ -121,6 +123,8 @@ export const Sidebar = ({
       }, closeDelayMs);
     }
   };
+
+  const isOpen = (state === State.Open && !isSmallScreen) || isPinned;
 
   return (
     <div
@@ -133,13 +137,12 @@ export const Sidebar = ({
     >
       <SidebarContext.Provider
         value={{
-          isOpen: state === State.Open || isPinned,
+          isOpen,
         }}
       >
         <div
           className={clsx(classes.drawer, {
-            [classes.drawerPeek]: state === State.Peek,
-            [classes.drawerOpen]: state === State.Open || isPinned,
+            [classes.drawerOpen]: isOpen,
           })}
         >
           {children}
@@ -147,4 +150,4 @@ export const Sidebar = ({
       </SidebarContext.Provider>
     </div>
   );
-};
+}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,10 @@ import { getCalverTagParts } from './getCalverTagParts';
 import { getSemverTagParts } from './getSemverTagParts';
 import { Project } from '../../contexts/ProjectContext';
 
+/**
+ * Tag parts are the individual parts of a version, e.g. <major>.<minor>.<patch>
+ * are the parts of a semantic version
+ */
 export function getTagParts({
   project,
   tag,

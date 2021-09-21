@@ -1,5 +1,138 @@
 # @backstage/cli
 
+## 0.7.12
+
+### Patch Changes
+
+- d835d112fe: replace the deprecated file-loader for fonts with assets module
+- 15e324ce60: Set the default TZ (Timezone) env for the test command to be UTC so any date related tests are consistent across timezones.
+- 9f1362dcc1: Upgrade `@material-ui/lab` to `4.0.0-alpha.57`.
+
+## 0.7.11
+
+### Patch Changes
+
+- 13895db37: Support importing font files in tests.
+  This fixes remaining issues from [#7019](https://github.com/backstage/backstage/pull/7019).
+- Updated dependencies
+  - @backstage/cli-common@0.1.3
+  - @backstage/config-loader@0.6.8
+  - @backstage/config@0.1.9
+
+## 0.7.10
+
+### Patch Changes
+
+- 5e803edb8: Added support for importing font files. Imports in CSS via `url()` are supported for the final frontend bundle, but not for packages that are built for publishing. Module imports of fonts files from TypeScript are supported everywhere.
+- b5118ff76: Updated dependencies
+
+## 0.7.9
+
+### Patch Changes
+
+- f3bba3d2b: Remove debug logging
+- 8ea1e96b3: Fix file path handling in diff commands on Windows.
+- 2518aab58: Compensate for error formatting mismatch between Webpack 5 and react-dev-utils
+- 1ac2961c3: Reintroduce Node.js shims that were removed in the Webpack 5 migration.
+- 8d07a8b03: Add Buffer to `ProvidePlugin` since this is no longer provided in `webpack@5`
+- fe506a0cf: Remove Webpack deprecation message when running build.
+- 485438a56: Fix `backstage-cli backend:dev` argument passing
+- Updated dependencies
+  - @backstage/config@0.1.7
+  - @backstage/config-loader@0.6.7
+
+## 0.7.8
+
+### Patch Changes
+
+- c4ef9181a: Migrate to using `webpack@5` 🎉
+
+## 0.7.7
+
+### Patch Changes
+
+- 6aa7c3db7: bump node-tar version to the latest
+- e9d3983ee: Keep track of filtered configuration values when running frontend in development mode.
+- Updated dependencies
+  - @backstage/config@0.1.6
+  - @backstage/config-loader@0.6.6
+
+## 0.7.6
+
+### Patch Changes
+
+- 9d40fcb1e: - Bumping `material-ui/core` version to at least `4.12.2` as they made some breaking changes in later versions which broke `Pagination` of the `Table`.
+  - Switching out `material-table` to `@material-table/core` for support for the later versions of `material-ui/core`
+  - This causes a minor API change to `@backstage/core-components` as the interface for `Table` re-exports the `prop` from the underlying `Table` components.
+  - `onChangeRowsPerPage` has been renamed to `onRowsPerPageChange`
+  - `onChangePage` has been renamed to `onPageChange`
+  - Migration guide is here: https://material-table-core.com/docs/breaking-changes
+
+## 0.7.5
+
+### Patch Changes
+
+- 9a96b5da7: chore: bump `eslint` to `7.30.0`
+
+## 0.7.4
+
+### Patch Changes
+
+- ae84b20cf: Revert the upgrade to `fs-extra@10.0.0` as that seemed to have broken all installs inexplicably.
+- Updated dependencies
+  - @backstage/config-loader@0.6.5
+
+## 0.7.3
+
+### Patch Changes
+
+- a93e60fdc: Updated dependencies
+- 55f49fcc7: Update dependencies
+- ab5cc376f: Use new `isChildPath` export from `@backstage/cli-common`
+- Updated dependencies
+  - @backstage/cli-common@0.1.2
+
+## 0.7.2
+
+### Patch Changes
+
+- 953a7e66f: updated plugin template to generate path equals plugin id for the root page
+- 04248b8f9: chore: bump `msw` dependency in `create-plugin`
+- e3d31b381: Make the `create-github-app` command disable webhooks by default.
+- 8f100db75: chore: bump `@typescript-eslint/eslint-plugin` from 4.26.0 to 4.27.0
+- 95e572305: chore: bump `del` from 5.1.0 to 6.0.0
+- ece2b5dd1: chore: bump `@spotify/eslint-config-typescript` from 9.0.0 to 10.0.0
+- 0ec31e596: chore: bump `@rollup/plugin-node-resolve` from 11.2.1 to 13.0.0
+- 48c9fcd33: Migrated to use the new `@backstage/core-*` packages rather than `@backstage/core`.
+
+## 0.7.1
+
+### Patch Changes
+
+- 3108ff7bf: Make `yarn dev` in newly created backend plugins respect the `PLUGIN_PORT` environment variable.
+
+  You can achieve the same in your created backend plugins by making sure to properly call the port and CORS methods on your service builder. Typically in a file named `src/service/standaloneServer.ts` inside your backend plugin package, replace the following:
+
+  ```ts
+  const service = createServiceBuilder(module)
+    .enableCors({ origin: 'http://localhost:3000' })
+    .addRouter('/my-plugin', router);
+  ```
+
+  With something like the following:
+
+  ```ts
+  let service = createServiceBuilder(module)
+    .setPort(options.port)
+    .addRouter('/my-plugin', router);
+  if (options.enableCors) {
+    service = service.enableCors({ origin: 'http://localhost:3000' });
+  }
+  ```
+
+- Updated dependencies
+  - @backstage/config-loader@0.6.4
+
 ## 0.7.0
 
 ### Minor Changes

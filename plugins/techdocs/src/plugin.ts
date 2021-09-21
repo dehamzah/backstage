@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,13 @@
  * limitations under the License.
  */
 
+import { techdocsApiRef, techdocsStorageApiRef } from './api';
+import { TechDocsClient, TechDocsStorageClient } from './client';
+import {
+  rootDocsRouteRef,
+  rootRouteRef,
+  rootCatalogDocsRouteRef,
+} from './routes';
 import {
   configApiRef,
   createApiFactory,
@@ -22,14 +29,7 @@ import {
   createRoutableExtension,
   discoveryApiRef,
   identityApiRef,
-} from '@backstage/core';
-import { techdocsApiRef, techdocsStorageApiRef } from './api';
-import { TechDocsClient, TechDocsStorageClient } from './client';
-import {
-  rootDocsRouteRef,
-  rootRouteRef,
-  rootCatalogDocsRouteRef,
-} from './routes';
+} from '@backstage/core-plugin-api';
 
 export const techdocsPlugin = createPlugin({
   id: 'techdocs',
@@ -65,6 +65,7 @@ export const techdocsPlugin = createPlugin({
   ],
   routes: {
     root: rootRouteRef,
+    docRoot: rootDocsRouteRef,
     entityContent: rootCatalogDocsRouteRef,
   },
 });
@@ -108,6 +109,16 @@ export const TechDocsCustomHome = techdocsPlugin.provide(
     component: () =>
       import('./home/components/TechDocsCustomHome').then(
         m => m.TechDocsCustomHome,
+      ),
+    mountPoint: rootRouteRef,
+  }),
+);
+
+export const TechDocsIndexPage = techdocsPlugin.provide(
+  createRoutableExtension({
+    component: () =>
+      import('./home/components/TechDocsIndexPage').then(
+        m => m.TechDocsIndexPage,
       ),
     mountPoint: rootRouteRef,
   }),

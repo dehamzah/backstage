@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ export type AnyExternalRoutes = { [name: string]: ExternalRouteRef };
 
 export type BackstagePlugin<
   Routes extends AnyRoutes = {},
-  ExternalRoutes extends AnyExternalRoutes = {}
+  ExternalRoutes extends AnyExternalRoutes = {},
 > = {
   getId(): string;
   output(): PluginOutput[];
@@ -54,7 +54,7 @@ export type BackstagePlugin<
 
 export type PluginConfig<
   Routes extends AnyRoutes,
-  ExternalRoutes extends AnyExternalRoutes
+  ExternalRoutes extends AnyExternalRoutes,
 > = {
   id: string;
   apis?: Iterable<AnyApiFactory>;

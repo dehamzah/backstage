@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
-export type { CacheClient } from './CacheClient';
+export type { CacheClient, CacheClientSetOptions } from './CacheClient';
 export { CacheManager } from './CacheManager';
-export type { PluginCacheManager } from './types';
+export type {
+  PluginCacheManager,
+  CacheManagerOptions,
+  CacheClientOptions,
+} from './types';

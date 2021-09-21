@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -126,6 +126,19 @@ describe('GheAuth AuthSessionStore', () => {
 
     expect(localStorage.getItem('my-key')).toBe(null);
     expect(manager.removeSession).toHaveBeenCalled();
+  });
+
+  it('should set session', async () => {
+    const manager = new MockManager();
+    const store = new AuthSessionStore({ manager, ...defaultOptions });
+
+    await expect(store.getSession({ optional: true })).resolves.toBe(undefined);
+    expect(localStorage.getItem('my-key')).toBe(null);
+    expect(manager.setSession).not.toHaveBeenCalled();
+    store.setSession('123');
+    expect(manager.setSession).toHaveBeenCalled();
+    expect(localStorage.getItem('my-key')).toBe('"123"');
+    await expect(store.getSession({ optional: true })).resolves.toBe('123');
   });
 
   it('should forward sessionState calls', () => {

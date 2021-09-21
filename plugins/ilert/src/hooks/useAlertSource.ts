@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,10 @@
  */
 import React from 'react';
 import { ilertApiRef } from '../api';
-import { useApi, errorApiRef } from '@backstage/core';
 import { AuthenticationError } from '@backstage/errors';
 import { useAsyncRetry } from 'react-use';
 import { AlertSource, UptimeMonitor } from '../types';
+import { useApi, errorApiRef } from '@backstage/core-plugin-api';
 
 export const useAlertSource = (integrationKey: string) => {
   const ilertApi = useApi(ilertApiRef);
@@ -28,13 +28,10 @@ export const useAlertSource = (integrationKey: string) => {
     null,
   );
   const [isAlertSourceLoading, setIsAlertSourceLoading] = React.useState(false);
-  const [
-    uptimeMonitor,
-    setUptimeMonitor,
-  ] = React.useState<UptimeMonitor | null>(null);
-  const [isUptimeMonitorLoading, setIsUptimeMonitorLoading] = React.useState(
-    false,
-  );
+  const [uptimeMonitor, setUptimeMonitor] =
+    React.useState<UptimeMonitor | null>(null);
+  const [isUptimeMonitorLoading, setIsUptimeMonitorLoading] =
+    React.useState(false);
 
   const fetchAlertSourceCall = async () => {
     try {
@@ -54,10 +51,10 @@ export const useAlertSource = (integrationKey: string) => {
     }
   };
 
-  const {
-    error: alertSourceError,
-    retry: alertSourceRetry,
-  } = useAsyncRetry(fetchAlertSourceCall, [integrationKey]);
+  const { error: alertSourceError, retry: alertSourceRetry } = useAsyncRetry(
+    fetchAlertSourceCall,
+    [integrationKey],
+  );
 
   const fetchUptimeMonitorCall = async () => {
     try {
@@ -77,10 +74,8 @@ export const useAlertSource = (integrationKey: string) => {
     }
   };
 
-  const {
-    error: uptimeMonitorError,
-    retry: uptimeMonitorRetry,
-  } = useAsyncRetry(fetchUptimeMonitorCall, [alertSource]);
+  const { error: uptimeMonitorError, retry: uptimeMonitorRetry } =
+    useAsyncRetry(fetchUptimeMonitorCall, [alertSource]);
 
   const retry = () => {
     alertSourceRetry();

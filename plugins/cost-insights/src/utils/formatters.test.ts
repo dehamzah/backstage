@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,11 +36,7 @@ describe('date formatters', () => {
 
   it('Correctly formats values to two significant digits', () => {
     const values = [
-      0.00000040925,
-      0.21,
-      0.0000004,
-      0.4139877878,
-      0.00000234566,
+      0.00000040925, 0.21, 0.0000004, 0.4139877878, 0.00000234566,
     ];
     const formattedValues = values.map(val =>
       lengthyCurrencyFormatter.format(val),

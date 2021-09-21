@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,8 @@ describe('entitySchemaValidator', () => {
         generation: 13,
         name: 'test',
         namespace: 'ns',
+        title: 'My Component, Yay',
+        description: 'Yeah this is probably the best component so far',
         labels: {
           'backstage.io/custom': 'ValueStuff',
         },
@@ -190,6 +192,21 @@ describe('entitySchemaValidator', () => {
   it('rejects bad namespace type', () => {
     entity.metadata.namespace = 7;
     expect(() => validator(entity)).toThrow(/namespace/);
+  });
+
+  it('accepts missing title', () => {
+    delete entity.metadata.title;
+    expect(() => validator(entity)).not.toThrow();
+  });
+
+  it('rejects bad title type', () => {
+    entity.metadata.title = 7;
+    expect(() => validator(entity)).toThrow(/title/);
+  });
+
+  it('rejects empty title', () => {
+    entity.metadata.title = '';
+    expect(() => validator(entity)).toThrow(/title/);
   });
 
   it('accepts missing description', () => {

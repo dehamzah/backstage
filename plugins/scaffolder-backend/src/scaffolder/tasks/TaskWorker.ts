@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,12 +27,14 @@ import { parseRepoUrl } from '../actions/builtin/publish/util';
 import { TemplateActionRegistry } from '../actions/TemplateActionRegistry';
 import { isTruthy } from './helper';
 import { Task, TaskBroker } from './types';
+import { ScmIntegrations } from '@backstage/integration';
 
 type Options = {
   logger: Logger;
   taskBroker: TaskBroker;
   workingDirectory: string;
   actionRegistry: TemplateActionRegistry;
+  integrations: ScmIntegrations;
 };
 
 export class TaskWorker {
@@ -45,12 +47,19 @@ export class TaskWorker {
     // scary right now, so we're going to lock it off like the component API is
     // in the frontend until we can work out a nice way to do it.
     this.handlebars.registerHelper('parseRepoUrl', repoUrl => {
-      return JSON.stringify(parseRepoUrl(repoUrl));
+      return JSON.stringify(parseRepoUrl(repoUrl, options.integrations));
+    });
+
+    this.handlebars.registerHelper('projectSlug', repoUrl => {
+      const { owner, repo } = parseRepoUrl(repoUrl, options.integrations);
+      return `${owner}/${repo}`;
     });
 
     this.handlebars.registerHelper('json', obj => JSON.stringify(obj));
 
     this.handlebars.registerHelper('not', value => !isTruthy(value));
+
+    this.handlebars.registerHelper('eq', (a, b) => a === b);
   }
 
   start() {
@@ -170,11 +179,6 @@ export class TaskWorker {
                   preventIndent: true,
                 })(templateCtx);
 
-                // If it's just an empty string, treat it as undefined
-                if (templated === '') {
-                  return undefined;
-                }
-
                 // If it smells like a JSON object then give it a parse as an object and if it fails return the string
                 if (
                   (templated.startsWith('"') && templated.endsWith('"')) ||
@@ -212,6 +216,10 @@ export class TaskWorker {
 
           // Keep track of all tmp dirs that are created by the action so we can remove them after
           const tmpDirs = new Array<string>();
+
+          this.options.logger.debug(`Running ${action.id} with input`, {
+            input: JSON.stringify(input, null, 2),
+          });
 
           await action.handler({
             baseUrl: task.spec.baseUrl,

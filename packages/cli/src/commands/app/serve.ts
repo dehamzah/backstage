@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,6 +59,7 @@ export default async (cmd: Command) => {
     ...(await loadCliConfig({
       args: cmd.config,
       fromPackage: name,
+      withFilteredKeys: true,
     })),
   });
 

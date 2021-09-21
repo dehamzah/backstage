@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,12 +70,8 @@ type Props = {
   fixed?: boolean;
 };
 
-export const DismissableBanner = ({
-  variant,
-  message,
-  id,
-  fixed = false,
-}: Props) => {
+export const DismissableBanner = (props: Props) => {
+  const { variant, message, id, fixed = false } = props;
   const classes = useStyles();
   const storageApi = useApi(storageApiRef);
   const notificationsStore = storageApi.forBucket('notifications');

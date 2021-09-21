@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import {
   makeStyles,
 } from '@material-ui/core';
 import classNames from 'classnames';
-import { ErrorBoundary } from '../ErrorBoundary';
+import { ErrorBoundary, ErrorBoundaryProps } from '../ErrorBoundary';
 import { BottomLink, BottomLinkProps } from '../BottomLink';
 
 const useStyles = makeStyles(theme => ({
@@ -37,7 +37,6 @@ const useStyles = makeStyles(theme => ({
     },
   },
   header: {
-    display: 'inline-block',
     padding: theme.spacing(2, 2, 2, 2.5),
   },
   headerTitle: {
@@ -92,11 +91,11 @@ export type InfoCardVariants = 'flex' | 'fullHeight' | 'gridItem';
 /**
  * InfoCard is used to display a paper-styled block on the screen, similar to a panel.
  *
- * You can custom style an InfoCard with the 'style' (outer container) and 'cardStyle' (inner container)
- * styles.
+ * You can custom style an InfoCard with the 'className' (outer container) and 'cardClassName' (inner container)
+ * props. This is typically used with the material-ui makeStyles mechanism.
  *
- * The InfoCard serves as an error boundary. As a result, if you provide a 'slackChannel' property this
- * specifies the channel to display in the error component that is displayed if an error occurs
+ * The InfoCard serves as an error boundary. As a result, if you provide an 'errorBoundaryProps' property this
+ * specifies the extra information to display in the error component that is displayed if an error occurs
  * in any descendent components.
  *
  * By default the InfoCard has no custom layout of its children, but is treated as a block element. A
@@ -112,13 +111,14 @@ type Props = {
   subheader?: ReactNode;
   divider?: boolean;
   deepLink?: BottomLinkProps;
+  /** @deprecated Use errorBoundaryProps instead */
   slackChannel?: string;
+  errorBoundaryProps?: ErrorBoundaryProps;
   variant?: InfoCardVariants;
-  style?: object;
-  cardStyle?: object;
   children?: ReactNode;
   headerStyle?: object;
   headerProps?: CardHeaderProps;
+  action?: ReactNode;
   actionsClassName?: string;
   actions?: ReactNode;
   cardClassName?: string;
@@ -128,24 +128,27 @@ type Props = {
   titleTypographyProps?: object;
 };
 
-export const InfoCard = ({
-  title,
-  subheader,
-  divider = true,
-  deepLink,
-  slackChannel = '#backstage',
-  variant,
-  children,
-  headerStyle,
-  headerProps,
-  actionsClassName,
-  actions,
-  cardClassName,
-  actionsTopRight,
-  className,
-  noPadding,
-  titleTypographyProps,
-}: Props): JSX.Element => {
+export function InfoCard(props: Props): JSX.Element {
+  const {
+    title,
+    subheader,
+    divider = true,
+    deepLink,
+    slackChannel,
+    errorBoundaryProps,
+    variant,
+    children,
+    headerStyle,
+    headerProps,
+    action,
+    actionsClassName,
+    actions,
+    cardClassName,
+    actionsTopRight,
+    className,
+    noPadding,
+    titleTypographyProps,
+  } = props;
   const classes = useStyles();
   /**
    * If variant is specified, we build up styles for that particular variant for both
@@ -169,9 +172,12 @@ export const InfoCard = ({
     });
   }
 
+  const errProps: ErrorBoundaryProps =
+    errorBoundaryProps || (slackChannel ? { slackChannel } : {});
+
   return (
     <Card style={calculatedStyle} className={className}>
-      <ErrorBoundary slackChannel={slackChannel}>
+      <ErrorBoundary {...errProps}>
         {title && (
           <CardHeader
             classes={{
@@ -184,6 +190,7 @@ export const InfoCard = ({
             }}
             title={title}
             subheader={subheader}
+            action={action}
             style={{ ...headerStyle }}
             titleTypographyProps={titleTypographyProps}
             {...headerProps}
@@ -208,4 +215,4 @@ export const InfoCard = ({
       </ErrorBoundary>
     </Card>
   );
-};
+}

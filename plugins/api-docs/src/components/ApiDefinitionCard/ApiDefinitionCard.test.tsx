@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 
 import { ApiEntity } from '@backstage/catalog-model';
-import { ApiProvider, ApiRegistry } from '@backstage/core';
 import { EntityProvider } from '@backstage/plugin-catalog-react';
 import { renderInTestApp } from '@backstage/test-utils';
 import { waitFor } from '@testing-library/react';
@@ -23,6 +22,7 @@ import React from 'react';
 import { ApiDocsConfig, apiDocsConfigRef } from '../../config';
 import { OpenApiDefinitionWidget } from '../OpenApiDefinitionWidget';
 import { ApiDefinitionCard } from './ApiDefinitionCard';
+import { ApiProvider, ApiRegistry } from '@backstage/core-app-api';
 
 describe('<ApiDefinitionCard />', () => {
   const apiDocsConfig: jest.Mocked<ApiDocsConfig> = {
@@ -111,7 +111,7 @@ paths:
       },
     };
 
-    const { getByText } = await renderInTestApp(
+    const { getByText, getAllByText } = await renderInTestApp(
       <Wrapper>
         <EntityProvider entity={apiEntity}>
           <ApiDefinitionCard />
@@ -121,6 +121,10 @@ paths:
 
     expect(getByText(/my-name/i)).toBeInTheDocument();
     expect(getByText(/custom-type/i)).toBeInTheDocument();
-    expect(getByText(/Custom Definition/i)).toBeInTheDocument();
+    expect(
+      getAllByText(
+        (_text, element) => element?.textContent === 'Custom Definition',
+      ).length,
+    ).toBeGreaterThan(0);
   });
 });

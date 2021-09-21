@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,9 +51,8 @@ export const CostOverviewCard = ({
   const styles = useOverviewTabsStyles(theme);
   const config = useConfig();
   const [tabIndex, setTabIndex] = useState(0);
-  const { setDuration, setProject, setMetric, ...filters } = useFilters(
-    mapFiltersToProps,
-  );
+  const { setDuration, setProject, setMetric, ...filters } =
+    useFilters(mapFiltersToProps);
 
   // Reset tabIndex if breakdowns available change
   useEffect(() => {

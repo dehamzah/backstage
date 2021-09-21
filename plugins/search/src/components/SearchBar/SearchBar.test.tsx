@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,29 +17,38 @@
 import React from 'react';
 import { screen, render, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useApi } from '@backstage/core';
-
 import { SearchContextProvider } from '../SearchContext';
-import { SearchBar } from './SearchBar';
 
-jest.mock('@backstage/core', () => ({
-  ...jest.requireActual('@backstage/core'),
-  useApi: jest.fn().mockReturnValue({}),
+import { SearchBar } from './SearchBar';
+import { configApiRef } from '@backstage/core-plugin-api';
+import {
+  ApiProvider,
+  ApiRegistry,
+  ConfigReader,
+} from '@backstage/core-app-api';
+import { searchApiRef } from '../../apis';
+
+jest.mock('@backstage/core-plugin-api', () => ({
+  ...jest.requireActual('@backstage/core-plugin-api'),
 }));
 
 describe('SearchBar', () => {
   const initialState = {
     term: '',
-    pageCursor: '',
     filters: {},
     types: ['*'],
+    pageCursor: '',
   };
 
-  const name = 'Search term';
-  const term = 'term';
-
   const query = jest.fn().mockResolvedValue({});
-  (useApi as jest.Mock).mockReturnValue({ query });
+
+  const apiRegistry = ApiRegistry.from([
+    [configApiRef, new ConfigReader({ app: { title: 'Mock title' } })],
+    [searchApiRef, { query }],
+  ]);
+
+  const name = 'Search';
+  const term = 'term';
 
   afterAll(() => {
     jest.resetAllMocks();
@@ -47,9 +56,11 @@ describe('SearchBar', () => {
 
   it('Renders without exploding', async () => {
     render(
-      <SearchContextProvider initialState={initialState}>
-        <SearchBar />
-      </SearchContextProvider>,
+      <ApiProvider apis={apiRegistry}>
+        <SearchContextProvider initialState={initialState}>
+          <SearchBar />
+        </SearchContextProvider>
+      </ApiProvider>,
     );
 
     await waitFor(() => {
@@ -59,9 +70,12 @@ describe('SearchBar', () => {
 
   it('Renders based on initial search', async () => {
     render(
-      <SearchContextProvider initialState={{ ...initialState, term }}>
-        <SearchBar />
-      </SearchContextProvider>,
+      <ApiProvider apis={apiRegistry}>
+        <SearchContextProvider initialState={{ ...initialState, term }}>
+          <SearchBar />
+        </SearchContextProvider>
+        ,
+      </ApiProvider>,
     );
 
     await waitFor(() => {
@@ -71,9 +85,12 @@ describe('SearchBar', () => {
 
   it('Updates term state when text is entered', async () => {
     render(
-      <SearchContextProvider initialState={initialState}>
-        <SearchBar />
-      </SearchContextProvider>,
+      <ApiProvider apis={apiRegistry}>
+        <SearchContextProvider initialState={initialState}>
+          <SearchBar />
+        </SearchContextProvider>
+        ,
+      </ApiProvider>,
     );
 
     const textbox = screen.getByRole('textbox', { name });
@@ -93,16 +110,18 @@ describe('SearchBar', () => {
 
   it('Clear button clears term state', async () => {
     render(
-      <SearchContextProvider initialState={{ ...initialState, term }}>
-        <SearchBar />
-      </SearchContextProvider>,
+      <ApiProvider apis={apiRegistry}>
+        <SearchContextProvider initialState={{ ...initialState, term }}>
+          <SearchBar />
+        </SearchContextProvider>
+      </ApiProvider>,
     );
 
     await waitFor(() => {
       expect(screen.getByRole('textbox', { name })).toHaveValue(term);
     });
 
-    userEvent.click(screen.getByRole('button', { name: 'Clear term' }));
+    userEvent.click(screen.getByRole('button', { name: 'Clear' }));
 
     await waitFor(() => {
       expect(screen.getByRole('textbox', { name })).toHaveValue('');
@@ -119,9 +138,12 @@ describe('SearchBar', () => {
     const debounceTime = 600;
 
     render(
-      <SearchContextProvider initialState={initialState}>
-        <SearchBar debounceTime={debounceTime} />
-      </SearchContextProvider>,
+      <ApiProvider apis={apiRegistry}>
+        <SearchContextProvider initialState={initialState}>
+          <SearchBar debounceTime={debounceTime} />
+        </SearchContextProvider>
+        ,
+      </ApiProvider>,
     );
 
     await waitFor(() => {

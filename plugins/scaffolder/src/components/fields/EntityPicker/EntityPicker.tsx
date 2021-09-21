@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { useApi } from '@backstage/core';
+import { useApi } from '@backstage/core-plugin-api';
 import {
   catalogApiRef,
   formatEntityRefTitle,
@@ -32,6 +32,7 @@ export const EntityPicker = ({
   uiSchema,
   rawErrors,
   formData,
+  idSchema,
 }: FieldProps<string>) => {
   const allowedKinds = uiSchema['ui:options']?.allowedKinds as string[];
   const defaultKind = uiSchema['ui:options']?.defaultKind as string | undefined;
@@ -58,6 +59,7 @@ export const EntityPicker = ({
       error={rawErrors?.length > 0 && !formData}
     >
       <Autocomplete
+        id={idSchema?.$id}
         value={(formData as string) || ''}
         loading={loading}
         onChange={onSelect}

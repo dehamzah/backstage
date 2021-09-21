@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,9 +38,10 @@ function useCalloutStates(): {
   return { states, setState };
 }
 
-function useCalloutHasBeenSeen(
-  featureId: string,
-): { seen: boolean | undefined; markSeen: () => void } {
+function useCalloutHasBeenSeen(featureId: string): {
+  seen: boolean | undefined;
+  markSeen: () => void;
+} {
   const { states, setState } = useCalloutStates();
 
   const markSeen = useCallback(() => {
@@ -50,9 +51,10 @@ function useCalloutHasBeenSeen(
   return { seen: states[featureId] === true, markSeen };
 }
 
-export function useShowCallout(
-  featureId: string,
-): { show: boolean; hide: () => void } {
+export function useShowCallout(featureId: string): {
+  show: boolean;
+  hide: () => void;
+} {
   const { seen, markSeen } = useCalloutHasBeenSeen(featureId);
   return { show: seen === false, hide: markSeen };
 }

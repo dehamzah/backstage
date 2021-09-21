@@ -8,6 +8,8 @@
       "overview/background",
       "overview/adopting",
       "overview/stability-index",
+      "overview/support",
+      "overview/glossary",
       "overview/logos"
     ],
     "Getting Started": [
@@ -24,7 +26,8 @@
       },
       "getting-started/keeping-backstage-updated",
       "getting-started/concepts",
-      "getting-started/contributors"
+      "getting-started/contributors",
+      "getting-started/project-structure"
     ],
     "CLI": ["cli/index", "cli/commands"],
     "Core Features": [
@@ -33,7 +36,7 @@
         "label": "Software Catalog",
         "ids": [
           "features/software-catalog/software-catalog-overview",
-          "features/software-catalog/installation",
+          "features/software-catalog/life-of-an-entity",
           "features/software-catalog/configuration",
           "features/software-catalog/system-model",
           "features/software-catalog/descriptor-format",
@@ -62,11 +65,12 @@
         "label": "Software Templates",
         "ids": [
           "features/software-templates/software-templates-index",
-          "features/software-templates/installation",
+          "features/software-templates/configuration",
           "features/software-templates/adding-templates",
           "features/software-templates/writing-templates",
           "features/software-templates/builtin-actions",
           "features/software-templates/writing-custom-actions",
+          "features/software-templates/writing-custom-field-extensions",
           "features/software-templates/template-legacy",
           "features/software-templates/migrating-from-v1alpha1-to-v1beta2"
         ]
@@ -78,7 +82,8 @@
           "features/search/search-overview",
           "features/search/getting-started",
           "features/search/concepts",
-          "features/search/architecture"
+          "features/search/architecture",
+          "features/search/search-engines"
         ]
       },
       {
@@ -103,8 +108,16 @@
       "integrations/index",
       {
         "type": "subcategory",
-        "label": "Azure DevOps",
-        "ids": ["integrations/azure/locations"]
+        "label": "AWS S3",
+        "ids": [
+          "integrations/aws-s3/locations",
+          "integrations/aws-s3/discovery"
+        ]
+      },
+      {
+        "type": "subcategory",
+        "label": "Azure",
+        "ids": ["integrations/azure/locations", "integrations/azure/org"]
       },
       {
         "type": "subcategory",
@@ -155,7 +168,7 @@
       "plugins/create-a-plugin",
       "plugins/plugin-development",
       "plugins/structure-of-a-plugin",
-      "plugins/integrating-plugin-into-service-catalog",
+      "plugins/integrating-plugin-into-software-catalog",
       "plugins/composability",
       {
         "type": "subcategory",
@@ -164,7 +177,8 @@
           "plugins/proxying",
           "plugins/backend-plugin",
           "plugins/call-existing-api",
-          "plugins/github-apps"
+          "plugins/github-apps",
+          "plugins/url-reader"
         ]
       },
       {
@@ -206,6 +220,7 @@
       },
       "auth/add-auth-provider",
       "auth/using-auth",
+      "auth/identity-resolver",
       "auth/auth-backend",
       "auth/oauth",
       "auth/auth-backend-classes",
@@ -223,26 +238,23 @@
       "dls/contributing-to-storybook",
       "dls/figma"
     ],
-    "API references": [
+    "API Reference": [
       {
         "type": "subcategory",
-        "label": "TypeScript API",
-        "ids": [
-          "api/utility-apis",
-          "reference/utility-apis/README",
-          "reference/createPlugin",
-          "reference/createPlugin-feature-flags"
-        ]
+        "label": "Guides",
+        "ids": ["api/utility-apis"]
       },
       {
         "type": "subcategory",
-        "label": "Backend APIs",
-        "ids": ["api/backend"]
+        "label": "API Reference",
+        "ids": ["reference/index"]
       }
     ],
     "Tutorials": [
       "tutorials/journey",
       "tutorials/quickstart-app-plugin",
+      "tutorials/migrating-away-from-core",
+      "tutorials/configuring-plugin-databases",
       "tutorials/switching-sqlite-postgres"
     ],
     "Architecture Decision Records (ADRs)": [
@@ -259,8 +271,6 @@
       "architecture-decisions/adrs-adr010",
       "architecture-decisions/adrs-adr011"
     ],
-    "Support": ["support/support", "support/project-structure"],
-    "Glossary": ["glossary"],
     "FAQ": ["FAQ"]
   }
 }

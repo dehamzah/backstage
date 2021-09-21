@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,11 +47,8 @@ const useStyles = makeStyles<BackstageTheme>(theme => ({
   },
 }));
 
-export const ErrorPage = ({
-  status,
-  statusMessage,
-  additionalInfo,
-}: IErrorPageProps) => {
+export function ErrorPage(props: IErrorPageProps) {
+  const { status, statusMessage, additionalInfo } = props;
   const classes = useStyles();
   const navigate = useNavigate();
   const support = useSupportConfig();
@@ -82,4 +79,4 @@ export const ErrorPage = ({
       </Grid>
     </Grid>
   );
-};
+}

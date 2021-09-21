@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
+import { useElementFilter } from '@backstage/core-plugin-api';
+import { Grid, makeStyles, Typography } from '@material-ui/core';
 import React from 'react';
-import { makeStyles, Typography, Grid } from '@material-ui/core';
 
 const useStyles = makeStyles(theme => ({
   value: {
@@ -45,14 +46,17 @@ type Props = {
 export const AboutField = ({ label, value, gridSizes, children }: Props) => {
   const classes = useStyles();
 
+  const childElements = useElementFilter(children, c => c.getElements());
+
   // Content is either children or a string prop `value`
-  const content = React.Children.count(children) ? (
-    children
-  ) : (
-    <Typography variant="body2" className={classes.value}>
-      {value || `unknown`}
-    </Typography>
-  );
+  const content =
+    childElements.length > 0 ? (
+      childElements
+    ) : (
+      <Typography variant="body2" className={classes.value}>
+        {value || `unknown`}
+      </Typography>
+    );
   return (
     <Grid item {...gridSizes}>
       <Typography variant="subtitle2" className={classes.label}>

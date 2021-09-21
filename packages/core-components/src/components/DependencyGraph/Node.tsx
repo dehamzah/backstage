@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,10 +46,8 @@ export function Node({
   React.useLayoutEffect(() => {
     // set the node width to the actual rendered width to properly layout graph
     if (nodeRef.current) {
-      let {
-        height: renderedHeight,
-        width: renderedWidth,
-      } = nodeRef.current.getBBox();
+      let { height: renderedHeight, width: renderedWidth } =
+        nodeRef.current.getBBox();
       renderedHeight = Math.round(renderedHeight);
       renderedWidth = Math.round(renderedWidth);
 

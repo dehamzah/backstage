@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,4 +16,10 @@
 
 export { mergeConfigSchemas } from './compile';
 export { loadConfigSchema } from './load';
-export type { ConfigSchema, ConfigVisibility } from './types';
+export type { LoadConfigSchemaOptions } from './load';
+export type {
+  ConfigSchema,
+  ConfigVisibility,
+  ConfigSchemaProcessingOptions,
+  TransformFunc,
+} from './types';

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,15 +19,12 @@ import {
   AddLocationRequest,
   AddLocationResponse,
   CatalogApi,
+  CatalogClient,
   CatalogEntitiesRequest,
   CatalogListResponse,
-  CatalogClient,
+  CatalogRequestOptions,
 } from '@backstage/catalog-client';
-import { IdentityApi } from '@backstage/core';
-
-type CatalogRequestOptions = {
-  token?: string;
-};
+import { IdentityApi } from '@backstage/core-plugin-api';
 
 /**
  * CatalogClient wrapper that injects identity token for all requests
@@ -109,6 +106,15 @@ export class CatalogClientWrapper implements CatalogApi {
     options?: CatalogRequestOptions,
   ): Promise<void> {
     return await this.client.removeEntityByUid(uid, {
+      token: options?.token ?? (await this.identityApi.getIdToken()),
+    });
+  }
+
+  async refreshEntity(
+    entityRef: string,
+    options?: CatalogRequestOptions,
+  ): Promise<void> {
+    return await this.client.refreshEntity(entityRef, {
       token: options?.token ?? (await this.identityApi.getIdToken()),
     });
   }

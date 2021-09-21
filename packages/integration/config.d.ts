@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -163,5 +163,30 @@ export interface Config {
        */
       privateKey?: string;
     };
+
+    /** Integration configuration for AWS S3 Service */
+    awsS3?: Array<{
+      /**
+       * The host of the target that this matches on, e.g. "amazonaws.com".
+       * @visibility frontend
+       */
+      host: string;
+      /**
+       * Account access key used to authenticate requests.
+       * @visibility backend
+       */
+      accessKeyId?: string;
+      /**
+       * Account secret key used to authenticate requests.
+       * @visibility secret
+       */
+      secretAccessKey?: string;
+
+      /**
+       * ARN of the role to be assumed
+       * @visibility backend
+       */
+      roleArn?: string;
+    }>;
   };
 }

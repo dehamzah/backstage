@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,7 +62,10 @@ module.exports = {
       { vars: 'all', args: 'after-used', ignoreRestSiblings: true },
     ],
     // Avoid cross-package imports
-    'no-restricted-imports': [2, { patterns: ['**/../../**/*/src/**'] }],
+    'no-restricted-imports': [
+      2,
+      { patterns: ['**/../../**/*/src/**', '**/../../**/*/src'] },
+    ],
     // Avoid default import from winston as it breaks at runtime
     'no-restricted-syntax': [
       'error',

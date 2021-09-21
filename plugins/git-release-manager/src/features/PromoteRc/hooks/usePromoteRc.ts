@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,12 @@
 
 import { useState, useEffect } from 'react';
 import { useAsync, useAsyncFn } from 'react-use';
-import { useApi } from '@backstage/core';
+import {
+  CardHook,
+  ComponentConfig,
+  PromoteRcOnSuccessArgs,
+} from '../../../types/types';
 
-import { CardHook, ComponentConfigPromoteRc } from '../../../types/types';
 import { GetLatestReleaseResult } from '../../../api/GitReleaseClient';
 import { gitReleaseManagerApiRef } from '../../../api/serviceApiRef';
 import { GitReleaseManagerError } from '../../../errors/GitReleaseManagerError';
@@ -26,27 +29,24 @@ import { TAG_OBJECT_MESSAGE } from '../../../constants/constants';
 import { useProjectContext } from '../../../contexts/ProjectContext';
 import { useResponseSteps } from '../../../hooks/useResponseSteps';
 import { useUserContext } from '../../../contexts/UserContext';
+import { useApi } from '@backstage/core-plugin-api';
 
-interface PromoteRc {
+export interface UsePromoteRc {
   rcRelease: NonNullable<GetLatestReleaseResult['latestRelease']>;
   releaseVersion: string;
-  onSuccess?: ComponentConfigPromoteRc['onSuccess'];
+  onSuccess?: ComponentConfig<PromoteRcOnSuccessArgs>['onSuccess'];
 }
 
 export function usePromoteRc({
   rcRelease,
   releaseVersion,
   onSuccess,
-}: PromoteRc): CardHook<void> {
+}: UsePromoteRc): CardHook<void> {
   const pluginApiClient = useApi(gitReleaseManagerApiRef);
   const { user } = useUserContext();
   const { project } = useProjectContext();
-  const {
-    responseSteps,
-    addStepToResponseSteps,
-    asyncCatcher,
-    abortIfError,
-  } = useResponseSteps();
+  const { responseSteps, addStepToResponseSteps, asyncCatcher, abortIfError } =
+    useResponseSteps();
 
   /**
    * (1) Fetch most recent release branch commit
@@ -170,12 +170,16 @@ export function usePromoteRc({
 
       try {
         await onSuccess?.({
-          gitReleaseUrl: promotedReleaseRes.value.htmlUrl,
+          input: {
+            rcRelease,
+            releaseVersion,
+          },
           gitReleaseName: promotedReleaseRes.value.name,
-          previousTagUrl: rcRelease.htmlUrl,
+          gitReleaseUrl: promotedReleaseRes.value.htmlUrl,
           previousTag: rcRelease.tagName,
-          updatedTagUrl: promotedReleaseRes.value.htmlUrl,
+          previousTagUrl: rcRelease.htmlUrl,
           updatedTag: promotedReleaseRes.value.tagName,
+          updatedTagUrl: promotedReleaseRes.value.htmlUrl,
         });
       } catch (error) {
         asyncCatcher(error);

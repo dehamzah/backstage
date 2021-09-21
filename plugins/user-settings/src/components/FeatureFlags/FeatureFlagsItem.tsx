@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,12 @@
 import React from 'react';
 import {
   ListItem,
-  ListItemSecondaryAction,
   ListItemText,
+  ListItemIcon,
   Switch,
   Tooltip,
 } from '@material-ui/core';
-import { FeatureFlag } from '@backstage/core';
+import { FeatureFlag } from '@backstage/core-plugin-api';
 
 type Props = {
   flag: FeatureFlag;
@@ -31,20 +31,15 @@ type Props = {
 };
 
 export const FlagItem = ({ flag, enabled, toggleHandler }: Props) => (
-  <ListItem>
+  <ListItem divider button onClick={() => toggleHandler(flag.name)}>
+    <ListItemIcon>
+      <Tooltip placement="top" arrow title={enabled ? 'Disable' : 'Enable'}>
+        <Switch color="primary" checked={enabled} name={flag.name} />
+      </Tooltip>
+    </ListItemIcon>
     <ListItemText
       primary={flag.name}
       secondary={`Registered in ${flag.pluginId} plugin`}
     />
-    <ListItemSecondaryAction>
-      <Tooltip placement="top" arrow title={enabled ? 'Disable' : 'Enable'}>
-        <Switch
-          color="primary"
-          checked={enabled}
-          onChange={() => toggleHandler(flag.name)}
-          name={flag.name}
-        />
-      </Tooltip>
-    </ListItemSecondaryAction>
   </ListItem>
 );

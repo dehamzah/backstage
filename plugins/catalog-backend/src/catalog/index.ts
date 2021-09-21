@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,4 +16,15 @@
 
 export { DatabaseEntitiesCatalog } from './DatabaseEntitiesCatalog';
 export { DatabaseLocationsCatalog } from './DatabaseLocationsCatalog';
-export type { EntitiesCatalog, LocationsCatalog } from './types';
+export type {
+  EntitiesCatalog,
+  LocationsCatalog,
+  EntityUpsertRequest,
+  EntityUpsertResponse,
+  EntitiesRequest,
+  EntitiesResponse,
+  LocationResponse,
+  PageInfo,
+  LocationUpdateLogEvent,
+  LocationUpdateStatus,
+} from './types';

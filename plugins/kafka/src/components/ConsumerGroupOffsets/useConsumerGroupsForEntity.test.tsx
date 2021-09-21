@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import { Entity } from '@backstage/catalog-model';
-import { EntityContext } from '@backstage/plugin-catalog-react';
+import { EntityProvider } from '@backstage/plugin-catalog-react';
 import { renderHook } from '@testing-library/react-hooks';
 import React, { PropsWithChildren } from 'react';
 import { useConsumerGroupsForEntity } from './useConsumerGroupsForEntity';
@@ -23,11 +23,7 @@ describe('useConsumerGroupOffsets', () => {
   let entity: Entity;
 
   const wrapper = ({ children }: PropsWithChildren<{}>) => {
-    return (
-      <EntityContext.Provider value={{ entity: entity, loading: false }}>
-        {children}
-      </EntityContext.Provider>
-    );
+    return <EntityProvider entity={entity}>{children}</EntityProvider>;
   };
 
   const subject = () => renderHook(useConsumerGroupsForEntity, { wrapper });

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 import { EntityPicker } from '../components/fields/EntityPicker';
+import {
+  EntityNamePicker,
+  entityNamePickerValidation,
+} from '../components/fields/EntityNamePicker';
 import { OwnerPicker } from '../components/fields/OwnerPicker';
 import {
   repoPickerValidation,
@@ -25,6 +29,11 @@ export const DEFAULT_SCAFFOLDER_FIELD_EXTENSIONS: FieldExtensionOptions[] = [
   {
     component: EntityPicker,
     name: 'EntityPicker',
+  },
+  {
+    component: EntityNamePicker,
+    name: 'EntityNamePicker',
+    validation: entityNamePickerValidation,
   },
   {
     component: RepoUrlPicker,

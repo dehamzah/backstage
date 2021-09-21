@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,8 +37,7 @@ describe('AwsOrganizationCloudAccountProcessor', () => {
             return {
               Accounts: [
                 {
-                  Arn:
-                    'arn:aws:organizations::192594491037:account/o-1vl18kc5a3/957140518395',
+                  Arn: 'arn:aws:organizations::192594491037:account/o-1vl18kc5a3/957140518395',
                   Name: 'testaccount',
                 },
               ],
@@ -83,13 +82,11 @@ describe('AwsOrganizationCloudAccountProcessor', () => {
             return {
               Accounts: [
                 {
-                  Arn:
-                    'arn:aws:organizations::192594491037:account/o-1vl18kc5a3/957140518395',
+                  Arn: 'arn:aws:organizations::192594491037:account/o-1vl18kc5a3/957140518395',
                   Name: 'testaccount',
                 },
                 {
-                  Arn:
-                    'arn:aws:organizations::192594491037:account/o-zzzzzzzzz/957140518395',
+                  Arn: 'arn:aws:organizations::192594491037:account/o-zzzzzzzzz/957140518395',
                   Name: 'testaccount2',
                 },
               ],

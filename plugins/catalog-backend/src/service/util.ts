@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,7 @@ export async function validateRequestBody<T>(
     throw new InputError(`Malformed request: ${e}`);
   }
 
-  return (body as unknown) as T;
+  return body as unknown as T;
 }
 
 export function disallowReadonlyMode(readonly: boolean) {

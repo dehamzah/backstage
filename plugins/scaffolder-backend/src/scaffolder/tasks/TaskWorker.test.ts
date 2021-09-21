@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,18 @@
  * limitations under the License.
  */
 
-import {
-  getVoidLogger,
-  SingleConnectionDatabaseManager,
-} from '@backstage/backend-common';
-import { ConfigReader, JsonObject } from '@backstage/config';
 import os from 'os';
+import { getVoidLogger, DatabaseManager } from '@backstage/backend-common';
+import { ConfigReader, JsonObject } from '@backstage/config';
 import { createTemplateAction, TemplateActionRegistry } from '../actions';
 import { RepoSpec } from '../actions/builtin/publish/util';
 import { DatabaseTaskStore } from './DatabaseTaskStore';
 import { StorageTaskBroker } from './StorageTaskBroker';
 import { TaskWorker } from './TaskWorker';
+import { ScmIntegrations } from '@backstage/integration';
 
 async function createStore(): Promise<DatabaseTaskStore> {
-  const manager = SingleConnectionDatabaseManager.fromConfig(
+  const manager = DatabaseManager.fromConfig(
     new ConfigReader({
       backend: {
         database: {
@@ -43,6 +41,14 @@ async function createStore(): Promise<DatabaseTaskStore> {
 describe('TaskWorker', () => {
   let storage: DatabaseTaskStore;
   let actionRegistry = new TemplateActionRegistry();
+
+  const integrations = ScmIntegrations.fromConfig(
+    new ConfigReader({
+      integrations: {
+        github: [{ host: 'github.com', token: 'token' }],
+      },
+    }),
+  );
 
   beforeAll(async () => {
     storage = await createStore();
@@ -68,6 +74,7 @@ describe('TaskWorker', () => {
       workingDirectory: os.tmpdir(),
       actionRegistry,
       taskBroker: broker,
+      integrations,
     });
     const { taskId } = await broker.dispatch({
       steps: [{ id: 'test', name: 'test', action: 'not-found-action' }],
@@ -93,6 +100,7 @@ describe('TaskWorker', () => {
       workingDirectory: os.tmpdir(),
       actionRegistry,
       taskBroker: broker,
+      integrations,
     });
 
     const { taskId } = await broker.dispatch({
@@ -145,6 +153,7 @@ describe('TaskWorker', () => {
       workingDirectory: os.tmpdir(),
       actionRegistry,
       taskBroker: broker,
+      integrations,
     });
 
     const { taskId } = await broker.dispatch({
@@ -180,6 +189,7 @@ describe('TaskWorker', () => {
       workingDirectory: os.tmpdir(),
       actionRegistry,
       taskBroker: broker,
+      integrations,
     });
 
     const { taskId } = await broker.dispatch({
@@ -206,6 +216,40 @@ describe('TaskWorker', () => {
     expect((event?.body?.output as JsonObject).result).toBe('winning');
   });
 
+  it('should execute steps conditionally with eq helper', async () => {
+    const broker = new StorageTaskBroker(storage, logger);
+    const taskWorker = new TaskWorker({
+      logger,
+      workingDirectory: os.tmpdir(),
+      actionRegistry,
+      taskBroker: broker,
+      integrations,
+    });
+
+    const { taskId } = await broker.dispatch({
+      steps: [
+        { id: 'test', name: 'test', action: 'test-action' },
+        {
+          id: 'conditional',
+          name: 'conditional',
+          action: 'test-action',
+          if: '{{ eq steps.test.output.testOutput "winning" }}',
+        },
+      ],
+      output: {
+        result: '{{ steps.conditional.output.testOutput }}',
+      },
+      values: {},
+    });
+
+    const task = await broker.claim();
+    await taskWorker.runOneTask(task);
+
+    const { events } = await storage.listEvents({ taskId });
+    const event = events.find(e => e.type === 'completion');
+    expect((event?.body?.output as JsonObject).result).toBe('winning');
+  });
+
   it('should skip steps conditionally', async () => {
     const broker = new StorageTaskBroker(storage, logger);
     const taskWorker = new TaskWorker({
@@ -213,6 +257,7 @@ describe('TaskWorker', () => {
       workingDirectory: os.tmpdir(),
       actionRegistry,
       taskBroker: broker,
+      integrations,
     });
 
     const { taskId } = await broker.dispatch({
@@ -301,6 +346,7 @@ describe('TaskWorker', () => {
       workingDirectory: os.tmpdir(),
       actionRegistry,
       taskBroker: broker,
+      integrations,
     });
 
     const { taskId } = await broker.dispatch({
@@ -358,6 +404,12 @@ describe('TaskWorker', () => {
                 organization: {
                   type: 'string',
                 },
+                workspace: {
+                  type: 'string',
+                },
+                project: {
+                  type: 'string',
+                },
               },
             },
           },
@@ -366,7 +418,10 @@ describe('TaskWorker', () => {
       async handler(ctx) {
         ctx.output('host', ctx.input.destination.host);
         ctx.output('repo', ctx.input.destination.repo);
-        ctx.output('owner', ctx.input.destination.owner);
+
+        if (ctx.input.destination.owner) {
+          ctx.output('owner', ctx.input.destination.owner);
+        }
 
         if (ctx.input.destination.host !== 'github.com') {
           throw new Error(
@@ -380,7 +435,10 @@ describe('TaskWorker', () => {
           );
         }
 
-        if (ctx.input.destination.owner !== 'owner') {
+        if (
+          ctx.input.destination.owner &&
+          ctx.input.destination.owner !== 'owner'
+        ) {
           throw new Error(
             `expected repo to be "owner" got ${ctx.input.destination.owner}`,
           );
@@ -395,6 +453,7 @@ describe('TaskWorker', () => {
       workingDirectory: os.tmpdir(),
       actionRegistry,
       taskBroker: broker,
+      integrations,
     });
 
     const { taskId } = await broker.dispatch({

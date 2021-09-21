@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 import { Config } from '@backstage/config';
 import * as container from '@google-cloud/container';
-import { ClusterDetails, KubernetesClustersSupplier } from '../types/types';
+import { GKEClusterDetails, KubernetesClustersSupplier } from '../types/types';
 
 type GkeClusterLocatorOptions = {
   projectId: string;
@@ -49,7 +49,7 @@ export class GkeClusterLocator implements KubernetesClustersSupplier {
     );
   }
 
-  async getClusters(): Promise<ClusterDetails[]> {
+  async getClusters(): Promise<GKEClusterDetails[]> {
     const { projectId, region, skipTLSVerify } = this.options;
     const request = {
       parent: `projects/${projectId}/locations/${region}`,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,13 +29,14 @@ import {
   getRootLogger,
   loadBackendConfig,
   notFoundHandler,
-  SingleConnectionDatabaseManager,
+  DatabaseManager,
   SingleHostDiscovery,
   UrlReaders,
   useHotMemoize,
 } from '@backstage/backend-common';
 import { Config } from '@backstage/config';
 import healthcheck from './plugins/healthcheck';
+import { metricsInit, metricsHandler } from './metrics';
 import auth from './plugins/auth';
 import catalog from './plugins/catalog';
 import codeCoverage from './plugins/codecoverage';
@@ -50,6 +51,7 @@ import todo from './plugins/todo';
 import graphql from './plugins/graphql';
 import app from './plugins/app';
 import badges from './plugins/badges';
+import jenkins from './plugins/jenkins';
 import { PluginEnvironment } from './types';
 
 function makeCreateEnv(config: Config) {
@@ -59,7 +61,7 @@ function makeCreateEnv(config: Config) {
 
   root.info(`Created UrlReader ${reader}`);
 
-  const databaseManager = SingleConnectionDatabaseManager.fromConfig(config);
+  const databaseManager = DatabaseManager.fromConfig(config);
   const cacheManager = CacheManager.fromConfig(config);
 
   return (plugin: string): PluginEnvironment => {
@@ -71,9 +73,17 @@ function makeCreateEnv(config: Config) {
 }
 
 async function main() {
+  metricsInit();
+  const logger = getRootLogger();
+
+  logger.info(
+    `You are running an example backend, which is supposed to be mainly used for contributing back to Backstage. ` +
+      `Do NOT deploy this to production. Read more here https://backstage.io/docs/getting-started/`,
+  );
+
   const config = await loadBackendConfig({
     argv: process.argv,
-    logger: getRootLogger(),
+    logger,
   });
   const createEnv = makeCreateEnv(config);
 
@@ -94,6 +104,7 @@ async function main() {
   const graphqlEnv = useHotMemoize(module, () => createEnv('graphql'));
   const appEnv = useHotMemoize(module, () => createEnv('app'));
   const badgesEnv = useHotMemoize(module, () => createEnv('badges'));
+  const jenkinsEnv = useHotMemoize(module, () => createEnv('jenkins'));
 
   const apiRouter = Router();
   apiRouter.use('/catalog', await catalog(catalogEnv));
@@ -109,16 +120,18 @@ async function main() {
   apiRouter.use('/proxy', await proxy(proxyEnv));
   apiRouter.use('/graphql', await graphql(graphqlEnv));
   apiRouter.use('/badges', await badges(badgesEnv));
+  apiRouter.use('/jenkins', await jenkins(jenkinsEnv));
   apiRouter.use(notFoundHandler());
 
   const service = createServiceBuilder(module)
     .loadConfig(config)
     .addRouter('', await healthcheck(healthcheckEnv))
+    .addRouter('', metricsHandler())
     .addRouter('/api', apiRouter)
     .addRouter('', await app(appEnv));
 
   await service.start().catch(err => {
-    console.log(err);
+    logger.error(err);
     process.exit(1);
   });
 }

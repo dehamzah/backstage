@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 /**
  * This is a copy of the core DiscoveryApi, to avoid importing core.
+ *
+ * @public
  */
 export type DiscoveryApi = {
   getBaseUrl(pluginId: string): Promise<string>;

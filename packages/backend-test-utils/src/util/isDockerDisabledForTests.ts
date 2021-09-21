@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+/** @public */
 export function isDockerDisabledForTests() {
   // If we are not running in continuous integration, the default is to skip
   // the (relatively heavy, long running) docker based tests. If you want to

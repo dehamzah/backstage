@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,11 +22,15 @@ import { ZipArchiveResponse } from './ZipArchiveResponse';
 const archiveData = fs.readFileSync(
   resolvePath(__filename, '../../__fixtures__/mock-main.zip'),
 );
+const archiveDataWithExtraDir = fs.readFileSync(
+  resolvePath(__filename, '../../__fixtures__/mock-with-extra-root-dir.zip'),
+);
 
 describe('ZipArchiveResponse', () => {
   beforeEach(() => {
     mockFs({
       '/test-archive.zip': archiveData,
+      '/test-archive-with-extra-root-dir.zip': archiveDataWithExtraDir,
       '/tmp': mockFs.directory(),
     });
   });

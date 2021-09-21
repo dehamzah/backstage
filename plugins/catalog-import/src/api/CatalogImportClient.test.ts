@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 const octokit = {
   repos: {
     get: () => Promise.resolve({ data: { default_branch: 'main' } }),
-    createOrUpdateFileContents: jest.fn().mockImplementation(async () => {}),
+    createOrUpdateFileContents: jest.fn(async () => {}),
   },
   search: {
     code: jest.fn(),
@@ -26,10 +26,10 @@ const octokit = {
     getRef: async () => ({
       data: { object: { sha: 'any' } },
     }),
-    createRef: jest.fn().mockImplementation(async () => {}),
+    createRef: jest.fn(async () => {}),
   },
   pulls: {
-    create: jest.fn().mockImplementation(async () => ({
+    create: jest.fn(async () => ({
       data: {
         html_url: 'http://pull/request/0',
       },
@@ -46,27 +46,18 @@ jest.doMock('@octokit/rest', () => {
   return { Octokit };
 });
 
-// Mock the value to control which integrations are activated
-jest.mock('./GitHub', () => ({
-  getGithubIntegrationConfig: jest.fn(),
-}));
-
-import { ConfigReader, OAuthApi, UrlPatternDiscovery } from '@backstage/core';
-import {
-  GitHubIntegrationConfig,
-  ScmIntegrations,
-} from '@backstage/integration';
+import { ConfigReader, UrlPatternDiscovery } from '@backstage/core-app-api';
+import { OAuthApi } from '@backstage/core-plugin-api';
+import { ScmIntegrations } from '@backstage/integration';
 import { catalogApiRef } from '@backstage/plugin-catalog-react';
 import { msw } from '@backstage/test-utils';
 import { Octokit } from '@octokit/rest';
 import { rest } from 'msw';
 import { setupServer } from 'msw/node';
 import { CatalogImportClient } from './CatalogImportClient';
-import { getGithubIntegrationConfig } from './GitHub';
-
-const server = setupServer();
 
 describe('CatalogImportClient', () => {
+  const server = setupServer();
   msw.setupDefaultHandlers(server);
 
   const mockBaseUrl = 'http://backstage:9191/api/catalog';
@@ -90,7 +81,19 @@ describe('CatalogImportClient', () => {
     },
   };
 
-  const scmIntegrationsApi = ScmIntegrations.fromConfig(new ConfigReader({}));
+  const scmIntegrationsApi = ScmIntegrations.fromConfig(
+    new ConfigReader({
+      integrations: {
+        github: [{ host: 'example.com' }],
+        gitlab: [
+          {
+            host: 'registered-but-not-github.com',
+            apiBaseUrl: 'https://registered-but-not-github.com',
+          },
+        ],
+      },
+    }),
+  );
 
   const catalogApi: jest.Mocked<typeof catalogApiRef.T> = {
     getEntities: jest.fn(),
@@ -101,10 +104,10 @@ describe('CatalogImportClient', () => {
     getLocationByEntity: jest.fn(),
     getLocationById: jest.fn(),
     removeEntityByUid: jest.fn(),
+    refreshEntity: jest.fn(),
   };
 
   let catalogImportClient: CatalogImportClient;
-  let getGithubIntegrationConfigFn: jest.Mock;
 
   beforeEach(() => {
     catalogImportClient = new CatalogImportClient({
@@ -113,10 +116,17 @@ describe('CatalogImportClient', () => {
       scmIntegrationsApi,
       identityApi,
       catalogApi,
+      configApi: new ConfigReader({
+        app: {
+          baseUrl: 'https://demo.backstage.io/',
+        },
+      }),
     });
+  });
 
-    getGithubIntegrationConfigFn = getGithubIntegrationConfig as jest.Mock;
-    getGithubIntegrationConfigFn.mockReset();
+  afterEach(() => {
+    jest.restoreAllMocks();
+    jest.clearAllMocks();
   });
 
   describe('analyzeUrl', () => {
@@ -167,10 +177,119 @@ describe('CatalogImportClient', () => {
       });
     });
 
-    it('should ignore missing github integration', async () => {
+    it('should add yaml location, if url includes query parameter named path=', async () => {
+      catalogApi.addLocation.mockResolvedValueOnce({
+        location: {
+          id: 'id-0',
+          type: 'url',
+          target:
+            'https://dev.azure.com/any-org/any-project/_git/any-repository?path=%2Fcatalog-info.yaml',
+        },
+        entities: [
+          {
+            apiVersion: '1',
+            kind: 'Component',
+            metadata: {
+              name: 'my-entity-1',
+              namespace: 'my-namespace-1',
+            },
+          },
+        ],
+      });
+
       await expect(
         catalogImportClient.analyzeUrl(
-          'https://github.com/backstage/backstage',
+          'https://dev.azure.com/any-org/any-project/_git/any-repository?path=%2Fcatalog-info.yaml',
+        ),
+      ).resolves.toEqual({
+        locations: [
+          {
+            entities: [
+              {
+                kind: 'Component',
+                name: 'my-entity-1',
+                namespace: 'my-namespace-1',
+              },
+            ],
+            target:
+              'https://dev.azure.com/any-org/any-project/_git/any-repository?path=%2Fcatalog-info.yaml',
+          },
+        ],
+        type: 'locations',
+      });
+
+      expect(catalogApi.addLocation).toBeCalledTimes(1);
+      expect(catalogApi.addLocation.mock.calls[0][0]).toEqual({
+        type: 'url',
+        target:
+          'https://dev.azure.com/any-org/any-project/_git/any-repository?path=%2Fcatalog-info.yaml',
+        dryRun: true,
+      });
+    });
+
+    it('should add yaml location, if url includes query parameters', async () => {
+      catalogApi.addLocation.mockResolvedValueOnce({
+        location: {
+          id: 'id-0',
+          type: 'url',
+          target: 'http://example.com/folder/catalog-info.yaml?branch=test',
+        },
+        entities: [
+          {
+            apiVersion: '1',
+            kind: 'Component',
+            metadata: {
+              name: 'my-entity',
+              namespace: 'my-namespace',
+            },
+          },
+        ],
+      });
+
+      await expect(
+        catalogImportClient.analyzeUrl(
+          'http://example.com/folder/catalog-info.yaml?branch=test',
+        ),
+      ).resolves.toEqual({
+        locations: [
+          {
+            entities: [
+              {
+                kind: 'Component',
+                name: 'my-entity',
+                namespace: 'my-namespace',
+              },
+            ],
+            target: 'http://example.com/folder/catalog-info.yaml?branch=test',
+          },
+        ],
+        type: 'locations',
+      });
+
+      expect(catalogApi.addLocation).toBeCalledTimes(1);
+      expect(catalogApi.addLocation.mock.calls[0][0]).toEqual({
+        type: 'url',
+        target: 'http://example.com/folder/catalog-info.yaml?branch=test',
+        dryRun: true,
+      });
+    });
+
+    it('should reject for integrations that are not github ones', async () => {
+      await expect(
+        catalogImportClient.analyzeUrl(
+          'https://registered-but-not-github.com/backstage/backstage',
+        ),
+      ).rejects.toThrow(
+        new Error(
+          'The registered-but-not-github.com integration only supports full URLs to catalog-info.yaml files. Did you try to pass in the URL of a directory instead?',
+        ),
+      );
+    });
+
+    it('should reject when unable to match with any integration', async () => {
+      await expect(
+        catalogImportClient.analyzeUrl(
+          'https://not-registered-as-integration.com/foo/bar',
         ),
       ).rejects.toThrow(
         new Error(
@@ -180,13 +299,7 @@ describe('CatalogImportClient', () => {
     });
 
     it('should find locations from github', async () => {
-      getGithubIntegrationConfigFn.mockReturnValue({
-        repo: 'backstage',
-        owner: 'backstage',
-        githubIntegrationConfig: {} as GitHubIntegrationConfig,
-      });
-
-      ((new Octokit().search.code as any) as jest.Mock).mockResolvedValueOnce({
+      (new Octokit().search.code as any as jest.Mock).mockResolvedValueOnce({
         data: {
           total_count: 2,
           items: [
@@ -242,13 +355,7 @@ describe('CatalogImportClient', () => {
     });
 
     it('should find repository from github', async () => {
-      getGithubIntegrationConfigFn.mockReturnValue({
-        repo: 'backstage',
-        owner: 'backstage',
-        githubIntegrationConfig: {} as GitHubIntegrationConfig,
-      });
-
-      ((new Octokit().search.code as any) as jest.Mock).mockResolvedValueOnce({
+      (new Octokit().search.code as any as jest.Mock).mockResolvedValueOnce({
         data: { total_count: 0, items: [] },
       });
 
@@ -298,14 +405,6 @@ describe('CatalogImportClient', () => {
 
   describe('submitPullRequest', () => {
     it('should create GitHub pull request', async () => {
-      getGithubIntegrationConfigFn.mockReturnValue({
-        repo: 'backstage',
-        owner: 'backstage',
-        githubIntegrationConfig: {
-          host: 'github.com',
-        } as GitHubIntegrationConfig,
-      });
-
       await expect(
         catalogImportClient.submitPullRequest({
           repositoryUrl: 'https://github.com/backstage/backstage',
@@ -320,7 +419,7 @@ describe('CatalogImportClient', () => {
       });
 
       expect(
-        ((new Octokit().git.createRef as any) as jest.Mock).mock.calls[0][0],
+        (new Octokit().git.createRef as any as jest.Mock).mock.calls[0][0],
       ).toEqual({
         owner: 'backstage',
         repo: 'backstage',
@@ -328,7 +427,7 @@ describe('CatalogImportClient', () => {
         sha: 'any',
       });
       expect(
-        ((new Octokit().repos.createOrUpdateFileContents as any) as jest.Mock)
+        (new Octokit().repos.createOrUpdateFileContents as any as jest.Mock)
           .mock.calls[0][0],
       ).toEqual({
         owner: 'backstage',
@@ -339,7 +438,7 @@ describe('CatalogImportClient', () => {
         branch: 'backstage-integration',
       });
       expect(
-        ((new Octokit().pulls.create as any) as jest.Mock).mock.calls[0][0],
+        (new Octokit().pulls.create as any as jest.Mock).mock.calls[0][0],
       ).toEqual({
         owner: 'backstage',
         repo: 'backstage',
@@ -347,6 +446,15 @@ describe('CatalogImportClient', () => {
         head: 'backstage-integration',
         body: 'A body',
         base: 'main',
+      });
+    });
+  });
+
+  describe('preparePullRequest', () => {
+    test('should prepare pull request details', async () => {
+      await expect(catalogImportClient.preparePullRequest()).resolves.toEqual({
+        title: 'Add catalog-info.yaml config file',
+        body: expect.any(String),
       });
     });
   });

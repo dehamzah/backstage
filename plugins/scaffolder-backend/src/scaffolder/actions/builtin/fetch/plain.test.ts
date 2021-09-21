@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,13 +56,12 @@ describe('fetch:plain', () => {
       action.handler({
         ...mockContext,
         input: {
-          url:
-            'https://github.com/backstage/community/tree/main/backstage-community-sessions/assets',
+          url: 'https://github.com/backstage/community/tree/main/backstage-community-sessions/assets',
           targetPath: '/foobar',
         },
       }),
     ).rejects.toThrow(
-      /Fetch action targetPath may not specify a path outside the working directory/,
+      /Relative path is not allowed to refer to a directory outside its parent/,
     );
   });
 
@@ -70,8 +69,7 @@ describe('fetch:plain', () => {
     await action.handler({
       ...mockContext,
       input: {
-        url:
-          'https://github.com/backstage/community/tree/main/backstage-community-sessions/assets',
+        url: 'https://github.com/backstage/community/tree/main/backstage-community-sessions/assets',
         targetPath: 'lol',
       },
     });

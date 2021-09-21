@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ import { Config } from '@backstage/config';
 import { Logger } from 'winston';
 import { parseReferenceAnnotation } from '../../helpers';
 import { DirectoryPreparer } from './dir';
-import { CommonGitPreparer } from './commonGit';
 import { UrlPreparer } from './url';
 import { PreparerBase, PreparerBuilder, RemoteProtocol } from './types';
 
@@ -46,12 +45,6 @@ export class Preparers implements PreparerBuilder {
      */
     const directoryPreparer = new DirectoryPreparer(config, logger, reader);
     preparers.register('dir', directoryPreparer);
-
-    // Common git preparers will be deprecated soon.
-    const commonGitPreparer = new CommonGitPreparer(config, logger);
-    preparers.register('github', commonGitPreparer);
-    preparers.register('gitlab', commonGitPreparer);
-    preparers.register('azure/api', commonGitPreparer);
 
     return preparers;
   }

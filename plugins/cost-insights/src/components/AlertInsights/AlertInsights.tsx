@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,10 +41,10 @@ import { ScrollAnchor } from '../../utils/scroll';
 
 type MapLoadingtoAlerts = (isLoading: boolean) => void;
 
-const mapLoadingToAlerts: MapLoadingToProps<MapLoadingtoAlerts> = ({
-  dispatch,
-}) => (isLoading: boolean) =>
-  dispatch({ [DefaultLoadingAction.CostInsightsAlerts]: isLoading });
+const mapLoadingToAlerts: MapLoadingToProps<MapLoadingtoAlerts> =
+  ({ dispatch }) =>
+  (isLoading: boolean) =>
+    dispatch({ [DefaultLoadingAction.CostInsightsAlerts]: isLoading });
 
 type AlertInsightsProps = {
   group: string;

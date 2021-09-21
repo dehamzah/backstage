@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import { toAbsoluteUrl } from './LocationEntityProcessor';
 describe('LocationEntityProcessor', () => {
   describe('toAbsoluteUrl', () => {
     it('handles files', () => {
-      const integrations = ({} as unknown) as ScmIntegrationRegistry;
+      const integrations = {} as unknown as ScmIntegrationRegistry;
       const base: LocationSpec = {
         type: 'file',
         target: `some${path.sep}path${path.sep}catalog-info.yaml`,

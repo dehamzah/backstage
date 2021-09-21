@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,18 @@
 
 import { CatalogApi } from '@backstage/catalog-client';
 import { EntityName } from '@backstage/catalog-model';
-import { DiscoveryApi, IdentityApi, OAuthApi } from '@backstage/core';
+import {
+  ConfigApi,
+  DiscoveryApi,
+  IdentityApi,
+  OAuthApi,
+} from '@backstage/core-plugin-api';
 import {
   GitHubIntegrationConfig,
   ScmIntegrationRegistry,
 } from '@backstage/integration';
-import { Base64 } from 'js-base64';
 import { Octokit } from '@octokit/rest';
+import { Base64 } from 'js-base64';
 import { PartialEntity } from '../types';
 import { AnalyzeResult, CatalogImportApi } from './CatalogImportApi';
 import { getGithubIntegrationConfig } from './GitHub';
@@ -33,6 +38,7 @@ export class CatalogImportClient implements CatalogImportApi {
   private readonly githubAuthApi: OAuthApi;
   private readonly scmIntegrationsApi: ScmIntegrationRegistry;
   private readonly catalogApi: CatalogApi;
+  private readonly configApi: ConfigApi;
 
   constructor(options: {
     discoveryApi: DiscoveryApi;
@@ -40,16 +46,21 @@ export class CatalogImportClient implements CatalogImportApi {
     identityApi: IdentityApi;
     scmIntegrationsApi: ScmIntegrationRegistry;
     catalogApi: CatalogApi;
+    configApi: ConfigApi;
   }) {
     this.discoveryApi = options.discoveryApi;
     this.githubAuthApi = options.githubAuthApi;
     this.identityApi = options.identityApi;
     this.scmIntegrationsApi = options.scmIntegrationsApi;
     this.catalogApi = options.catalogApi;
+    this.configApi = options.configApi;
   }
 
   async analyzeUrl(url: string): Promise<AnalyzeResult> {
-    if (url.match(/\.ya?ml$/)) {
+    if (
+      new URL(url).pathname.match(/\.ya?ml$/) ||
+      new URL(url).searchParams.get('path')?.match(/.ya?ml$/)
+    ) {
       const location = await this.catalogApi.addLocation({
         type: 'url',
         target: url,
@@ -73,6 +84,12 @@ export class CatalogImportClient implements CatalogImportApi {
 
     const ghConfig = getGithubIntegrationConfig(this.scmIntegrationsApi, url);
     if (!ghConfig) {
+      const other = this.scmIntegrationsApi.byUrl(url);
+      if (other) {
+        throw new Error(
+          `The ${other.title} integration only supports full URLs to catalog-info.yaml files. Did you try to pass in the URL of a directory instead?`,
+        );
+      }
       throw new Error(
         'This URL was not recognized as a valid GitHub URL because there was no configured integration that matched the given host name. You could try to paste the full URL to a catalog-info.yaml file instead.',
       );
@@ -98,6 +115,24 @@ export class CatalogImportClient implements CatalogImportApi {
       generatedEntities: await this.generateEntityDefinitions({
         repo: url,
       }),
+    };
+  }
+
+  async preparePullRequest(): Promise<{
+    title: string;
+    body: string;
+  }> {
+    const appTitle =
+      this.configApi.getOptionalString('app.title') ?? 'Backstage';
+    const appBaseUrl = this.configApi.getString('app.baseUrl');
+
+    return {
+      title: 'Add catalog-info.yaml config file',
+      body: `This pull request adds a **Backstage entity metadata file** \
+to this repository so that the component can be added to the \
+[${appTitle} software catalog](${appBaseUrl}).\n\nAfter this pull request is merged, \
+the component will become available.\n\nFor more information, read an \
+[overview of the Backstage software catalog](https://backstage.io/docs/features/software-catalog/software-catalog-overview).`,
     };
   }
 

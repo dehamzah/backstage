@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,60 +17,88 @@
 import {
   Content,
   ContentHeader,
+  CreateButton,
+  PageWithHeader,
   SupportButton,
-  useApi,
-  useRouteRef,
-} from '@backstage/core';
-import { catalogApiRef } from '@backstage/plugin-catalog-react';
-import { Button } from '@material-ui/core';
+  TableColumn,
+} from '@backstage/core-components';
+import { configApiRef, useApi, useRouteRef } from '@backstage/core-plugin-api';
+import {
+  CatalogTable,
+  CatalogTableRow,
+  FilteredEntityLayout,
+  EntityListContainer,
+  FilterContainer,
+} from '@backstage/plugin-catalog';
+import {
+  EntityKindPicker,
+  EntityLifecyclePicker,
+  EntityListProvider,
+  EntityOwnerPicker,
+  EntityTagPicker,
+  EntityTypePicker,
+  UserListFilterKind,
+  UserListPicker,
+} from '@backstage/plugin-catalog-react';
 import React from 'react';
-import { Link as RouterLink } from 'react-router-dom';
-import { useAsync } from 'react-use';
 import { createComponentRouteRef } from '../../routes';
-import { ApiExplorerTable } from '../ApiExplorerTable';
-import { ApiExplorerLayout } from './ApiExplorerLayout';
 
-export const ApiExplorerPage = () => {
+const defaultColumns: TableColumn<CatalogTableRow>[] = [
+  CatalogTable.columns.createNameColumn({ defaultKind: 'API' }),
+  CatalogTable.columns.createSystemColumn(),
+  CatalogTable.columns.createOwnerColumn(),
+  CatalogTable.columns.createSpecTypeColumn(),
+  CatalogTable.columns.createSpecLifecycleColumn(),
+  CatalogTable.columns.createMetadataDescriptionColumn(),
+  CatalogTable.columns.createTagsColumn(),
+];
+
+type ApiExplorerPageProps = {
+  initiallySelectedFilter?: UserListFilterKind;
+  columns?: TableColumn<CatalogTableRow>[];
+};
+
+export const ApiExplorerPage = ({
+  initiallySelectedFilter = 'all',
+  columns,
+}: ApiExplorerPageProps) => {
+  const configApi = useApi(configApiRef);
+  const generatedSubtitle = `${
+    configApi.getOptionalString('organization.name') ?? 'Backstage'
+  } API Explorer`;
   const createComponentLink = useRouteRef(createComponentRouteRef);
-  const catalogApi = useApi(catalogApiRef);
-  const { loading, error, value: catalogResponse } = useAsync(() => {
-    return catalogApi.getEntities({
-      filter: { kind: 'API' },
-      fields: [
-        'apiVersion',
-        'kind',
-        'metadata',
-        'relations',
-        'spec.lifecycle',
-        'spec.owner',
-        'spec.type',
-        'spec.system',
-      ],
-    });
-  }, [catalogApi]);
 
   return (
-    <ApiExplorerLayout>
+    <PageWithHeader
+      themeId="apis"
+      title="APIs"
+      subtitle={generatedSubtitle}
+      pageTitleOverride="APIs"
+    >
       <Content>
         <ContentHeader title="">
-          {createComponentLink && (
-            <Button
-              variant="contained"
-              color="primary"
-              component={RouterLink}
-              to={createComponentLink()}
-            >
-              Register Existing API
-            </Button>
-          )}
+          <CreateButton
+            title="Register Existing API"
+            to={createComponentLink?.()}
+          />
           <SupportButton>All your APIs</SupportButton>
         </ContentHeader>
-        <ApiExplorerTable
-          entities={catalogResponse?.items ?? []}
-          loading={loading}
-          error={error}
-        />
+        <EntityListProvider>
+          <FilteredEntityLayout>
+            <FilterContainer>
+              <EntityKindPicker initialFilter="api" hidden />
+              <EntityTypePicker />
+              <UserListPicker initialFilter={initiallySelectedFilter} />
+              <EntityOwnerPicker />
+              <EntityLifecyclePicker />
+              <EntityTagPicker />
+            </FilterContainer>
+            <EntityListContainer>
+              <CatalogTable columns={columns || defaultColumns} />
+            </EntityListContainer>
+          </FilteredEntityLayout>
+        </EntityListProvider>
       </Content>
-    </ApiExplorerLayout>
+    </PageWithHeader>
   );
 };

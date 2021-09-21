@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,5 +16,18 @@
 
 export { NextCatalogBuilder } from './NextCatalogBuilder';
 export { createNextRouter } from './NextRouter';
+export type { NextRouterOptions } from './NextRouter';
 export * from './processing';
+export { createRandomRefreshInterval } from './refresh';
+export type { RefreshIntervalFunction } from './refresh';
 export * from './stitching';
+export type {
+  EntityProvider,
+  EntityProviderConnection,
+  EntityProviderMutation,
+  CatalogProcessingEngine,
+  LocationService,
+  LocationStore,
+  RefreshOptions,
+  RefreshService,
+} from './types';

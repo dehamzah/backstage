@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,22 +16,29 @@
 
 import { Entity, EntityName, Location } from '@backstage/catalog-model';
 
+/** @public */
+export const CATALOG_FILTER_EXISTS = Symbol('CATALOG_FILTER_EXISTS');
+
+/** @public */
 export type CatalogEntitiesRequest = {
   filter?:
-    | Record<string, string | string[]>[]
-    | Record<string, string | string[]>
+    | Record<string, string | symbol | (string | symbol)[]>[]
+    | Record<string, string | symbol | (string | symbol)[]>
     | undefined;
   fields?: string[] | undefined;
 };
 
+/** @public */
 export type CatalogListResponse<T> = {
   items: T[];
 };
 
+/** @public */
 export type CatalogRequestOptions = {
   token?: string;
 };
 
+/** @public */
 export interface CatalogApi {
   // Entities
   getEntities(
@@ -44,6 +51,10 @@ export interface CatalogApi {
   ): Promise<Entity | undefined>;
   removeEntityByUid(
     uid: string,
+    options?: CatalogRequestOptions,
+  ): Promise<void>;
+  refreshEntity(
+    entityRef: string,
     options?: CatalogRequestOptions,
   ): Promise<void>;
 
@@ -70,6 +81,7 @@ export interface CatalogApi {
   ): Promise<void>;
 }
 
+/** @public */
 export type AddLocationRequest = {
   type?: string;
   target: string;
@@ -77,6 +89,7 @@ export type AddLocationRequest = {
   presence?: 'optional' | 'required';
 };
 
+/** @public */
 export type AddLocationResponse = {
   location: Location;
   entities: Entity[];

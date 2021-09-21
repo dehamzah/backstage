@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,8 +31,8 @@ import {
   createRouteRef,
   createPlugin,
   RouteRef,
+  attachComponentData,
 } from '@backstage/core-plugin-api';
-import { attachComponentData } from '../extensions';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
 const MockComponent = ({ children }: PropsWithChildren<{ path?: string }>) => (

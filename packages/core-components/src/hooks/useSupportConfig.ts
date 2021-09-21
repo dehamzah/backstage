@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,8 +42,7 @@ const DEFAULT_SUPPORT_CONFIG: SupportConfig = {
         {
           // TODO: Update to dedicated support page on backstage.io/docs
           title: 'Add `app.support` config key',
-          url:
-            'https://github.com/andrewthauer/backstage/blob/master/app-config.yaml',
+          url: 'https://github.com/andrewthauer/backstage/blob/master/app-config.yaml',
         },
       ],
     },

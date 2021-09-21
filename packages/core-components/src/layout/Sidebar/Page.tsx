@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ export const SidebarPinStateContext = createContext<SidebarPinStateContextType>(
   },
 );
 
-export const SidebarPage = (props: PropsWithChildren<{}>) => {
+export function SidebarPage(props: PropsWithChildren<{}>) {
   const [isPinned, setIsPinned] = useState(() =>
     LocalStorage.getSidebarPinState(),
   );
@@ -71,4 +71,4 @@ export const SidebarPage = (props: PropsWithChildren<{}>) => {
       <div className={classes.root}>{props.children}</div>
     </SidebarPinStateContext.Provider>
   );
-};
+}

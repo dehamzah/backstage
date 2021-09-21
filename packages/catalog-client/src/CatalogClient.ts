@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,13 @@ import {
   Location,
   LOCATION_ANNOTATION,
   ORIGIN_LOCATION_ANNOTATION,
+  stringifyEntityRef,
   stringifyLocationReference,
 } from '@backstage/catalog-model';
 import { ResponseError } from '@backstage/errors';
 import fetch from 'cross-fetch';
 import {
+  CATALOG_FILTER_EXISTS,
   AddLocationRequest,
   AddLocationResponse,
   CatalogApi,
@@ -34,6 +36,7 @@ import {
 } from './types/api';
 import { DiscoveryApi } from './types/discovery';
 
+/** @public */
 export class CatalogClient implements CatalogApi {
   private readonly discoveryApi: DiscoveryApi;
 
@@ -68,9 +71,13 @@ export class CatalogClient implements CatalogApi {
       const filterParts: string[] = [];
       for (const [key, value] of Object.entries(filterItem)) {
         for (const v of [value].flat()) {
-          filterParts.push(
-            `${encodeURIComponent(key)}=${encodeURIComponent(v)}`,
-          );
+          if (v === CATALOG_FILTER_EXISTS) {
+            filterParts.push(encodeURIComponent(key));
+          } else if (typeof v === 'string') {
+            filterParts.push(
+              `${encodeURIComponent(key)}=${encodeURIComponent(v)}`,
+            );
+          }
         }
       }
 
@@ -89,7 +96,30 @@ export class CatalogClient implements CatalogApi {
       `/entities${query}`,
       options,
     );
-    return { items: entities };
+
+    const refCompare = (a: Entity, b: Entity) => {
+      // in case field filtering is used, these fields might not be part of the response
+      if (
+        a.metadata?.name === undefined ||
+        a.kind === undefined ||
+        b.metadata?.name === undefined ||
+        b.kind === undefined
+      ) {
+        return 0;
+      }
+
+      const aRef = stringifyEntityRef(a);
+      const bRef = stringifyEntityRef(b);
+      if (aRef < bRef) {
+        return -1;
+      }
+      if (aRef > bRef) {
+        return 1;
+      }
+      return 0;
+    };
+
+    return { items: entities.sort(refCompare) };
   }
 
   async getEntityByName(
@@ -104,6 +134,24 @@ export class CatalogClient implements CatalogApi {
       )}/${encodeURIComponent(name)}`,
       options,
     );
+  }
+
+  async refreshEntity(entityRef: string, options?: CatalogRequestOptions) {
+    const response = await fetch(
+      `${await this.discoveryApi.getBaseUrl('catalog')}/refresh`,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(options?.token && { Authorization: `Bearer ${options?.token}` }),
+        },
+        method: 'POST',
+        body: JSON.stringify({ entityRef }),
+      },
+    );
+
+    if (response.status !== 200) {
+      throw new Error(await response.text());
+    }
   }
 
   async addLocation(

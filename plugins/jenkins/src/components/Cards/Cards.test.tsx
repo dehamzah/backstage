@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,9 @@ import React from 'react';
 import { renderInTestApp } from '@backstage/test-utils';
 import { LatestRunCard } from './Cards';
 import { EntityProvider } from '@backstage/plugin-catalog-react';
-import { ApiProvider, ApiRegistry } from '@backstage/core';
 import { JenkinsApi, jenkinsApiRef } from '../../api';
+import { ApiProvider, ApiRegistry } from '@backstage/core-app-api';
+import { Project } from '../../api/JenkinsApi';
 
 describe('<LatestRunCard />', () => {
   const entity = {
@@ -33,7 +34,10 @@ describe('<LatestRunCard />', () => {
   };
 
   const jenkinsApi: Partial<JenkinsApi> = {
-    getLastBuild: () => Promise.resolve({ timestamp: 0, result: 'success' }),
+    getProjects: () =>
+      Promise.resolve([
+        { lastBuild: { timestamp: 0, status: 'success' } },
+      ] as Project[]),
   };
 
   it('should show success status of latest build', async () => {
@@ -52,7 +56,7 @@ describe('<LatestRunCard />', () => {
 
   it('should show the appropriate error in case of a connection error', async () => {
     const jenkinsApiWithError: Partial<JenkinsApi> = {
-      getLastBuild: () => Promise.reject(new Error('Unauthorized')),
+      getProjects: () => Promise.reject(new Error('Unauthorized')),
     };
 
     const apis = ApiRegistry.from([[jenkinsApiRef, jenkinsApiWithError]]);
@@ -71,7 +75,7 @@ describe('<LatestRunCard />', () => {
 
   it('should show the appropriate error in case Jenkins project is not found', async () => {
     const jenkinsApiWithError: Partial<JenkinsApi> = {
-      getLastBuild: () =>
+      getProjects: () =>
         Promise.reject({
           notFound: true,
           message: 'jenkins-project not found',

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,11 +36,13 @@ export async function createRouter({
       req: express.Request<any, unknown, unknown, SearchQuery>,
       res: express.Response<SearchResultSet>,
     ) => {
-      const { term, filters = {}, pageCursor = '' } = req.query;
+      const { term, filters = {}, types, pageCursor } = req.query;
       logger.info(
-        `Search request received: ${term}, ${JSON.stringify(
+        `Search request received: term="${term}", filters=${JSON.stringify(
           filters,
-        )}, ${pageCursor}`,
+        )}, types=${types ? types.join(',') : ''}, pageCursor=${
+          pageCursor ?? ''
+        }`,
       );
 
       try {

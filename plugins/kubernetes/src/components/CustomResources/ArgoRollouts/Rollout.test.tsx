@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,10 +58,10 @@ describe('Rollout', () => {
   it('should render Paused Rollout with pause text', async () => {
     const wrapper = kubernetesProviders(groupedResources, new Set([]));
 
-    (pausedRollout.status.pauseConditions[0]
-      .startTime as any) = DateTime.local()
-      // millis * secs * mins = 45 mins
-      .minus(Duration.fromMillis(1000 * 60 * 45));
+    (pausedRollout.status.pauseConditions[0].startTime as any) =
+      DateTime.local()
+        // millis * secs * mins = 45 mins
+        .minus(Duration.fromMillis(1000 * 60 * 45));
 
     const { getByText } = render(
       wrapper(

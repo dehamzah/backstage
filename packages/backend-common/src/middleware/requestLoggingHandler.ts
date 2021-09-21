@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,8 @@ import { getRootLogger } from '../logging';
 /**
  * Logs incoming requests.
  *
- * @param logger An optional logger to use. If not specified, the root logger will be used.
+ * @public
+ * @param logger - An optional logger to use. If not specified, the root logger will be used.
  * @returns An Express request handler
  */
 export function requestLoggingHandler(logger?: Logger): RequestHandler {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -153,11 +153,7 @@ export class DatabaseTaskStore implements TaskStore {
     }
   }
 
-  async listStaleTasks({
-    timeoutS,
-  }: {
-    timeoutS: number;
-  }): Promise<{
+  async listStaleTasks({ timeoutS }: { timeoutS: number }): Promise<{
     tasks: { taskId: string }[];
   }> {
     const rawRows = await this.db<RawDbTaskRow>('tasks')

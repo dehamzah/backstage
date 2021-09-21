@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ import {
  * An error thrown as the result of a failed server request.
  *
  * The server is expected to respond on the ErrorResponse format.
+ *
+ * @public
  */
 export class ResponseError extends Error {
   /**

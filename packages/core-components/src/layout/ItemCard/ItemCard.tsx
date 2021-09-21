@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,16 +62,9 @@ type ItemCardProps = {
  * @deprecated Use plain MUI <Card> and composable helpers instead.
  * @see https://material-ui.com/components/cards/
  */
-export const ItemCard = ({
-  description,
-  tags,
-  title,
-  type,
-  subtitle,
-  label,
-  onClick,
-  href,
-}: ItemCardProps) => {
+export function ItemCard(props: ItemCardProps) {
+  const { description, tags, title, type, subtitle, label, onClick, href } =
+    props;
   return (
     <Card>
       <CardMedia>
@@ -101,4 +94,4 @@ export const ItemCard = ({
       </CardActions>
     </Card>
   );
-};
+}

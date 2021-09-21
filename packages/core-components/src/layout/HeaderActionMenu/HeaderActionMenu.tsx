@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,7 +66,8 @@ export type HeaderActionMenuProps = {
   actionItems: ActionItemProps[];
 };
 
-export const HeaderActionMenu = ({ actionItems }: HeaderActionMenuProps) => {
+export function HeaderActionMenu(props: HeaderActionMenuProps) {
+  const { actionItems } = props;
   const [open, setOpen] = React.useState(false);
   const anchorElRef = React.useRef(null);
 
@@ -103,4 +104,4 @@ export const HeaderActionMenu = ({ actionItems }: HeaderActionMenuProps) => {
       </Popover>
     </Fragment>
   );
-};
+}

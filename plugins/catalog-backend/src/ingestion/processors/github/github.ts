@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,6 +60,9 @@ export type Repository = {
   name: string;
   url: string;
   isArchived: boolean;
+  defaultBranchRef: {
+    name: string;
+  } | null;
 };
 
 export type Connection<T> = {
@@ -79,6 +82,7 @@ export async function getOrganizationUsers(
   client: typeof graphql,
   org: string,
   tokenType: GithubCredentialType,
+  userNamespace?: string,
 ): Promise<{ users: UserEntity[] }> {
   const query = `
     query users($org: String!, $email: Boolean!, $cursor: String) {
@@ -114,6 +118,7 @@ export async function getOrganizationUsers(
       },
     };
 
+    if (userNamespace) entity.metadata.namespace = userNamespace;
     if (user.bio) entity.metadata.description = user.bio;
     if (user.name) entity.spec.profile!.displayName = user.name;
     if (user.email) entity.spec.profile!.email = user.email;
@@ -144,6 +149,7 @@ export async function getOrganizationUsers(
 export async function getOrganizationTeams(
   client: typeof graphql,
   org: string,
+  orgNamespace?: string,
 ): Promise<{
   groups: GroupEntity[];
   groupMemberUsers: Map<string, string[]>;
@@ -189,6 +195,10 @@ export async function getOrganizationTeams(
       },
     };
 
+    if (orgNamespace) {
+      entity.metadata.namespace = orgNamespace;
+    }
+
     if (team.description) {
       entity.metadata.description = team.description;
     }
@@ -203,7 +213,8 @@ export async function getOrganizationTeams(
     }
 
     const memberNames: string[] = [];
-    groupMemberUsers.set(team.slug, memberNames);
+    const groupKey = orgNamespace ? `${orgNamespace}/${team.slug}` : team.slug;
+    groupMemberUsers.set(groupKey, memberNames);
 
     if (!team.members.pageInfo.hasNextPage) {
       // We got all the members in one go, run the fast path
@@ -246,6 +257,9 @@ export async function getOrganizationRepositories(
             name
             url
             isArchived
+            defaultBranchRef {
+              name
+            }
           }
           pageInfo {
             hasNextPage
@@ -324,7 +338,7 @@ export async function queryWithPaging<
   GraphqlType,
   OutputType,
   Variables extends {},
-  Response = QueryResponse
+  Response = QueryResponse,
 >(
   client: typeof graphql,
   query: string,

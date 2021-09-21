@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,11 @@ import {
   identityApiRef,
 } from '@backstage/core-plugin-api';
 
-// import { rootRouteRef } from './routes';
-
+/**
+ * The Todo plugin instance.
+ *
+ * @public
+ */
 export const todoPlugin = createPlugin({
   id: 'todo',
   apis: [
@@ -43,6 +46,11 @@ export const todoPlugin = createPlugin({
   },
 });
 
+/**
+ * An extension for displaying the list of todos on an entity page.
+ *
+ * @public
+ */
 export const EntityTodoContent = todoPlugin.provide(
   createComponentExtension({
     component: {

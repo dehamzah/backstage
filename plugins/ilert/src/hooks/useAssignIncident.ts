@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,10 @@
  */
 import React from 'react';
 import { ilertApiRef } from '../api';
-import { useApi, errorApiRef } from '@backstage/core';
 import { AuthenticationError } from '@backstage/errors';
 import { useAsyncRetry } from 'react-use';
 import { Incident, IncidentResponder } from '../types';
+import { useApi, errorApiRef } from '@backstage/core-plugin-api';
 
 export const useAssignIncident = (incident: Incident | null, open: boolean) => {
   const ilertApi = useApi(ilertApiRef);
@@ -27,10 +27,8 @@ export const useAssignIncident = (incident: Incident | null, open: boolean) => {
   const [incidentRespondersList, setIncidentRespondersList] = React.useState<
     IncidentResponder[]
   >([]);
-  const [
-    incidentResponder,
-    setIncidentResponder,
-  ] = React.useState<IncidentResponder | null>(null);
+  const [incidentResponder, setIncidentResponder] =
+    React.useState<IncidentResponder | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
 
   const { error, retry } = useAsyncRetry(async () => {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,11 +48,12 @@ export interface Config {
         entryPoint: string;
         logoutUrl?: string;
         issuer: string;
-        cert?: string;
+        cert: string;
         privateKey?: string;
         decryptionPvk?: string;
         signatureAlgorithm?: 'sha256' | 'sha512';
         digestAlgorithm?: string;
+        acceptedClockSkewMs?: number;
       };
       okta?: {
         [authEnv: string]: { [key: string]: string };
@@ -64,6 +65,7 @@ export interface Config {
           authorizationUrl: string;
           tokenUrl: string;
           scope?: string;
+          disableRefresh?: boolean;
         };
       };
       oidc?: {

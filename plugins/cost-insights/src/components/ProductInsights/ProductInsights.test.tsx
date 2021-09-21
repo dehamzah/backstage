@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -170,7 +170,8 @@ describe('<ProductInsights />', () => {
   }
 
   it('should render each product panel', async () => {
-    const noComputeEngineCostsRgx = /There are no Compute Engine costs within this time frame for your team's projects./;
+    const noComputeEngineCostsRgx =
+      /There are no Compute Engine costs within this time frame for your team's projects./;
     const { getByText } = await renderInContext(
       <ProductInsights
         onLoaded={jest.fn()}

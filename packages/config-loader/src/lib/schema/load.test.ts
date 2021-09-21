@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,13 +68,19 @@ describe('loadConfigSchema', () => {
       schema.process(configs, {
         visibility: ['frontend'],
         valueTransform: () => 'X',
+        withFilteredKeys: true,
       }),
-    ).toEqual([{ data: { key1: 'X' }, context: 'test' }]);
+    ).toEqual([
+      { data: { key1: 'X' }, context: 'test', filteredKeys: ['key2'] },
+    ]);
     expect(
       schema.process(configs, {
         valueTransform: () => 'X',
+        withFilteredKeys: true,
       }),
-    ).toEqual([{ data: { key1: 'X', key2: 'X' }, context: 'test' }]);
+    ).toEqual([
+      { data: { key1: 'X', key2: 'X' }, context: 'test', filteredKeys: [] },
+    ]);
 
     const serialized = schema.serialize();
 

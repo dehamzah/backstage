@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,4 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export const JENKINS_ANNOTATION = 'jenkins.io/github-folder';
+export const JENKINS_ANNOTATION = 'jenkins.io/job-full-name';
+// @deprecated The legacy annotation used for identifing Jenkins jobs, use
+// JENKINS_ANNOTATION instead.
+export const LEGACY_JENKINS_ANNOTATION = 'jenkins.io/github-folder';

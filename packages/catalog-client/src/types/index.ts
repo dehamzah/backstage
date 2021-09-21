@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,5 +20,8 @@ export type {
   CatalogApi,
   CatalogEntitiesRequest,
   CatalogListResponse,
+  CatalogRequestOptions,
 } from './api';
+export type { DiscoveryApi } from './discovery';
+export { CATALOG_FILTER_EXISTS } from './api';
 export { ENTITY_STATUS_CATALOG_PROCESSING_TYPE } from './status';

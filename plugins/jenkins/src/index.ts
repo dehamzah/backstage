@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,12 @@
  * limitations under the License.
  */
 
+/**
+ * A Backstage plugin that integrates towards Jenkins
+ *
+ * @packageDocumentation
+ */
+
 export {
   jenkinsPlugin,
   jenkinsPlugin as plugin,
@@ -26,5 +32,5 @@ export {
   isJenkinsAvailable,
   isJenkinsAvailable as isPluginApplicableToEntity,
 } from './components/Router';
-export { JENKINS_ANNOTATION } from './constants';
+export { JENKINS_ANNOTATION, LEGACY_JENKINS_ANNOTATION } from './constants';
 export * from './api';

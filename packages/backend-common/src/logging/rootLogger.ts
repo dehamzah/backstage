@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,14 +21,17 @@ import { coloredFormat } from './formats';
 
 let rootLogger: winston.Logger;
 
+/** @public */
 export function getRootLogger(): winston.Logger {
   return rootLogger;
 }
 
+/** @public */
 export function setRootLogger(newLogger: winston.Logger) {
   rootLogger = newLogger;
 }
 
+/** @public */
 export function createRootLogger(
   options: winston.LoggerOptions = {},
   env = process.env,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,19 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  InfoCard,
-  InfoCardVariants,
-  StructuredMetadataTable,
-  WarningPanel,
-} from '@backstage/core';
 import { LinearProgress, Link, makeStyles, Theme } from '@material-ui/core';
 import ExternalLinkIcon from '@material-ui/icons/Launch';
 import { DateTime, Duration } from 'luxon';
 import React from 'react';
 import { JenkinsRunStatus } from '../BuildsPage/lib/Status';
 import { ErrorType, useBuilds } from '../useBuilds';
-import { useProjectSlugFromEntity } from '../useProjectSlugFromEntity';
+import {
+  InfoCard,
+  InfoCardVariants,
+  StructuredMetadataTable,
+  WarningPanel,
+} from '@backstage/core-components';
+import { Project } from '../../api/JenkinsApi';
 
 const useStyles = makeStyles<Theme>({
   externalLinkIcon: {
@@ -39,16 +39,18 @@ const WidgetContent = ({
   latestRun,
 }: {
   loading?: boolean;
-  latestRun: any;
+  latestRun?: Project;
   branch: string;
 }) => {
   const classes = useStyles();
   if (loading || !latestRun) return <LinearProgress />;
-  const displayDate = DateTime.fromMillis(latestRun.timestamp).toRelative();
+  const displayDate = DateTime.fromMillis(
+    latestRun.lastBuild.timestamp,
+  ).toRelative();
   const displayDuration =
-    (latestRun.building ? 'Running for ' : '') +
+    (latestRun.lastBuild.building ? 'Running for ' : '') +
     DateTime.local()
-      .minus(Duration.fromMillis(latestRun.duration))
+      .minus(Duration.fromMillis(latestRun.lastBuild.duration))
       .toRelative({ locale: 'en' })
       ?.replace(' ago', '');
 
@@ -57,16 +59,14 @@ const WidgetContent = ({
       metadata={{
         status: (
           <>
-            <JenkinsRunStatus
-              status={latestRun.building ? 'running' : latestRun.result}
-            />
+            <JenkinsRunStatus status={latestRun.lastBuild.status} />
           </>
         ),
         build: latestRun.fullDisplayName,
         'latest run': displayDate,
         duration: displayDuration,
         link: (
-          <Link href={latestRun.url} target="_blank">
+          <Link href={latestRun.lastBuild.url} target="_blank">
             See more on Jenkins{' '}
             <ExternalLinkIcon className={classes.externalLinkIcon} />
           </Link>
@@ -100,9 +100,8 @@ export const LatestRunCard = ({
   branch: string;
   variant?: InfoCardVariants;
 }) => {
-  const projectName = useProjectSlugFromEntity();
-  const [{ builds, loading, error }] = useBuilds(projectName, branch);
-  const latestRun = builds ?? {};
+  const [{ projects, loading, error }] = useBuilds({ branch });
+  const latestRun = projects?.[0];
   return (
     <InfoCard title={`Latest ${branch} build`} variant={variant}>
       {!error ? (

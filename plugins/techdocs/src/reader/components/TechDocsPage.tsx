@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import { Content, Page, useApi } from '@backstage/core';
 import React, { useCallback, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAsync } from 'react-use';
@@ -22,13 +21,16 @@ import { techdocsApiRef } from '../../api';
 import { Reader } from './Reader';
 import { TechDocsPageHeader } from './TechDocsPageHeader';
 
+import { Content, Page } from '@backstage/core-components';
+import { useApi } from '@backstage/core-plugin-api';
+
 export const TechDocsPage = () => {
   const [documentReady, setDocumentReady] = useState<boolean>(false);
   const { namespace, kind, name } = useParams();
 
   const techdocsApi = useApi(techdocsApiRef);
 
-  const techdocsMetadataRequest = useAsync(() => {
+  const { value: techdocsMetadataValue } = useAsync(() => {
     if (documentReady) {
       return techdocsApi.getTechDocsMetadata({ kind, namespace, name });
     }
@@ -36,7 +38,7 @@ export const TechDocsPage = () => {
     return Promise.resolve(undefined);
   }, [kind, namespace, name, techdocsApi, documentReady]);
 
-  const entityMetadataRequest = useAsync(() => {
+  const { value: entityMetadataValue } = useAsync(() => {
     return techdocsApi.getEntityMetadata({ kind, namespace, name });
   }, [kind, namespace, name, techdocsApi]);
 
@@ -47,10 +49,8 @@ export const TechDocsPage = () => {
   return (
     <Page themeId="documentation">
       <TechDocsPageHeader
-        metadataRequest={{
-          techdocs: techdocsMetadataRequest,
-          entity: entityMetadataRequest,
-        }}
+        techDocsMetadata={techdocsMetadataValue}
+        entityMetadata={entityMetadataValue}
         entityId={{
           kind,
           namespace,

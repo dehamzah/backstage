@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import {
 } from '@material-ui/core';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import { DefaultCustomResourceDrawer } from './DefaultCustomResourceDrawer';
-import { StructuredMetadataTable } from '@backstage/core';
+import { StructuredMetadataTable } from '@backstage/core-components';
 
 type DefaultCustomResourceAccordionsProps = {
   customResources: any[];
@@ -51,7 +51,12 @@ const DefaultCustomResourceSummary = ({
   customResourceName,
 }: DefaultCustomResourceSummaryProps) => {
   return (
-    <Grid container direction="row" justify="flex-start" alignItems="center">
+    <Grid
+      container
+      direction="row"
+      justifyContent="flex-start"
+      alignItems="center"
+    >
       <Grid xs={3} item>
         <DefaultCustomResourceDrawer
           customResource={customResource}
@@ -99,7 +104,7 @@ export const DefaultCustomResourceAccordions = ({
     <Grid
       container
       direction="column"
-      justify="flex-start"
+      justifyContent="flex-start"
       alignItems="flex-start"
     >
       {customResources.map((cr, i) => (

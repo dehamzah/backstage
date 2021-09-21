@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@
  */
 
 import { Entity, GroupEntity } from '@backstage/catalog-model';
-import { ApiProvider, ApiRegistry } from '@backstage/core-api';
-import { catalogApiRef, EntityContext } from '@backstage/plugin-catalog-react';
+import { ApiProvider, ApiRegistry } from '@backstage/core-app-api';
+import { catalogApiRef, EntityProvider } from '@backstage/plugin-catalog-react';
 import { Grid } from '@material-ui/core';
 import React from 'react';
 import { MemoryRouter } from 'react-router';
@@ -105,13 +105,13 @@ const apiRegistry = (items: Entity[]) =>
 export const Default = () => (
   <MemoryRouter>
     <ApiProvider apis={apiRegistry([alice, bob])}>
-      <EntityContext.Provider value={{ entity: defaultEntity, loading: false }}>
+      <EntityProvider entity={defaultEntity}>
         <Grid container spacing={4}>
           <Grid item xs={12} md={6}>
             <MembersListCard />
           </Grid>
         </Grid>
-      </EntityContext.Provider>
+      </EntityProvider>
     </ApiProvider>
   </MemoryRouter>
 );
@@ -119,13 +119,13 @@ export const Default = () => (
 export const Empty = () => (
   <MemoryRouter>
     <ApiProvider apis={apiRegistry([])}>
-      <EntityContext.Provider value={{ entity: defaultEntity, loading: false }}>
+      <EntityProvider entity={defaultEntity}>
         <Grid container spacing={4}>
           <Grid item xs={12} md={6}>
             <MembersListCard />
           </Grid>
         </Grid>
-      </EntityContext.Provider>
+      </EntityProvider>
     </ApiProvider>
   </MemoryRouter>
 );

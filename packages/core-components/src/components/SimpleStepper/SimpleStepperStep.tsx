@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,13 +30,8 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
-export const SimpleStepperStep = ({
-  title,
-  children,
-  end,
-  actions,
-  ...muiProps
-}: PropsWithChildren<StepProps>) => {
+export function SimpleStepperStep(props: PropsWithChildren<StepProps>) {
+  const { title, children, end, actions, ...muiProps } = props;
   const classes = useStyles();
 
   // The end step is not a part of the stepper
@@ -58,4 +53,4 @@ export const SimpleStepperStep = ({
       </StepContent>
     </MuiStep>
   );
-};
+}

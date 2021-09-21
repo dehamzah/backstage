@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,14 +96,14 @@ interface StyleProps extends WithStyles {
   children?: React.ReactNode;
 }
 
-export const MetadataList = withStyles(
-  listStyles,
-)(({ classes, children }: StyleProps) => (
-  <ul className={classes.root}>{children}</ul>
-));
+export const MetadataList = withStyles(listStyles)(
+  ({ classes, children }: StyleProps) => (
+    <ul className={classes.root}>{children}</ul>
+  ),
+);
 
-export const MetadataListItem = withStyles(
-  listItemStyles,
-)(({ classes, children }: StyleProps) => (
-  <li className={classes.root}>{children}</li>
-));
+export const MetadataListItem = withStyles(listItemStyles)(
+  ({ classes, children }: StyleProps) => (
+    <li className={classes.root}>{children}</li>
+  ),
+);

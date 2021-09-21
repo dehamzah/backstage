@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,14 +92,11 @@ export type ErrorPanelProps = {
 /**
  * Renders a warning panel as the effect of an error.
  */
-export const ErrorPanel = ({
-  title,
-  error,
-  defaultExpanded,
-  children,
-}: PropsWithChildren<ErrorPanelProps>) => {
+export function ErrorPanel(props: PropsWithChildren<ErrorPanelProps>) {
+  const { title, error, defaultExpanded, children } = props;
   return (
     <WarningPanel
+      severity="error"
       title={title ?? error.message}
       defaultExpanded={defaultExpanded}
     >
@@ -111,4 +108,4 @@ export const ErrorPanel = ({
       />
     </WarningPanel>
   );
-};
+}

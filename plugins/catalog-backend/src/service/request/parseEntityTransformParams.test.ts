@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,8 +60,8 @@ describe('parseEntityTransformParams', () => {
     expect(
       parseEntityTransformParams({ fields: 'kind,metadata.name' })!(entity),
     ).toEqual({ kind: 'k', metadata: { name: 'n' } });
-    expect(
-      parseEntityTransformParams({ fields: 'metadata' })!(entity),
-    ).toEqual({ metadata: { name: 'n', tags: ['t1', 't2'] } });
+    expect(parseEntityTransformParams({ fields: 'metadata' })!(entity)).toEqual(
+      { metadata: { name: 'n', tags: ['t1', 't2'] } },
+    );
   });
 });

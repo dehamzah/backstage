@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,17 +31,33 @@ export type LinkProps = MaterialLinkProps &
     component?: ElementType<any>;
   };
 
+declare function LinkType(props: LinkProps): JSX.Element;
+
 /**
  * Thin wrapper on top of material-ui's Link component
  * Makes the Link to utilise react-router
  */
-export const Link = React.forwardRef<any, LinkProps>((props, ref) => {
+const ActualLink = React.forwardRef<any, LinkProps>((props, ref) => {
   const to = String(props.to);
-  return isExternalUri(to) ? (
+  const external = isExternalUri(to);
+  const newWindow = external && !!/^https?:/.exec(to);
+  return external ? (
     // External links
-    <MaterialLink ref={ref} href={to} {...props} />
+    <MaterialLink
+      ref={ref}
+      href={to}
+      {...(newWindow ? { target: '_blank', rel: 'noopener' } : {})}
+      {...props}
+    />
   ) : (
     // Interact with React Router for internal links
     <MaterialLink ref={ref} component={RouterLink} {...props} />
   );
 });
+
+// TODO(Rugvip): We use this as a workaround to make the exported type be a
+//               function, which makes our API reference docs much nicer.
+//               The first type to be exported gets priority, but it will
+//               be thrown away when compiling to JS.
+// @ts-ignore
+export { LinkType as Link, ActualLink as Link };

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ export type ApiHolder = {
 export type ApiFactory<
   Api,
   Impl extends Api,
-  Deps extends { [name in string]: unknown }
+  Deps extends { [name in string]: unknown },
 > = {
   api: ApiRef<Api>;
   deps: TypesToApiRefs<Deps>;

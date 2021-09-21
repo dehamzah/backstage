@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,21 +65,19 @@ export const getTagDates = async ({
   }
 
   if (startTag.tagType === 'tag' && endTag.tagType === 'tag') {
-    const [
-      { tag: startTagResponse },
-      { tag: endTagResponse },
-    ] = await Promise.all([
-      pluginApiClient.getTag({
-        owner: project.owner,
-        repo: project.repo,
-        tagSha: startTag.tagSha,
-      }),
-      pluginApiClient.getTag({
-        owner: project.owner,
-        repo: project.repo,
-        tagSha: endTag.tagSha,
-      }),
-    ]);
+    const [{ tag: startTagResponse }, { tag: endTagResponse }] =
+      await Promise.all([
+        pluginApiClient.getTag({
+          owner: project.owner,
+          repo: project.repo,
+          tagSha: startTag.tagSha,
+        }),
+        pluginApiClient.getTag({
+          owner: project.owner,
+          repo: project.repo,
+          tagSha: endTag.tagSha,
+        }),
+      ]);
 
     return {
       startDate: startTagResponse.date,

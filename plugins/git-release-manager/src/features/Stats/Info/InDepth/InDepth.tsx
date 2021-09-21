@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,12 +31,8 @@ import { useReleaseStatsContext } from '../../contexts/ReleaseStatsContext';
 
 export function InDepth() {
   const { releaseStats } = useReleaseStatsContext();
-  const {
-    averageReleaseTime,
-    progress,
-    releaseCommitPairs,
-    run,
-  } = useGetReleaseTimes();
+  const { averageReleaseTime, progress, releaseCommitPairs, run } =
+    useGetReleaseTimes();
 
   const skipped =
     Object.keys(releaseStats.releases).length - releaseCommitPairs.length;

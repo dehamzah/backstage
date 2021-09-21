@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,8 @@ import ObservableImpl from 'zen-observable';
  * See http://reactivex.io/documentation/subject.html
  */
 export class PublishSubject<T>
-  implements Observable<T>, ZenObservable.SubscriptionObserver<T> {
+  implements Observable<T>, ZenObservable.SubscriptionObserver<T>
+{
   private isClosed = false;
   private terminatingError?: Error;
 
@@ -121,7 +122,8 @@ export class PublishSubject<T>
  * See http://reactivex.io/documentation/subject.html
  */
 export class BehaviorSubject<T>
-  implements Observable<T>, ZenObservable.SubscriptionObserver<T> {
+  implements Observable<T>, ZenObservable.SubscriptionObserver<T>
+{
   private isClosed = false;
   private currentValue: T;
   private terminatingError?: Error;

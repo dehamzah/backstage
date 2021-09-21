@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,6 +64,26 @@ declare module '*.icon.svg' {
 }
 
 declare module '*.svg' {
+  const src: string;
+  export default src;
+}
+
+declare module '*.eot' {
+  const src: string;
+  export default src;
+}
+
+declare module '*.woff' {
+  const src: string;
+  export default src;
+}
+
+declare module '*.woff2' {
+  const src: string;
+  export default src;
+}
+
+declare module '*.ttf' {
   const src: string;
   export default src;
 }

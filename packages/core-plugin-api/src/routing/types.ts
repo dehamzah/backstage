@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,14 @@
  */
 
 import { OldIconComponent } from '../icons/types';
-import { getOrCreateGlobalSingleton } from '../lib/globalObject';
+import { getOrCreateGlobalSingleton } from '@backstage/version-bridge';
 
 export type AnyParams = { [param in string]: string } | undefined;
 export type ParamKeys<Params extends AnyParams> = keyof Params extends never
   ? []
   : (keyof Params)[];
-export type OptionalParams<
-  Params extends { [param in string]: string }
-> = Params[keyof Params] extends never ? undefined : Params;
+export type OptionalParams<Params extends { [param in string]: string }> =
+  Params[keyof Params] extends never ? undefined : Params;
 
 // The extra TS magic here is to require a single params argument if the RouteRef
 // had at least one param defined, but require 0 arguments if there are no params defined.
@@ -65,7 +64,7 @@ export type SubRouteRef<Params extends AnyParams = any> = {
 
 export type ExternalRouteRef<
   Params extends AnyParams = any,
-  Optional extends boolean = any
+  Optional extends boolean = any,
 > = {
   readonly [routeRefType]: 'external';
 

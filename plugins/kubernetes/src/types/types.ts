@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,3 +37,13 @@ export interface GroupedResponses extends DeploymentResources {
   ingresses: ExtensionsV1beta1Ingress[];
   customResources: any[];
 }
+
+export interface ClusterLinksFormatterOptions {
+  dashboardUrl: URL;
+  object: any;
+  kind: string;
+}
+
+export type ClusterLinksFormatter = (
+  options: ClusterLinksFormatterOptions,
+) => URL;

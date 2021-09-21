@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,6 +66,7 @@ describe('createRouter', () => {
       getLocationById: jest.fn(),
       removeLocationById: jest.fn(),
       removeEntityByUid: jest.fn(),
+      refreshEntity: jest.fn(),
     };
 
     config = new ConfigReader({

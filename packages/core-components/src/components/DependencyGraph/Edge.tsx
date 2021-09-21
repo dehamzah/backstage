@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,10 +71,8 @@ export function Edge({
   React.useLayoutEffect(() => {
     // set the label width to the actual rendered width to properly layout graph
     if (labelRef.current) {
-      let {
-        height: renderedHeight,
-        width: renderedWidth,
-      } = labelRef.current.getBBox();
+      let { height: renderedHeight, width: renderedWidth } =
+        labelRef.current.getBBox();
       renderedHeight = Math.round(renderedHeight);
       renderedWidth = Math.round(renderedWidth);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,8 @@ import { DEFAULT_PORT } from '../service/lib/ServiceBuilderImpl';
  * The deployment may be scaled horizontally, as long as the external URL
  * is the same for all instances. However, internal URLs will always be
  * resolved to the same host, so there won't be any balancing of internal traffic.
+ *
+ * @public
  */
 export class SingleHostDiscovery implements PluginEndpointDiscovery {
   /**

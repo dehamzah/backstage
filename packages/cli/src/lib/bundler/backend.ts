@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,23 +26,16 @@ export async function serveBackend(options: BackendServeOptions) {
     isDev: true,
   });
 
-  const compiler = webpack(config);
-
-  const watcher = compiler.watch(
-    {
-      poll: true,
-    },
-    (err: Error) => {
-      if (err) {
-        console.error(err);
-      } else console.log('Build succeeded');
-    },
-  );
+  const compiler = webpack(config, (err: Error | undefined) => {
+    if (err) {
+      console.error(err);
+    } else console.log('Build succeeded');
+  });
 
   const waitForExit = async () => {
     for (const signal of ['SIGINT', 'SIGTERM'] as const) {
       process.on(signal, () => {
-        watcher.close(() => console.log('Stopped watcher'));
+        compiler.close(() => console.log('Stopped watcher'));
         // exit instead of resolve. The process is shutting down and resolving a promise here logs an error
         process.exit();
       });

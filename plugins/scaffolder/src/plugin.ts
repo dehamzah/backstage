@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,13 @@
  * limitations under the License.
  */
 
-import {
-  createApiFactory,
-  createPlugin,
-  createRoutableExtension,
-  discoveryApiRef,
-  identityApiRef,
-} from '@backstage/core';
 import { scmIntegrationsApiRef } from '@backstage/integration-react';
 import { scaffolderApiRef, ScaffolderClient } from './api';
 import { EntityPicker } from './components/fields/EntityPicker';
+import {
+  entityNamePickerValidation,
+  EntityNamePicker,
+} from './components/fields/EntityNamePicker';
 import { OwnerPicker } from './components/fields/OwnerPicker';
 import {
   repoPickerValidation,
@@ -31,6 +28,13 @@ import {
 } from './components/fields/RepoUrlPicker';
 import { createScaffolderFieldExtension } from './extensions';
 import { registerComponentRouteRef, rootRouteRef } from './routes';
+import {
+  createApiFactory,
+  createPlugin,
+  createRoutableExtension,
+  discoveryApiRef,
+  identityApiRef,
+} from '@backstage/core-plugin-api';
 
 export const scaffolderPlugin = createPlugin({
   id: 'scaffolder',
@@ -58,6 +62,14 @@ export const EntityPickerFieldExtension = scaffolderPlugin.provide(
   createScaffolderFieldExtension({
     component: EntityPicker,
     name: 'EntityPicker',
+  }),
+);
+
+export const EntityNamePickerFieldExtension = scaffolderPlugin.provide(
+  createScaffolderFieldExtension({
+    component: EntityNamePicker,
+    name: 'EntityNamePicker',
+    validation: entityNamePickerValidation,
   }),
 );
 

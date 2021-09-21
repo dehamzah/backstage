@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ type Options = {
   args: string[];
   fromPackage?: string;
   mockEnv?: boolean;
+  withFilteredKeys?: boolean;
 };
 
 export async function loadCliConfig(options: Options) {
@@ -57,6 +58,7 @@ export async function loadCliConfig(options: Options) {
   try {
     const frontendAppConfigs = schema.process(appConfigs, {
       visibility: ['frontend'],
+      withFilteredKeys: options.withFilteredKeys,
     });
     const frontendConfig = ConfigReader.fromConfigs(frontendAppConfigs);
 
