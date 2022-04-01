@@ -42,7 +42,7 @@ export class SonarQubeClient implements SonarQubeApi {
     path: string,
     query: { [key in string]: any },
   ): Promise<T | undefined> {
-    const idToken = await this.identityApi.getIdToken();
+    const { token: idToken } = await this.identityApi.getCredentials();
 
     const apiUrl = `${await this.discoveryApi.getBaseUrl('proxy')}/sonarqube`;
     const response = await fetch(
@@ -138,11 +138,13 @@ export class SonarQubeClient implements SonarQubeApi {
       getIssuesUrl: identifier =>
         `${this.baseUrl}project/issues?id=${encodeURIComponent(
           componentKey,
-        )}&types=${identifier.toUpperCase()}&resolved=false`,
+        )}&types=${identifier.toLocaleUpperCase('en-US')}&resolved=false`,
       getComponentMeasuresUrl: identifier =>
         `${this.baseUrl}component_measures?id=${encodeURIComponent(
           componentKey,
-        )}&metric=${identifier.toLowerCase()}&resolved=false&view=list`,
+        )}&metric=${identifier.toLocaleLowerCase(
+          'en-US',
+        )}&resolved=false&view=list`,
       getSecurityHotspotsUrl: () =>
         `${this.baseUrl}project/security_hotspots?id=${encodeURIComponent(
           componentKey,

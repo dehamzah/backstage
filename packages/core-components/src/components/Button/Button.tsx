@@ -14,28 +14,38 @@
  * limitations under the License.
  */
 
-import {
-  Button as MaterialButton,
+import MaterialButton, {
   ButtonProps as MaterialButtonProps,
-} from '@material-ui/core';
+} from '@material-ui/core/Button';
 import React from 'react';
 import { Link, LinkProps } from '../Link';
 
-type Props = MaterialButtonProps & Omit<LinkProps, 'variant' | 'color'>;
-
-declare function ButtonType(props: Props): JSX.Element;
+/**
+ * Properties for {@link Button}
+ *
+ * @public
+ * @remarks
+ *
+ * See {@link https://v4.mui.com/api/button/#props | Material-UI Button Props} for all properties
+ */
+export type ButtonProps = MaterialButtonProps &
+  Omit<LinkProps, 'variant' | 'color'>;
 
 /**
- * Thin wrapper on top of material-ui's Button component
+ * This wrapper is here to reset the color of the Link and make typescript happy.
+ */
+const LinkWrapper = React.forwardRef<any, LinkProps>((props, ref) => (
+  <Link ref={ref} {...props} color="initial" />
+));
+
+/**
+ * Thin wrapper on top of material-ui's {@link https://v4.mui.com/components/buttons/ | Button} component
+ *
+ * @public
+ * @remarks
+ *
  * Makes the Button to utilise react-router
  */
-const ActualButton = React.forwardRef<any, Props>((props, ref) => (
-  <MaterialButton ref={ref} component={Link} {...props} />
-)) as { (props: Props): JSX.Element };
-
-// TODO(Rugvip): We use this as a workaround to make the exported type be a
-//               function, which makes our API reference docs much nicer.
-//               The first type to be exported gets priority, but it will
-//               be thrown away when compiling to JS.
-// @ts-ignore
-export { ButtonType as Button, ActualButton as Button };
+export const Button = React.forwardRef<any, ButtonProps>((props, ref) => (
+  <MaterialButton ref={ref} component={LinkWrapper} {...props} />
+)) as (props: ButtonProps) => JSX.Element;

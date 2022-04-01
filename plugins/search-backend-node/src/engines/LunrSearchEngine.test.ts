@@ -16,28 +16,64 @@
 
 import { getVoidLogger } from '@backstage/backend-common';
 import lunr from 'lunr';
-import { SearchEngine } from '@backstage/search-common';
+import {
+  IndexableDocument,
+  SearchEngine,
+} from '@backstage/plugin-search-common';
 import {
   ConcreteLunrQuery,
   LunrSearchEngine,
   decodePageCursor,
   encodePageCursor,
 } from './LunrSearchEngine';
+import { LunrSearchEngineIndexer } from './LunrSearchEngineIndexer';
+import { TestPipeline } from '../test-utils';
 
 /**
  * Just used to test the default translator shipped with LunrSearchEngine.
  */
-class LunrSearchEngineForTranslatorTests extends LunrSearchEngine {
+class LunrSearchEngineForTests extends LunrSearchEngine {
+  getDocStore() {
+    return this.docStore;
+  }
+  setDocStore(docStore: Record<string, IndexableDocument>) {
+    this.docStore = docStore;
+  }
+  getLunrIndices() {
+    return this.lunrIndices;
+  }
   getTranslator() {
     return this.translator;
   }
 }
+
+const indexerMock = {
+  on: jest.fn(),
+  buildIndex: jest.fn(),
+  getDocumentStore: jest.fn(),
+};
+jest.mock('./LunrSearchEngineIndexer', () => ({
+  LunrSearchEngineIndexer: jest.fn().mockImplementation(() => indexerMock),
+}));
+
+const getActualIndexer = (engine: SearchEngine, index: string) => {
+  (LunrSearchEngineIndexer as unknown as jest.Mock).mockImplementationOnce(
+    () => {
+      const ActualIndexer = jest.requireActual(
+        './LunrSearchEngineIndexer',
+      ).LunrSearchEngineIndexer;
+      return new ActualIndexer();
+    },
+  );
+  return engine.getIndexer(index);
+};
 
 describe('LunrSearchEngine', () => {
   let testLunrSearchEngine: SearchEngine;
 
   beforeEach(() => {
     testLunrSearchEngine = new LunrSearchEngine({ logger: getVoidLogger() });
+    jest.clearAllMocks();
   });
 
   describe('translator', () => {
@@ -65,7 +101,7 @@ describe('LunrSearchEngine', () => {
     });
 
     it('should return translated query', async () => {
-      const inspectableSearchEngine = new LunrSearchEngineForTranslatorTests({
+      const inspectableSearchEngine = new LunrSearchEngineForTests({
         logger: getVoidLogger(),
       });
       const translatorUnderTest = inspectableSearchEngine.getTranslator();
@@ -107,7 +143,7 @@ describe('LunrSearchEngine', () => {
     });
 
     it('should have default offset and limit', async () => {
-      const inspectableSearchEngine = new LunrSearchEngineForTranslatorTests({
+      const inspectableSearchEngine = new LunrSearchEngineForTests({
         logger: getVoidLogger(),
       });
       const translatorUnderTest = inspectableSearchEngine.getTranslator();
@@ -148,7 +184,7 @@ describe('LunrSearchEngine', () => {
     });
 
     it('should return translated query with 1 filter', async () => {
-      const inspectableSearchEngine = new LunrSearchEngineForTranslatorTests({
+      const inspectableSearchEngine = new LunrSearchEngineForTests({
         logger: getVoidLogger(),
       });
       const translatorUnderTest = inspectableSearchEngine.getTranslator();
@@ -192,8 +228,39 @@ describe('LunrSearchEngine', () => {
       });
     });
 
+    it('should handle single-item array filter as scalar value', async () => {
+      const inspectableSearchEngine = new LunrSearchEngineForTests({
+        logger: getVoidLogger(),
+      });
+      const translatorUnderTest = inspectableSearchEngine.getTranslator();
+
+      const actualTranslatedQuery = translatorUnderTest({
+        term: 'testTerm',
+        filters: { kind: ['testKind'] },
+      }) as ConcreteLunrQuery;
+
+      expect(actualTranslatedQuery).toMatchObject({
+        documentTypes: undefined,
+        lunrQueryBuilder: expect.any(Function),
+      });
+
+      const query: jest.Mocked<lunr.Query> = {
+        allFields: ['kind'],
+        clauses: [],
+        term: jest.fn(),
+        clause: jest.fn(),
+      };
+
+      actualTranslatedQuery.lunrQueryBuilder.bind(query)(query);
+
+      expect(query.term).toBeCalledWith(lunr.tokenizer('testKind'), {
+        fields: ['kind'],
+        presence: lunr.Query.presence.REQUIRED,
+      });
+    });
+
     it('should return translated query with multiple filters', async () => {
-      const inspectableSearchEngine = new LunrSearchEngineForTranslatorTests({
+      const inspectableSearchEngine = new LunrSearchEngineForTests({
         logger: getVoidLogger(),
       });
       const translatorUnderTest = inspectableSearchEngine.getTranslator();
@@ -242,7 +309,7 @@ describe('LunrSearchEngine', () => {
     });
 
     it('should throw if translated query references missing field', async () => {
-      const inspectableSearchEngine = new LunrSearchEngineForTranslatorTests({
+      const inspectableSearchEngine = new LunrSearchEngineForTests({
         logger: getVoidLogger(),
       });
       const translatorUnderTest = inspectableSearchEngine.getTranslator();
@@ -303,7 +370,13 @@ describe('LunrSearchEngine', () => {
       ];
 
       // Mock indexing of 1 document
-      await testLunrSearchEngine.index('test-index', mockDocuments);
+      const indexer = await getActualIndexer(
+        testLunrSearchEngine,
+        'test-index',
+      );
+      await TestPipeline.withSubject(indexer)
+        .withDocuments(mockDocuments)
+        .execute();
 
       // Perform search query
       const mockedSearchResult = await testLunrSearchEngine.query({
@@ -328,7 +401,13 @@ describe('LunrSearchEngine', () => {
       ];
 
       // Mock indexing of 1 document
-      await testLunrSearchEngine.index('test-index', mockDocuments);
+      const indexer = await getActualIndexer(
+        testLunrSearchEngine,
+        'test-index',
+      );
+      await TestPipeline.withSubject(indexer)
+        .withDocuments(mockDocuments)
+        .execute();
 
       // Perform search query
       const mockedSearchResult = await testLunrSearchEngine.query({
@@ -361,7 +440,13 @@ describe('LunrSearchEngine', () => {
       ];
 
       // Mock indexing of 1 document
-      await testLunrSearchEngine.index('test-index', mockDocuments);
+      const indexer = await getActualIndexer(
+        testLunrSearchEngine,
+        'test-index',
+      );
+      await TestPipeline.withSubject(indexer)
+        .withDocuments(mockDocuments)
+        .execute();
 
       // Perform search query
       const mockedSearchResult = await testLunrSearchEngine.query({
@@ -393,7 +478,13 @@ describe('LunrSearchEngine', () => {
       ];
 
       // Mock indexing of 1 document
-      await testLunrSearchEngine.index('test-index', mockDocuments);
+      const indexer = await getActualIndexer(
+        testLunrSearchEngine,
+        'test-index',
+      );
+      await TestPipeline.withSubject(indexer)
+        .withDocuments(mockDocuments)
+        .execute();
 
       // Perform search query
       const mockedSearchResult = await testLunrSearchEngine.query({
@@ -425,7 +516,13 @@ describe('LunrSearchEngine', () => {
       ];
 
       // Mock indexing of 1 document
-      await testLunrSearchEngine.index('test-index', mockDocuments);
+      const indexer = await getActualIndexer(
+        testLunrSearchEngine,
+        'test-index',
+      );
+      await TestPipeline.withSubject(indexer)
+        .withDocuments(mockDocuments)
+        .execute();
 
       // Perform search query
       const mockedSearchResult = await testLunrSearchEngine.query({
@@ -458,7 +555,13 @@ describe('LunrSearchEngine', () => {
       ];
 
       // Mock indexing of 1 document
-      await testLunrSearchEngine.index('test-index', mockDocuments);
+      const indexer = await getActualIndexer(
+        testLunrSearchEngine,
+        'test-index',
+      );
+      await TestPipeline.withSubject(indexer)
+        .withDocuments(mockDocuments)
+        .execute();
 
       // Perform search query
       const mockedSearchResult = await testLunrSearchEngine.query({
@@ -491,7 +594,13 @@ describe('LunrSearchEngine', () => {
       ];
 
       // Mock indexing of 1 document
-      await testLunrSearchEngine.index('test-index', mockDocuments);
+      const indexer = await getActualIndexer(
+        testLunrSearchEngine,
+        'test-index',
+      );
+      await TestPipeline.withSubject(indexer)
+        .withDocuments(mockDocuments)
+        .execute();
 
       // Perform search query
       const mockedSearchResult = await testLunrSearchEngine.query({
@@ -529,7 +638,13 @@ describe('LunrSearchEngine', () => {
       ];
 
       // Mock indexing of 2 documents
-      await testLunrSearchEngine.index('test-index', mockDocuments);
+      const indexer = await getActualIndexer(
+        testLunrSearchEngine,
+        'test-index',
+      );
+      await TestPipeline.withSubject(indexer)
+        .withDocuments(mockDocuments)
+        .execute();
 
       // Perform search query
       const mockedSearchResult = await testLunrSearchEngine.query({
@@ -573,8 +688,21 @@ describe('LunrSearchEngine', () => {
       ];
 
       // Mock 2 indices with 1 document each
-      await testLunrSearchEngine.index('test-index', mockDocuments);
-      await testLunrSearchEngine.index('test-index-2', mockDocuments2);
+      const indexer1 = await getActualIndexer(
+        testLunrSearchEngine,
+        'test-index',
+      );
+      const indexer2 = await getActualIndexer(
+        testLunrSearchEngine,
+        'test-index-2',
+      );
+      await TestPipeline.withSubject(indexer1)
+        .withDocuments(mockDocuments)
+        .execute();
+      await TestPipeline.withSubject(indexer2)
+        .withDocuments(mockDocuments2)
+        .execute();
+
       // Perform search query scoped to "test-index-2" with a filter on the field "extraField"
       const mockedSearchResult = await testLunrSearchEngine.query({
         term: 'testTitle',
@@ -611,7 +739,13 @@ describe('LunrSearchEngine', () => {
       ];
 
       // Mock indexing of 2 documents
-      await testLunrSearchEngine.index('test-index', mockDocuments);
+      const indexer = await getActualIndexer(
+        testLunrSearchEngine,
+        'test-index',
+      );
+      await TestPipeline.withSubject(indexer)
+        .withDocuments(mockDocuments)
+        .execute();
 
       // Perform search query
       const mockedSearchResult = await testLunrSearchEngine.query({
@@ -664,8 +798,20 @@ describe('LunrSearchEngine', () => {
       ];
 
       // Mock 2 indices with 2 documents each
-      await testLunrSearchEngine.index('test-index', mockDocuments);
-      await testLunrSearchEngine.index('test-index-2', mockDocuments2);
+      const indexer = await getActualIndexer(
+        testLunrSearchEngine,
+        'test-index',
+      );
+      await TestPipeline.withSubject(indexer)
+        .withDocuments(mockDocuments)
+        .execute();
+      const indexer2 = await getActualIndexer(
+        testLunrSearchEngine,
+        'test-index-2',
+      );
+      await TestPipeline.withSubject(indexer2)
+        .withDocuments(mockDocuments2)
+        .execute();
 
       // Perform search query scoped to "test-index-2"
       const mockedSearchResult = await testLunrSearchEngine.query({
@@ -703,7 +849,13 @@ describe('LunrSearchEngine', () => {
           location: `test/location/${i}`,
         }));
 
-      await testLunrSearchEngine.index('test-index', mockDocuments);
+      const indexer = await getActualIndexer(
+        testLunrSearchEngine,
+        'test-index',
+      );
+      await TestPipeline.withSubject(indexer)
+        .withDocuments(mockDocuments)
+        .execute();
 
       const mockedSearchResult = await testLunrSearchEngine.query({
         term: 'testTitle',
@@ -736,7 +888,10 @@ describe('LunrSearchEngine', () => {
         location: `test/location/${i}`,
       }));
 
-    await testLunrSearchEngine.index('test-index', mockDocuments);
+    const indexer = await getActualIndexer(testLunrSearchEngine, 'test-index');
+    await TestPipeline.withSubject(indexer)
+      .withDocuments(mockDocuments)
+      .execute();
 
     const mockedSearchResult = await testLunrSearchEngine.query({
       term: 'testTitle',
@@ -762,22 +917,46 @@ describe('LunrSearchEngine', () => {
   });
 
   describe('index', () => {
-    it('should index document', async () => {
-      const indexSpy = jest.spyOn(testLunrSearchEngine, 'index');
-      const mockDocuments = [
-        {
-          title: 'testTerm',
-          text: 'testText',
-          location: 'test/location',
-        },
-      ];
+    it('should get indexer', async () => {
+      const indexer = await testLunrSearchEngine.getIndexer('test-index');
+      expect(LunrSearchEngineIndexer).toHaveBeenCalled();
+      expect(indexer.on).toHaveBeenCalledWith('close', expect.any(Function));
+    });
 
-      // call index func and ensure the index func was invoked.
-      await testLunrSearchEngine.index('test-index', mockDocuments);
-      expect(indexSpy).toHaveBeenCalled();
-      expect(indexSpy).toHaveBeenCalledWith('test-index', [
-        { title: 'testTerm', text: 'testText', location: 'test/location' },
-      ]);
+    it('should manage indices and docs on close', async () => {
+      const doc = { title: 'A doc', text: 'test', location: 'some-location' };
+
+      // Set up an inspectable search engine to pre-set some data.
+      const inspectableSearchEngine = new LunrSearchEngineForTests({
+        logger: getVoidLogger(),
+      });
+      inspectableSearchEngine.setDocStore({ 'existing-location': doc });
+
+      // Mock methods called by close handler.
+      indexerMock.buildIndex.mockReturnValueOnce('expected-index');
+      indexerMock.getDocumentStore.mockReturnValueOnce({
+        'new-location': doc,
+      });
+
+      // Get the indexer and invoke its close handler.
+      await inspectableSearchEngine.getIndexer('test-index');
+      const onClose = indexerMock.on.mock.calls[0][1] as Function;
+      onClose();
+
+      // Ensure mocked methods were called.
+      expect(indexerMock.buildIndex).toHaveBeenCalled();
+      expect(indexerMock.getDocumentStore).toHaveBeenCalled();
+
+      // Ensure the lunr index was written to the search engine.
+      expect(inspectableSearchEngine.getLunrIndices()).toStrictEqual({
+        'test-index': 'expected-index',
+      });
+
+      // Ensure documents are merged into the existing store.
+      expect(inspectableSearchEngine.getDocStore()).toStrictEqual({
+        'existing-location': doc,
+        'new-location': doc,
+      });
     });
   });
 });

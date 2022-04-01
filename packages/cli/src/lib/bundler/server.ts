@@ -50,10 +50,12 @@ export async function serveBundle(options: ServeOptions) {
         publicPath: config.output?.publicPath as string,
         stats: 'errors-warnings',
       },
-      static: {
-        publicPath: config.output?.publicPath as string,
-        directory: paths.targetPublic ?? '/',
-      },
+      static: paths.targetPublic
+        ? {
+            publicPath: config.output?.publicPath as string,
+            directory: paths.targetPublic,
+          }
+        : undefined,
       historyApiFallback: {
         // Paths with dots should still use the history fallback.
         // See https://github.com/facebookincubator/create-react-app/issues/387.
@@ -65,6 +67,9 @@ export async function serveBundle(options: ServeOptions) {
       proxy: pkg.proxy,
       // When the dev server is behind a proxy, the host and public hostname differ
       allowedHosts: [url.hostname],
+      client: {
+        webSocketURL: 'auto://0.0.0.0:0/ws',
+      },
     } as any,
   );
 

@@ -55,33 +55,50 @@ When using ALB authentication Backstage will only be loaded once the user has su
 - add the following definition just before the app is created (`const app = createApp`):
 
 ```ts
-const DummySignInComponent: any = (props: any) => {
-  try {
-    const config = useApi(configApiRef);
+import React from 'react';
+import { UserIdentity } from '@backstage/core-components';
+import { SignInPageProps } from '@backstage/core-app-api';
+
+const DummySignInComponent: any = (props: SignInPageProps) => {
+  const [error, setError] = React.useState<string | undefined>();
+  const config = useApi(configApiRef);
+  React.useEffect(() => {
     const shouldAuth = !!config.getOptionalConfig('auth.providers.awsalb');
     if (shouldAuth) {
       fetch(`${window.location.origin}/api/auth/awsalb/refresh`)
         .then(data => data.json())
         .then(data => {
-          props.onResult({
-            userId: data.backstageIdentity.id,
-            profile: data.profile,
-          });
+          props.onSignInSuccess(
+            UserIdentity.fromLegacy({
+              userId: data.backstageIdentity.id,
+              profile: data.profile,
+            }),
+          );
+        })
+        .catch(err => {
+          setError(err.message);
         });
     } else {
-      props.onResult({
-        userId: 'guest',
-        profile: {
-          email: 'guest@example.com',
-          displayName: 'Guest',
-          picture: '',
-        },
-      });
+      try {
+        props.onSignInSuccess(
+          UserIdentity.fromLegacy({
+            userId: 'guest',
+            profile: {
+              email: 'guest@example.com',
+              displayName: 'Guest',
+              picture: '',
+            },
+          }),
+        );
+      } catch (err) {
+        setError(err.message);
+      }
     }
-    return <div />;
-  } catch (err) {
-    return <div>{err.message}</div>;
+  }, [config]);
+  if (error) {
+    return <div>{error}</div>;
   }
+  return <div />;
 };
 ```
 
@@ -100,17 +117,20 @@ const app = createApp({
 
 ### Backend
 
-When using ALB auth it is not possible to leverage the built-in auth config discovery mechanism implemented in the app created by default; bespoke logic needs to be implemented.
+When using ALB auth you can configure it as described [here](https://backstage.io/docs/auth/identity-resolver).
 
-- replace the content of `packages/backend/plugin/auth.ts` with the below
+- replace the content of `packages/backend/plugin/auth.ts` with the below and tweak it according to your needs.
 
 ```ts
 import {
   createRouter,
-  AuthResponse,
-  AuthProviderFactoryOptions,
-  defaultAuthProviderFactories,
+  createAwsAlbProvider,
 } from '@backstage/plugin-auth-backend';
+import {
+  DEFAULT_NAMESPACE,
+  stringifyEntityRef,
+} from '@backstage/catalog-model';
+import { Router } from 'express';
 import { PluginEnvironment } from '../types';
 
 export default async function createPlugin({
@@ -118,30 +138,63 @@ export default async function createPlugin({
   database,
   config,
   discovery,
-}: PluginEnvironment) {
-  const identityResolver = (payload: any): Promise<AuthResponse<any>> => {
-    return Promise.resolve({
-      providerInfo: {},
-      profile: {
-        email: payload.email,
-        displayName: payload.name,
-        picture: payload.picture,
-      },
-      backstageIdentity: {
-        id: payload.email,
-      },
-    });
-  };
-  const providerFactories = {
-    awsalb: (options: AuthProviderFactoryOptions) =>
-      defaultAuthProviderFactories.awsalb({ ...options, identityResolver }),
-  };
+}: PluginEnvironment): Promise<Router> {
   return await createRouter({
     logger,
     config,
     database,
     discovery,
-    providerFactories,
+    providerFactories: {
+      awsalb: createAwsAlbProvider({
+        authHandler: async ({ fullProfile }) => {
+          let email: string | undefined = undefined;
+          if (fullProfile.emails && fullProfile.emails.length > 0) {
+            const [firstEmail] = fullProfile.emails;
+            email = firstEmail.value;
+          }
+
+          let picture: string | undefined = undefined;
+          if (fullProfile.photos && fullProfile.photos.length > 0) {
+            const [firstPhoto] = fullProfile.photos;
+            picture = firstPhoto.value;
+          }
+
+          const displayName: string | undefined =
+            fullProfile.displayName ?? fullProfile.username ?? fullProfile.id;
+
+          return {
+            profile: {
+              email,
+              picture,
+              displayName,
+            },
+          };
+        },
+        signIn: {
+          resolver: async ({ profile: { email } }, ctx) => {
+            const [id] = email?.split('@') ?? '';
+            // Fetch from an external system that returns entity claims like:
+            // ['user:default/breanna.davison', ...]
+            const userEntityRef = stringifyEntityRef({
+              kind: 'User',
+              namespace: DEFAULT_NAMESPACE,
+              name: id,
+            });
+
+            // Resolve group membership from the Backstage catalog
+            const fullEnt =
+              await ctx.catalogIdentityClient.resolveCatalogMembership({
+                entityRefs: [id].concat([userEntityRef]),
+                logger: ctx.logger,
+              });
+            const token = await ctx.tokenIssuer.issueToken({
+              claims: { sub: userEntityRef, ent: fullEnt },
+            });
+            return { id, token };
+          },
+        },
+      }),
+    },
   });
 }
 ```
@@ -154,12 +207,11 @@ Use the following `auth` configuration when running Backstage on AWS:
 auth:
   providers:
     awsalb:
-      issuer:
-        issuer: https://login.microsoftonline.com/{TENANT_ID}/v2.0
-        region: { AWS_REGION }
+      issuer: https://login.microsoftonline.com/<TENANT_ID>/v2.0
+      region: <AWS_REGION>
 ```
 
-Replace `{TENANT_ID}` with the value of `Directory (tenant) ID` of the AAD App and `{AWS_REGION}` with the AWS region identifier where the ALB is deployed (for example: `eu-central-1`).
+Replace `<TENANT_ID>` with the value of `Directory (tenant) ID` of the AAD App and `<AWS_REGION>` with the AWS region identifier where the ALB is deployed (for example: `eu-central-1`).
 
 ## Conclusion
 

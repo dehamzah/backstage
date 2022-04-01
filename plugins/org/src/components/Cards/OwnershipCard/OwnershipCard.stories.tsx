@@ -15,14 +15,13 @@
  */
 
 import { GroupEntity } from '@backstage/catalog-model';
-import { ApiProvider, ApiRegistry } from '@backstage/core-app-api';
+import { ApiProvider } from '@backstage/core-app-api';
 import {
   CatalogApi,
   catalogApiRef,
-  catalogRouteRef,
   EntityProvider,
 } from '@backstage/plugin-catalog-react';
-import { wrapInTestApp } from '@backstage/test-utils';
+import { TestApiRegistry, wrapInTestApp } from '@backstage/test-utils';
 import {
   BackstageTheme,
   createTheme,
@@ -31,6 +30,7 @@ import {
 } from '@backstage/theme';
 import { Grid, ThemeProvider } from '@material-ui/core';
 import React from 'react';
+import { catalogIndexRouteRef } from '../../../routes';
 import { OwnershipCard } from './OwnershipCard';
 
 export default {
@@ -69,9 +69,10 @@ const makeComponent = ({ type, name }: { type: string; name: string }) => ({
   relations: [
     {
       type: 'ownedBy',
+      targetRef: 'group:default/team-a',
       target: {
         namespace: 'default',
-        kind: 'Group',
+        kind: 'group',
         name: 'team-a',
       },
     },
@@ -86,11 +87,11 @@ const catalogApi: Partial<CatalogApi> = {
   getEntities: () => Promise.resolve({ items: [serviceA, serviceB, websiteA] }),
 };
 
-const apiRegistry = ApiRegistry.from([[catalogApiRef, catalogApi]]);
+const apis = TestApiRegistry.from([catalogApiRef, catalogApi]);
 
 export const Default = () =>
   wrapInTestApp(
-    <ApiProvider apis={apiRegistry}>
+    <ApiProvider apis={apis}>
       <EntityProvider entity={defaultEntity}>
         <Grid container spacing={4}>
           <Grid item xs={12} md={6}>
@@ -100,7 +101,7 @@ export const Default = () =>
       </EntityProvider>
     </ApiProvider>,
     {
-      mountedRoutes: { '/catalog': catalogRouteRef },
+      mountedRoutes: { '/catalog': catalogIndexRouteRef },
     },
   );
 
@@ -123,7 +124,7 @@ const monochromeTheme = (outer: BackstageTheme) =>
 export const Themed = () =>
   wrapInTestApp(
     <ThemeProvider theme={monochromeTheme}>
-      <ApiProvider apis={apiRegistry}>
+      <ApiProvider apis={apis}>
         <EntityProvider entity={defaultEntity}>
           <Grid container spacing={4}>
             <Grid item xs={12} md={6}>
@@ -134,6 +135,6 @@ export const Themed = () =>
       </ApiProvider>
     </ThemeProvider>,
     {
-      mountedRoutes: { '/catalog': catalogRouteRef },
+      mountedRoutes: { '/catalog': catalogIndexRouteRef },
     },
   );

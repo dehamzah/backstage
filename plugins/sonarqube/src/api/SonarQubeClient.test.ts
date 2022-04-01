@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { msw } from '@backstage/test-utils';
+import { setupRequestMockHandlers } from '@backstage/test-utils';
 import { rest } from 'msw';
 import { setupServer } from 'msw/node';
 import { FindingSummary, SonarQubeClient } from './index';
@@ -25,36 +25,20 @@ import { IdentityApi } from '@backstage/core-plugin-api';
 const server = setupServer();
 
 const identityApiAuthenticated: IdentityApi = {
-  getUserId() {
-    return 'jane-fonda';
-  },
-  getProfile() {
-    return { email: 'jane-fonda@spotify.com' };
-  },
-  async getIdToken() {
-    return Promise.resolve('fake-id-token');
-  },
-  async signOut() {
-    return Promise.resolve();
-  },
+  signOut: jest.fn(),
+  getProfileInfo: jest.fn(),
+  getBackstageIdentity: jest.fn(),
+  getCredentials: jest.fn().mockResolvedValue({ token: 'fake-id-token' }),
 };
 const identityApiGuest: IdentityApi = {
-  getUserId() {
-    return 'guest';
-  },
-  getProfile() {
-    return {};
-  },
-  async getIdToken() {
-    return Promise.resolve(undefined);
-  },
-  async signOut() {
-    return Promise.resolve();
-  },
+  signOut: jest.fn(),
+  getProfileInfo: jest.fn(),
+  getBackstageIdentity: jest.fn(),
+  getCredentials: jest.fn().mockResolvedValue({ token: undefined }),
 };
 
 describe('SonarQubeClient', () => {
-  msw.setupDefaultHandlers(server);
+  setupRequestMockHandlers(server);
 
   const mockBaseUrl = 'http://backstage:9191/api/proxy';
   const discoveryApi = UrlPatternDiscovery.compile(mockBaseUrl);

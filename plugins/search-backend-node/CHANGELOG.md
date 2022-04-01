@@ -1,5 +1,99 @@
 # @backstage/plugin-search-backend-node
 
+## 0.5.3-next.0
+
+### Patch Changes
+
+- 62ee65422c: Use new `IndexableResultSet` type as return type of query method in `SearchEngine` implementation.
+- Updated dependencies
+  - @backstage/plugin-search-common@0.3.3-next.0
+
+## 0.5.2
+
+### Patch Changes
+
+- f24ef7864e: Minor typo fixes
+- Updated dependencies
+  - @backstage/errors@1.0.0
+  - @backstage/plugin-search-common@0.3.2
+
+## 0.5.1
+
+### Patch Changes
+
+- 3e54f6c436: Use `@backstage/plugin-search-common` package instead of `@backstage/search-common`.
+- Updated dependencies
+  - @backstage/plugin-search-common@0.3.1
+
+## 0.5.1-next.0
+
+### Patch Changes
+
+- 3e54f6c436: Use `@backstage/plugin-search-common` package instead of `@backstage/search-common`.
+- Updated dependencies
+  - @backstage/plugin-search-common@0.3.1-next.0
+
+## 0.5.0
+
+### Minor Changes
+
+- 022507c860: **BREAKING**
+
+  The Backstage Search Platform's indexing process has been rewritten as a stream
+  pipeline in order to improve efficiency and performance on large document sets.
+
+  The concepts of `Collator` and `Decorator` have been replaced with readable and
+  transform object streams (respectively), as well as factory classes to
+  instantiate them. Accordingly, the `SearchEngine.index()` method has also been
+  replaced with a `getIndexer()` factory method that resolves to a writable
+  object stream.
+
+  Check [this upgrade guide](https://backstage.io/docs/features/search/how-to-guides#how-to-migrate-from-search-alpha-to-beta)
+  for further details.
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/search-common@0.3.0
+
+## 0.4.7
+
+### Patch Changes
+
+- Fix for the previous release with missing type declarations.
+- Updated dependencies
+  - @backstage/search-common@0.2.4
+
+## 0.4.6
+
+### Patch Changes
+
+- c77c5c7eb6: Added `backstage.role` to `package.json`
+- Updated dependencies
+  - @backstage/search-common@0.2.3
+
+## 0.4.5
+
+### Patch Changes
+
+- f6389e9e5d: Track visibility permissions by document type in IndexBuilder
+- Updated dependencies
+  - @backstage/search-common@0.2.2
+
+## 0.4.4
+
+### Patch Changes
+
+- 5333451def: Cleaned up API exports
+
+## 0.4.3
+
+### Patch Changes
+
+- a369f19e7e: Handle special case when filter array has single value optimizing Lunr search behaviour.
+- Updated dependencies
+  - @backstage/search-common@0.2.1
+
 ## 0.4.2
 
 ### Patch Changes

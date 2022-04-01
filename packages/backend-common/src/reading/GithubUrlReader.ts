@@ -16,12 +16,13 @@
 
 import {
   getGitHubFileFetchUrl,
+  DefaultGithubCredentialsProvider,
   GithubCredentialsProvider,
   GitHubIntegration,
   ScmIntegrations,
 } from '@backstage/integration';
 import { RestEndpointMethodTypes } from '@octokit/rest';
-import fetch from 'cross-fetch';
+import fetch, { RequestInit, Response } from 'node-fetch';
 import parseGitUrl from 'git-url-parse';
 import { Minimatch } from 'minimatch';
 import { Readable } from 'stream';
@@ -49,7 +50,7 @@ export type GhBlobResponse =
   RestEndpointMethodTypes['git']['getBlob']['response']['data'];
 
 /**
- * A processor that adds the ability to read files from GitHub v3 APIs, such as
+ * Implements a {@link UrlReader} for files through the GitHub v3 APIs, such as
  * the one exposed by GitHub itself.
  *
  * @public
@@ -57,10 +58,9 @@ export type GhBlobResponse =
 export class GithubUrlReader implements UrlReader {
   static factory: ReaderFactory = ({ config, treeResponseFactory }) => {
     const integrations = ScmIntegrations.fromConfig(config);
+    const credentialsProvider =
+      DefaultGithubCredentialsProvider.fromIntegrations(integrations);
     return integrations.github.list().map(integration => {
-      const credentialsProvider = GithubCredentialsProvider.create(
-        integration.config,
-      );
       const reader = new GithubUrlReader(integration, {
         treeResponseFactory,
         credentialsProvider,
@@ -110,6 +110,13 @@ export class GithubUrlReader implements UrlReader {
           ...(options?.etag && { 'If-None-Match': options.etag }),
           Accept: 'application/vnd.github.v3.raw',
         },
+        // TODO(freben): The signal cast is there because pre-3.x versions of
+        // node-fetch have a very slightly deviating AbortSignal type signature.
+        // The difference does not affect us in practice however. The cast can
+        // be removed after we support ESM for CLI dependencies and migrate to
+        // version 3 of node-fetch.
+        // https://github.com/backstage/backstage/issues/8242
+        signal: options?.signal as any,
       });
     } catch (e) {
       throw new Error(`Unable to read ${url}, ${e}`);
@@ -126,10 +133,21 @@ export class GithubUrlReader implements UrlReader {
       };
     }
 
-    const message = `${url} could not be read as ${ghUrl}, ${response.status} ${response.statusText}`;
+    let message = `${url} could not be read as ${ghUrl}, ${response.status} ${response.statusText}`;
     if (response.status === 404) {
       throw new NotFoundError(message);
     }
+
+    // GitHub returns a 403 response with a couple of headers indicating rate
+    // limit status. See more in the GitHub docs:
+    // https://docs.github.com/en/rest/overview/resources-in-the-rest-api#rate-limiting
+    if (
+      response.status === 403 &&
+      response.headers.get('X-RateLimit-Remaining') === '0'
+    ) {
+      message += ' (rate limit exceeded)';
+    }
+
     throw new Error(message);
   }
 
@@ -153,7 +171,13 @@ export class GithubUrlReader implements UrlReader {
       repoDetails.repo.archive_url,
       commitSha,
       filepath,
-      { headers },
+      // TODO(freben): The signal cast is there because pre-3.x versions of
+      // node-fetch have a very slightly deviating AbortSignal type signature.
+      // The difference does not affect us in practice however. The cast can be
+      // removed after we support ESM for CLI dependencies and migrate to
+      // version 3 of node-fetch.
+      // https://github.com/backstage/backstage/issues/8242
+      { headers, signal: options?.signal as any },
       options,
     );
   }
@@ -177,7 +201,7 @@ export class GithubUrlReader implements UrlReader {
       repoDetails.repo.archive_url,
       commitSha,
       filepath,
-      { headers },
+      { headers, signal: options?.signal as any },
     );
 
     return { files, etag: commitSha };

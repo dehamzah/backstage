@@ -14,25 +14,39 @@
  * limitations under the License.
  */
 
-import { spawn } from 'child_process';
+import { SpawnOptionsWithoutStdio, spawn } from 'child_process';
 import { PassThrough, Writable } from 'stream';
 import { Logger } from 'winston';
 import { Git } from '@backstage/backend-common';
-import { Octokit } from '@octokit/rest';
+import { Octokit } from 'octokit';
+import { assertError } from '@backstage/errors';
 
+/** @public */
 export type RunCommandOptions = {
+  /** command to run */
   command: string;
+  /** arguments to pass the command */
   args: string[];
+  /** options to pass to spawn */
+  options?: SpawnOptionsWithoutStdio;
+  /** stream to capture stdout and stderr output */
   logStream?: Writable;
 };
 
-export const runCommand = async ({
-  command,
-  args,
-  logStream = new PassThrough(),
-}: RunCommandOptions) => {
+/**
+ * Run a command in a sub-process, normally a shell command.
+ *
+ * @public
+ */
+export const executeShellCommand = async (options: RunCommandOptions) => {
+  const {
+    command,
+    args,
+    options: spawnOptions,
+    logStream = new PassThrough(),
+  } = options;
   await new Promise<void>((resolve, reject) => {
-    const process = spawn(command, args);
+    const process = spawn(command, args, spawnOptions);
 
     process.stdout.on('data', stream => {
       logStream.write(stream);
@@ -48,7 +62,9 @@ export const runCommand = async ({
 
     process.on('close', code => {
       if (code !== 0) {
-        return reject(`Command ${command} failed, exit code: ${code}`);
+        return reject(
+          new Error(`Command ${command} failed, exit code: ${code}`),
+        );
       }
       return resolve();
     });
@@ -129,7 +145,7 @@ export const enableBranchProtectionOnDefaultRepoBranch = async ({
 }: BranchProtectionOptions): Promise<void> => {
   const tryOnce = async () => {
     try {
-      await client.repos.updateBranchProtection({
+      await client.rest.repos.updateBranchProtection({
         mediaType: {
           /**
            * 👇 we need this preview because allowing a custom
@@ -152,6 +168,7 @@ export const enableBranchProtectionOnDefaultRepoBranch = async ({
         },
       });
     } catch (e) {
+      assertError(e);
       if (
         e.message.includes(
           'Upgrade to GitHub Pro or make this repository public to enable this feature',

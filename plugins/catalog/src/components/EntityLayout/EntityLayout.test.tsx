@@ -13,22 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import { CatalogApi } from '@backstage/catalog-client';
 import { Entity } from '@backstage/catalog-model';
+import { ApiProvider } from '@backstage/core-app-api';
+import { AlertApi, alertApiRef } from '@backstage/core-plugin-api';
 import {
+  AsyncEntityProvider,
   catalogApiRef,
   EntityProvider,
-  AsyncEntityProvider,
+  entityRouteRef,
+  starredEntitiesApiRef,
+  MockStarredEntitiesApi,
 } from '@backstage/plugin-catalog-react';
-import { renderInTestApp } from '@backstage/test-utils';
-import { fireEvent } from '@testing-library/react';
+import { permissionApiRef } from '@backstage/plugin-permission-react';
+import {
+  MockPermissionApi,
+  renderInTestApp,
+  TestApiRegistry,
+} from '@backstage/test-utils';
+import { act, fireEvent } from '@testing-library/react';
 import React from 'react';
-import { act } from 'react-dom/test-utils';
 import { Route, Routes } from 'react-router';
 import { EntityLayout } from './EntityLayout';
-
-import { AlertApi, alertApiRef } from '@backstage/core-plugin-api';
-import { ApiProvider, ApiRegistry } from '@backstage/core-app-api';
 
 const mockEntity = {
   kind: 'MyKind',
@@ -37,9 +44,11 @@ const mockEntity = {
   },
 } as Entity;
 
-const mockApis = ApiRegistry.with(catalogApiRef, {} as CatalogApi).with(
-  alertApiRef,
-  {} as AlertApi,
+const mockApis = TestApiRegistry.from(
+  [catalogApiRef, {} as CatalogApi],
+  [alertApiRef, {} as AlertApi],
+  [starredEntitiesApiRef, new MockStarredEntitiesApi()],
+  [permissionApiRef, new MockPermissionApi()],
 );
 
 describe('EntityLayout', () => {
@@ -54,6 +63,11 @@ describe('EntityLayout', () => {
           </EntityLayout>
         </EntityProvider>
       </ApiProvider>,
+      {
+        mountedRoutes: {
+          '/catalog/:namespace/:kind/:name': entityRouteRef,
+        },
+      },
     );
 
     expect(rendered.getByText('my-entity')).toBeInTheDocument();
@@ -80,6 +94,11 @@ describe('EntityLayout', () => {
           </EntityLayout>
         </EntityProvider>
       </ApiProvider>,
+      {
+        mountedRoutes: {
+          '/catalog/:namespace/:kind/:name': entityRouteRef,
+        },
+      },
     );
 
     expect(rendered.getByText('My Entity')).toBeInTheDocument();
@@ -98,6 +117,11 @@ describe('EntityLayout', () => {
           </EntityLayout>
         </AsyncEntityProvider>
       </ApiProvider>,
+      {
+        mountedRoutes: {
+          '/catalog/:namespace/:kind/:name': entityRouteRef,
+        },
+      },
     );
 
     expect(rendered.getByText('Warning: Entity not found')).toBeInTheDocument();
@@ -130,6 +154,11 @@ describe('EntityLayout', () => {
           }
         />
       </Routes>,
+      {
+        mountedRoutes: {
+          '/catalog/:namespace/:kind/:name': entityRouteRef,
+        },
+      },
     );
 
     const secondTab = rendered.queryAllByRole('tab')[1];
@@ -172,6 +201,11 @@ describe('EntityLayout', () => {
           </EntityLayout>
         </EntityProvider>
       </ApiProvider>,
+      {
+        mountedRoutes: {
+          '/catalog/:namespace/:kind/:name': entityRouteRef,
+        },
+      },
     );
 
     expect(rendered.queryByText('tabbed-test-title')).toBeInTheDocument();

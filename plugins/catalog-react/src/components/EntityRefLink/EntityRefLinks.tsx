@@ -13,27 +13,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Entity, EntityName } from '@backstage/catalog-model';
+
+import { Entity, CompoundEntityRef } from '@backstage/catalog-model';
 import React from 'react';
 import { EntityRefLink } from './EntityRefLink';
 import { LinkProps } from '@backstage/core-components';
 
+/**
+ * Props for {@link EntityRefLink}.
+ *
+ * @public
+ */
 export type EntityRefLinksProps = {
-  entityRefs: (Entity | EntityName)[];
+  entityRefs: (string | Entity | CompoundEntityRef)[];
   defaultKind?: string;
 } & Omit<LinkProps, 'to'>;
 
-export const EntityRefLinks = ({
-  entityRefs,
-  defaultKind,
-  ...linkProps
-}: EntityRefLinksProps) => (
-  <>
-    {entityRefs.map((r, i) => (
-      <React.Fragment key={i}>
-        {i > 0 && ', '}
-        <EntityRefLink {...linkProps} entityRef={r} defaultKind={defaultKind} />
-      </React.Fragment>
-    ))}
-  </>
-);
+/**
+ * Shows a list of clickable links to entities.
+ *
+ * @public
+ */
+export function EntityRefLinks(props: EntityRefLinksProps) {
+  const { entityRefs, defaultKind, ...linkProps } = props;
+  return (
+    <>
+      {entityRefs.map((r, i) => (
+        <React.Fragment key={i}>
+          {i > 0 && ', '}
+          <EntityRefLink
+            {...linkProps}
+            entityRef={r}
+            defaultKind={defaultKind}
+          />
+        </React.Fragment>
+      ))}
+    </>
+  );
+}

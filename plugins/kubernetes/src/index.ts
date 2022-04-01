@@ -25,6 +25,10 @@ export {
   kubernetesPlugin as plugin,
   EntityKubernetesContent,
 } from './plugin';
-export { Router } from './Router';
+export { Router, isKubernetesAvailable } from './Router';
+export * from './api';
 export * from './kubernetes-auth-provider';
 export * from './utils/clusterLinks';
+export * from './components';
+export * from './hooks';
+export * from './types';

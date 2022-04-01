@@ -36,36 +36,49 @@ import { compact } from 'lodash';
 import React, { Fragment, useEffect, useMemo, useState } from 'react';
 import { UserListFilter } from '../../filters';
 import {
-  useEntityListProvider,
+  useEntityList,
   useStarredEntities,
   useEntityOwnership,
 } from '../../hooks';
 import { UserListFilterKind } from '../../types';
 import { reduceEntityFilters } from '../../utils';
 
-const useStyles = makeStyles<Theme>(theme => ({
-  root: {
-    backgroundColor: 'rgba(0, 0, 0, .11)',
-    boxShadow: 'none',
-    margin: theme.spacing(1, 0, 1, 0),
+/** @public */
+export type CatalogReactUserListPickerClassKey =
+  | 'root'
+  | 'title'
+  | 'listIcon'
+  | 'menuItem'
+  | 'groupWrapper';
+
+const useStyles = makeStyles<Theme>(
+  theme => ({
+    root: {
+      backgroundColor: 'rgba(0, 0, 0, .11)',
+      boxShadow: 'none',
+      margin: theme.spacing(1, 0, 1, 0),
+    },
+    title: {
+      margin: theme.spacing(1, 0, 0, 1),
+      textTransform: 'uppercase',
+      fontSize: 12,
+      fontWeight: 'bold',
+    },
+    listIcon: {
+      minWidth: 30,
+      color: theme.palette.text.primary,
+    },
+    menuItem: {
+      minHeight: theme.spacing(6),
+    },
+    groupWrapper: {
+      margin: theme.spacing(1, 1, 2, 1),
+    },
+  }),
+  {
+    name: 'CatalogReactUserListPicker',
   },
-  title: {
-    margin: theme.spacing(1, 0, 0, 1),
-    textTransform: 'uppercase',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  listIcon: {
-    minWidth: 30,
-    color: theme.palette.text.primary,
-  },
-  menuItem: {
-    minHeight: theme.spacing(6),
-  },
-  groupWrapper: {
-    margin: theme.spacing(1, 1, 2, 1),
-  },
-}));
+);
 
 export type ButtonGroup = {
   name: string;
@@ -105,38 +118,46 @@ function getFilterGroups(orgName: string | undefined): ButtonGroup[] {
   ];
 }
 
-type UserListPickerProps = {
+/** @public */
+export type UserListPickerProps = {
   initialFilter?: UserListFilterKind;
   availableFilters?: UserListFilterKind[];
 };
 
-export const UserListPicker = ({
-  initialFilter,
-  availableFilters,
-}: UserListPickerProps) => {
+/** @public */
+export const UserListPicker = (props: UserListPickerProps) => {
+  const { initialFilter, availableFilters } = props;
   const classes = useStyles();
   const configApi = useApi(configApiRef);
   const orgName = configApi.getOptionalString('organization.name') ?? 'Company';
+  const {
+    filters,
+    updateFilters,
+    backendEntities,
+    queryParameters,
+    loading: loadingBackendEntities,
+  } = useEntityList();
 
   // Remove group items that aren't in availableFilters and exclude
   // any now-empty groups.
+  const userAndGroupFilterIds = ['starred', 'all'];
   const filterGroups = getFilterGroups(orgName)
     .map(filterGroup => ({
       ...filterGroup,
-      items: filterGroup.items.filter(
-        ({ id }) => !availableFilters || availableFilters.includes(id),
+      items: filterGroup.items.filter(({ id }) =>
+        // TODO: avoid hardcoding kinds here
+        ['group', 'user'].some(kind => kind === queryParameters.kind)
+          ? userAndGroupFilterIds.includes(id)
+          : !availableFilters || availableFilters.includes(id),
       ),
     }))
     .filter(({ items }) => !!items.length);
 
-  const { filters, updateFilters, backendEntities, queryParameters } =
-    useEntityListProvider();
-
   const { isStarredEntity } = useStarredEntities();
-  const { isOwnedEntity } = useEntityOwnership();
-  const [selectedUserFilter, setSelectedUserFilter] = useState(
-    [queryParameters.user].flat()[0] ?? initialFilter,
-  );
+  const { isOwnedEntity, loading: loadingEntityOwnership } =
+    useEntityOwnership();
+
+  const loading = loadingBackendEntities || loadingEntityOwnership;
 
   // Static filters; used for generating counts of potentially unselected kinds
   const ownedFilter = useMemo(
@@ -147,6 +168,59 @@ export const UserListPicker = ({
     () => new UserListFilter('starred', isOwnedEntity, isStarredEntity),
     [isOwnedEntity, isStarredEntity],
   );
+
+  const queryParamUserFilter = useMemo(
+    () => [queryParameters.user].flat()[0],
+    [queryParameters],
+  );
+
+  const [selectedUserFilter, setSelectedUserFilter] = useState(
+    queryParamUserFilter ?? initialFilter,
+  );
+
+  // To show proper counts for each section, apply all other frontend filters _except_ the user
+  // filter that's controlled by this picker.
+  const entitiesWithoutUserFilter = useMemo(
+    () =>
+      backendEntities.filter(
+        reduceEntityFilters(
+          compact(Object.values({ ...filters, user: undefined })),
+        ),
+      ),
+    [filters, backendEntities],
+  );
+
+  const filterCounts = useMemo<Record<string, number>>(
+    () => ({
+      all: entitiesWithoutUserFilter.length,
+      starred: entitiesWithoutUserFilter.filter(entity =>
+        starredFilter.filterEntity(entity),
+      ).length,
+      owned: entitiesWithoutUserFilter.filter(entity =>
+        ownedFilter.filterEntity(entity),
+      ).length,
+    }),
+    [entitiesWithoutUserFilter, starredFilter, ownedFilter],
+  );
+
+  // Set selected user filter on query parameter updates; this happens at initial page load and from
+  // external updates to the page location.
+  useEffect(() => {
+    if (queryParamUserFilter) {
+      setSelectedUserFilter(queryParamUserFilter as UserListFilterKind);
+    }
+  }, [queryParamUserFilter]);
+
+  useEffect(() => {
+    if (
+      !loading &&
+      !!selectedUserFilter &&
+      selectedUserFilter !== 'all' &&
+      filterCounts[selectedUserFilter] === 0
+    ) {
+      setSelectedUserFilter('all');
+    }
+  }, [loading, filterCounts, selectedUserFilter, setSelectedUserFilter]);
 
   useEffect(() => {
     updateFilters({
@@ -159,32 +233,6 @@ export const UserListPicker = ({
         : undefined,
     });
   }, [selectedUserFilter, isOwnedEntity, isStarredEntity, updateFilters]);
-
-  // To show proper counts for each section, apply all other frontend filters _except_ the user
-  // filter that's controlled by this picker.
-  const [entitiesWithoutUserFilter, setEntitiesWithoutUserFilter] =
-    useState(backendEntities);
-  useEffect(() => {
-    const filterFn = reduceEntityFilters(
-      compact(Object.values({ ...filters, user: undefined })),
-    );
-    setEntitiesWithoutUserFilter(backendEntities.filter(filterFn));
-  }, [filters, backendEntities]);
-
-  function getFilterCount(id: UserListFilterKind) {
-    switch (id) {
-      case 'owned':
-        return entitiesWithoutUserFilter.filter(entity =>
-          ownedFilter.filterEntity(entity),
-        ).length;
-      case 'starred':
-        return entitiesWithoutUserFilter.filter(entity =>
-          starredFilter.filterEntity(entity),
-        ).length;
-      default:
-        return entitiesWithoutUserFilter.length;
-    }
-  }
 
   return (
     <Card className={classes.root}>
@@ -203,6 +251,8 @@ export const UserListPicker = ({
                   onClick={() => setSelectedUserFilter(item.id)}
                   selected={item.id === filters.user?.value}
                   className={classes.menuItem}
+                  disabled={filterCounts[item.id] === 0}
+                  data-testid={`user-picker-${item.id}`}
                 >
                   {item.icon && (
                     <ListItemIcon className={classes.listIcon}>
@@ -210,15 +260,10 @@ export const UserListPicker = ({
                     </ListItemIcon>
                   )}
                   <ListItemText>
-                    <Typography
-                      variant="body1"
-                      data-testid={`user-picker-${item.id}`}
-                    >
-                      {item.label}
-                    </Typography>
+                    <Typography variant="body1">{item.label}</Typography>
                   </ListItemText>
                   <ListItemSecondaryAction>
-                    {getFilterCount(item.id) ?? '-'}
+                    {filterCounts[item.id] ?? '-'}
                   </ListItemSecondaryAction>
                 </MenuItem>
               ))}

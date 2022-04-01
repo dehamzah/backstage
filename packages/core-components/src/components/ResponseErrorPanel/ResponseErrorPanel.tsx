@@ -15,23 +15,31 @@
  */
 
 import { ResponseError } from '@backstage/errors';
-import { Divider, ListItem, ListItemText, makeStyles } from '@material-ui/core';
+import { makeStyles } from '@material-ui/core/styles';
+import Divider from '@material-ui/core/Divider';
+import ListItem from '@material-ui/core/ListItem';
+import ListItemText from '@material-ui/core/ListItemText';
 import React from 'react';
 import { CodeSnippet } from '../CodeSnippet';
 import { CopyTextButton } from '../CopyTextButton';
 import { ErrorPanel, ErrorPanelProps } from '../ErrorPanel';
 
-const useStyles = makeStyles(theme => ({
-  text: {
-    fontFamily: 'monospace',
-    whiteSpace: 'pre',
-    overflowX: 'auto',
-    marginRight: theme.spacing(2),
-  },
-  divider: {
-    margin: theme.spacing(2),
-  },
-}));
+export type ResponseErrorPanelClassKey = 'text' | 'divider';
+
+const useStyles = makeStyles(
+  theme => ({
+    text: {
+      fontFamily: 'monospace',
+      whiteSpace: 'pre',
+      overflowX: 'auto',
+      marginRight: theme.spacing(2),
+    },
+    divider: {
+      margin: theme.spacing(2),
+    },
+  }),
+  { name: 'BackstageResponseErrorPanel' },
+);
 
 /**
  * Renders a warning panel as the effect of a failed server request.
@@ -53,14 +61,14 @@ export function ResponseErrorPanel(props: ErrorPanelProps) {
     );
   }
 
-  const { data, cause } = error as ResponseError;
-  const { request, response } = data;
+  const { body, cause } = error as ResponseError;
+  const { request, response } = body;
 
   const errorString = `${response.statusCode}: ${cause.name}`;
   const requestString = request && `${request.method} ${request.url}`;
   const messageString = cause.message.replace(/\\n/g, '\n');
   const stackString = cause.stack?.replace(/\\n/g, '\n');
-  const jsonString = JSON.stringify(data, undefined, 2);
+  const jsonString = JSON.stringify(body, undefined, 2);
 
   return (
     <ErrorPanel

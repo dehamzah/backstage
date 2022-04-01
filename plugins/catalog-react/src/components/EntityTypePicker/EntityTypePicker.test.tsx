@@ -17,16 +17,16 @@
 import React from 'react';
 import { fireEvent, waitFor } from '@testing-library/react';
 import { capitalize } from 'lodash';
-import { CatalogApi } from '@backstage/catalog-client';
 import { Entity } from '@backstage/catalog-model';
 import { EntityTypePicker } from './EntityTypePicker';
 import { MockEntityListContextProvider } from '../../testUtils/providers';
 import { catalogApiRef } from '../../api';
 import { EntityKindFilter, EntityTypeFilter } from '../../filters';
 
-import { AlertApi, alertApiRef } from '@backstage/core-plugin-api';
-import { ApiProvider, ApiRegistry } from '@backstage/core-app-api';
-import { renderWithEffects } from '@backstage/test-utils';
+import { alertApiRef } from '@backstage/core-plugin-api';
+import { ApiProvider } from '@backstage/core-app-api';
+import { renderWithEffects, TestApiRegistry } from '@backstage/test-utils';
+import { GetEntityFacetsResponse } from '@backstage/catalog-client';
 
 const entities: Entity[] = [
   {
@@ -61,11 +61,27 @@ const entities: Entity[] = [
   },
 ];
 
-const apis = ApiRegistry.with(catalogApiRef, {
-  getEntities: jest.fn().mockResolvedValue({ items: entities }),
-} as unknown as CatalogApi).with(alertApiRef, {
-  post: jest.fn(),
-} as unknown as AlertApi);
+const apis = TestApiRegistry.from(
+  [
+    catalogApiRef,
+    {
+      getEntityFacets: jest.fn().mockResolvedValue({
+        facets: {
+          'spec.type': entities.map(e => ({
+            value: (e.spec as any).type,
+            count: 1,
+          })),
+        },
+      } as GetEntityFacetsResponse),
+    },
+  ],
+  [
+    alertApiRef,
+    {
+      post: jest.fn(),
+    },
+  ],
+);
 
 describe('<EntityTypePicker/>', () => {
   it('renders available entity types', async () => {
@@ -120,5 +136,61 @@ describe('<EntityTypePicker/>', () => {
     fireEvent.click(rendered.getByText('All'));
 
     expect(updateFilters).toHaveBeenLastCalledWith({ type: undefined });
+  });
+
+  it('respects the query parameter filter value', async () => {
+    const updateFilters = jest.fn();
+    const queryParameters = { type: 'tool' };
+    await renderWithEffects(
+      <ApiProvider apis={apis}>
+        <MockEntityListContextProvider
+          value={{
+            updateFilters,
+            queryParameters,
+          }}
+        >
+          <EntityTypePicker initialFilter="tool" hidden />
+        </MockEntityListContextProvider>
+        ,
+      </ApiProvider>,
+    );
+
+    expect(updateFilters).toHaveBeenLastCalledWith({
+      type: new EntityTypeFilter(['tool']),
+    });
+  });
+
+  it('responds to external queryParameters changes', async () => {
+    const updateFilters = jest.fn();
+    const rendered = await renderWithEffects(
+      <ApiProvider apis={apis}>
+        <MockEntityListContextProvider
+          value={{
+            updateFilters,
+            queryParameters: { type: 'service' },
+          }}
+        >
+          <EntityTypePicker />
+        </MockEntityListContextProvider>
+      </ApiProvider>,
+    );
+    expect(updateFilters).toHaveBeenLastCalledWith({
+      type: new EntityTypeFilter(['service']),
+    });
+    rendered.rerender(
+      <ApiProvider apis={apis}>
+        <MockEntityListContextProvider
+          value={{
+            updateFilters,
+            queryParameters: { type: 'tool' },
+          }}
+        >
+          <EntityTypePicker />
+        </MockEntityListContextProvider>
+      </ApiProvider>,
+    );
+    expect(updateFilters).toHaveBeenLastCalledWith({
+      type: new EntityTypeFilter(['tool']),
+    });
   });
 });

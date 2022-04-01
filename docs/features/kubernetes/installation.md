@@ -19,8 +19,7 @@ package.
 
 ```bash
 # From your Backstage root directory
-cd packages/app
-yarn add @backstage/plugin-kubernetes
+yarn add --cwd packages/app @backstage/plugin-kubernetes
 ```
 
 Once the package has been installed, you need to import the plugin in your app
@@ -50,8 +49,7 @@ Navigate to `packages/backend` of your Backstage app, and install the
 
 ```bash
 # From your Backstage root directory
-cd packages/backend
-yarn add @backstage/plugin-kubernetes-backend
+yarn add --cwd packages/backend @backstage/plugin-kubernetes-backend
 ```
 
 Create a file called `kubernetes.ts` inside `packages/backend/src/plugins/` and
@@ -59,14 +57,18 @@ add the following:
 
 ```typescript
 // In packages/backend/src/plugins/kubernetes.ts
-import { createRouter } from '@backstage/plugin-kubernetes-backend';
+import { KubernetesBuilder } from '@backstage/plugin-kubernetes-backend';
+import { Router } from 'express';
 import { PluginEnvironment } from '../types';
 
-export default async function createPlugin({
-  logger,
-  config,
-}: PluginEnvironment) {
-  return await createRouter({ logger, config });
+export default async function createPlugin(
+  env: PluginEnvironment,
+): Promise<Router> {
+  const { router } = await KubernetesBuilder.createBuilder({
+    logger: env.logger,
+    config: env.config,
+  }).build();
+  return router;
 }
 ```
 

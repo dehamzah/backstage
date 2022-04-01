@@ -22,6 +22,12 @@ import { getRepoSourceDirectory, parseRepoUrl } from './util';
 import { createTemplateAction } from '../../createTemplateAction';
 import { Config } from '@backstage/config';
 
+/**
+ * Creates a new action that initializes a git repository of the content in the workspace
+ * and publishes it to GitLab.
+ *
+ * @public
+ */
 export function createPublishGitlabAction(options: {
   integrations: ScmIntegrationRegistry;
   config: Config;
@@ -31,8 +37,12 @@ export function createPublishGitlabAction(options: {
   return createTemplateAction<{
     repoUrl: string;
     defaultBranch?: string;
-    repoVisibility: 'private' | 'internal' | 'public';
+    repoVisibility?: 'private' | 'internal' | 'public';
     sourcePath?: string;
+    token?: string;
+    gitCommitMessage?: string;
+    gitAuthorName?: string;
+    gitAuthorEmail?: string;
   }>({
     id: 'publish:gitlab',
     description:
@@ -56,10 +66,31 @@ export function createPublishGitlabAction(options: {
             type: 'string',
             description: `Sets the default branch on the repository. The default value is 'master'`,
           },
+          gitCommitMessage: {
+            title: 'Git Commit Message',
+            type: 'string',
+            description: `Sets the commit message on the repository. The default value is 'initial commit'`,
+          },
+          gitAuthorName: {
+            title: 'Default Author Name',
+            type: 'string',
+            description: `Sets the default author name for the commit. The default value is 'Scaffolder'`,
+          },
+          gitAuthorEmail: {
+            title: 'Default Author Email',
+            type: 'string',
+            description: `Sets the default author email for the commit.`,
+          },
           sourcePath: {
-            title:
+            title: 'Source Path',
+            description:
               'Path within the workspace that will be used as the repository root. If omitted, the entire workspace will be published as the repository.',
             type: 'string',
+          },
+          token: {
+            title: 'Authentication Token',
+            type: 'string',
+            description: 'The token to use for authorization to GitLab',
           },
         },
       },
@@ -82,8 +113,10 @@ export function createPublishGitlabAction(options: {
         repoUrl,
         repoVisibility = 'private',
         defaultBranch = 'master',
+        gitCommitMessage = 'initial commit',
+        gitAuthorName,
+        gitAuthorEmail,
       } = ctx.input;
-
       const { owner, repo, host } = parseRepoUrl(repoUrl, integrations);
 
       if (!owner) {
@@ -100,13 +133,16 @@ export function createPublishGitlabAction(options: {
         );
       }
 
-      if (!integrationConfig.config.token) {
+      if (!integrationConfig.config.token && !ctx.input.token) {
         throw new InputError(`No token available for host ${host}`);
       }
 
+      const token = ctx.input.token || integrationConfig.config.token!;
+      const tokenType = ctx.input.token ? 'oauthToken' : 'token';
+
       const client = new Gitlab({
         host: integrationConfig.config.baseUrl,
-        token: integrationConfig.config.token,
+        [tokenType]: token,
       });
 
       let { id: targetNamespace } = (await client.Namespaces.show(owner)) as {
@@ -130,22 +166,25 @@ export function createPublishGitlabAction(options: {
       const repoContentsUrl = `${remoteUrl}/-/blob/${defaultBranch}`;
 
       const gitAuthorInfo = {
-        name: config.getOptionalString('scaffolder.defaultAuthor.name'),
-        email: config.getOptionalString('scaffolder.defaultAuthor.email'),
+        name: gitAuthorName
+          ? gitAuthorName
+          : config.getOptionalString('scaffolder.defaultAuthor.name'),
+        email: gitAuthorEmail
+          ? gitAuthorEmail
+          : config.getOptionalString('scaffolder.defaultAuthor.email'),
       };
-
       await initRepoAndPush({
         dir: getRepoSourceDirectory(ctx.workspacePath, ctx.input.sourcePath),
         remoteUrl: http_url_to_repo as string,
         defaultBranch,
         auth: {
           username: 'oauth2',
-          password: integrationConfig.config.token,
+          password: token,
         },
         logger: ctx.logger,
-        commitMessage: config.getOptionalString(
-          'scaffolder.defaultCommitMessage',
-        ),
+        commitMessage: gitCommitMessage
+          ? gitCommitMessage
+          : config.getOptionalString('scaffolder.defaultCommitMessage'),
         gitAuthorInfo,
       });
 

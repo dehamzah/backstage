@@ -19,7 +19,7 @@ import {
   AzureIntegration,
   readAzureIntegrationConfig,
 } from '@backstage/integration';
-import { msw } from '@backstage/test-utils';
+import { setupRequestMockHandlers } from '@backstage/backend-test-utils';
 import fs from 'fs-extra';
 import mockFs from 'mock-fs';
 import { rest } from 'msw';
@@ -51,7 +51,7 @@ describe('AzureUrlReader', () => {
   });
 
   const worker = setupServer();
-  msw.setupDefaultHandlers(worker);
+  setupRequestMockHandlers(worker);
 
   describe('read', () => {
     beforeEach(() => {
@@ -130,7 +130,7 @@ describe('AzureUrlReader', () => {
       {
         url: 'com/a/b/blob/master/path/to/c.yaml',
         config: createConfig(),
-        error: 'Invalid URL: com/a/b/blob/master/path/to/c.yaml',
+        error: 'Invalid URL',
       },
       {
         url: '',
@@ -152,7 +152,7 @@ describe('AzureUrlReader', () => {
 
   describe('readTree', () => {
     const repoBuffer = fs.readFileSync(
-      path.resolve('src', 'reading', '__fixtures__', 'mock-main.zip'),
+      path.resolve(__dirname, '__fixtures__/mock-main.zip'),
     );
 
     const processor = new AzureUrlReader(
@@ -264,7 +264,7 @@ describe('AzureUrlReader', () => {
 
   describe('search', () => {
     const repoBuffer = fs.readFileSync(
-      path.resolve('src', 'reading', '__fixtures__', 'mock-main.zip'),
+      path.resolve(__dirname, '__fixtures__/mock-main.zip'),
     );
 
     const processor = new AzureUrlReader(

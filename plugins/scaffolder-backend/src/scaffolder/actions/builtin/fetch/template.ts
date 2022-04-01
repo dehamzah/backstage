@@ -14,53 +14,44 @@
  * limitations under the License.
  */
 
-import { resolve as resolvePath, extname } from 'path';
+import { extname } from 'path';
 import { resolveSafeChildPath, UrlReader } from '@backstage/backend-common';
 import { InputError } from '@backstage/errors';
 import { ScmIntegrations } from '@backstage/integration';
 import { fetchContents } from './helpers';
 import { createTemplateAction } from '../../createTemplateAction';
 import globby from 'globby';
-import nunjucks from 'nunjucks';
 import fs from 'fs-extra';
 import { isBinaryFile } from 'isbinaryfile';
+import {
+  TemplateFilter,
+  SecureTemplater,
+} from '../../../../lib/templating/SecureTemplater';
 
-/*
- * Maximise compatibility with Jinja (and therefore cookiecutter)
- * using nunjucks jinja compat mode. Since this method mutates
- * the global nunjucks instance, we can't enable this per-template,
- * or only for templates with cookiecutter compat enabled, so the
- * next best option is to explicitly enable it globally and allow
- * folks to rely on jinja compatibility behaviour in fetch:template
- * templates if they wish.
+/**
+ * Downloads a skeleton, templates variables into file and directory names and content.
+ * Then places the result in the workspace, or optionally in a subdirectory
+ * specified by the 'targetPath' input option.
  *
- * cf. https://mozilla.github.io/nunjucks/api.html#installjinjacompat
+ * @public
  */
-nunjucks.installJinjaCompat();
-
-type CookieCompatInput = {
-  copyWithoutRender?: string[];
-  cookiecutterCompat?: boolean;
-};
-
-type ExtensionInput = {
-  templateFileExtension?: string | boolean;
-};
-
-export type FetchTemplateInput = {
-  url: string;
-  targetPath?: string;
-  values: any;
-} & CookieCompatInput &
-  ExtensionInput;
-
 export function createFetchTemplateAction(options: {
   reader: UrlReader;
   integrations: ScmIntegrations;
+  additionalTemplateFilters?: Record<string, TemplateFilter>;
 }) {
-  const { reader, integrations } = options;
+  const { reader, integrations, additionalTemplateFilters } = options;
 
-  return createTemplateAction<FetchTemplateInput>({
+  return createTemplateAction<{
+    url: string;
+    targetPath?: string;
+    values: any;
+    templateFileExtension?: string | boolean;
+
+    // Cookiecutter compat options
+    copyWithoutRender?: string[];
+    cookiecutterCompat?: boolean;
+  }>({
     id: 'fetch:template',
     description:
       "Downloads a skeleton, templates variables into file and directory names and content, and places the result in the workspace, or optionally in a subdirectory specified by the 'targetPath' input option.",
@@ -114,7 +105,7 @@ export function createFetchTemplateAction(options: {
       ctx.logger.info('Fetching template content from remote URL');
 
       const workDir = await ctx.createTemporaryDirectory();
-      const templateDir = resolvePath(workDir, 'template');
+      const templateDir = resolveSafeChildPath(workDir, 'template');
 
       const targetPath = ctx.input.targetPath ?? './';
       const outputDir = resolveSafeChildPath(ctx.workspacePath, targetPath);
@@ -151,7 +142,7 @@ export function createFetchTemplateAction(options: {
       await fetchContents({
         reader,
         integrations,
-        baseUrl: ctx.baseUrl,
+        baseUrl: ctx.templateInfo?.baseUrl,
         fetchUrl: ctx.input.url,
         outputPath: templateDir,
       });
@@ -179,36 +170,6 @@ export function createFetchTemplateAction(options: {
         ).flat(),
       );
 
-      // Create a templater
-      const templater = nunjucks.configure({
-        ...(ctx.input.cookiecutterCompat
-          ? {}
-          : {
-              tags: {
-                // TODO(mtlewis/orkohunter): Document Why we are changing the literals? Not here, but on scaffolder docs. ADR?
-                variableStart: '${{',
-                variableEnd: '}}',
-              },
-            }),
-        // We don't want this builtin auto-escaping, since uses HTML escape sequences
-        // like `&quot;` - the correct way to escape strings in our case depends on
-        // the file type.
-        autoescape: false,
-      });
-
-      if (ctx.input.cookiecutterCompat) {
-        // The "jsonify" filter built into cookiecutter is common
-        // in fetch:cookiecutter templates, so when compat mode
-        // is enabled we alias the "dump" filter from nunjucks as
-        // jsonify. Dump accepts an optional `spaces` parameter
-        // which enables indented output, but when this parameter
-        // is not supplied it works identically to jsonify.
-        //
-        // cf. https://cookiecutter.readthedocs.io/en/latest/advanced/template_extensions.html?highlight=jsonify#jsonify-extension
-        // cf. https://mozilla.github.io/nunjucks/templating.html#dump
-        templater.addFilter('jsonify', templater.getFilter('dump'));
-      }
-
       // Cookiecutter prefixes all parameters in templates with
       // `cookiecutter.`. To replicate this, we wrap our parameters
       // in an object with a `cookiecutter` property when compat
@@ -222,6 +183,11 @@ export function createFetchTemplateAction(options: {
         `Processing ${allEntriesInTemplate.length} template files/directories with input values`,
         ctx.input.values,
       );
+
+      const renderTemplate = await SecureTemplater.loadRenderer({
+        cookiecutterCompat: ctx.input.cookiecutterCompat,
+        additionalTemplateFilters,
+      });
 
       for (const location of allEntriesInTemplate) {
         let renderFilename: boolean;
@@ -238,9 +204,14 @@ export function createFetchTemplateAction(options: {
           renderFilename = renderContents = !nonTemplatedEntries.has(location);
         }
         if (renderFilename) {
-          localOutputPath = templater.renderString(localOutputPath, context);
+          localOutputPath = renderTemplate(localOutputPath, context);
         }
-        const outputPath = resolvePath(outputDir, localOutputPath);
+        const outputPath = resolveSafeChildPath(outputDir, localOutputPath);
+        // variables have been expanded to make an empty file name
+        // this is due to a conditional like if values.my_condition then file-name.txt else empty string so skip
+        if (outputDir === outputPath) {
+          continue;
+        }
 
         if (!renderContents && !extension) {
           ctx.logger.info(
@@ -254,7 +225,7 @@ export function createFetchTemplateAction(options: {
           );
           await fs.ensureDir(outputPath);
         } else {
-          const inputFilePath = resolvePath(templateDir, location);
+          const inputFilePath = resolveSafeChildPath(templateDir, location);
 
           if (await isBinaryFile(inputFilePath)) {
             ctx.logger.info(
@@ -270,7 +241,7 @@ export function createFetchTemplateAction(options: {
             await fs.outputFile(
               outputPath,
               renderContents
-                ? templater.renderString(inputFileContents, context)
+                ? renderTemplate(inputFileContents, context)
                 : inputFileContents,
               { mode: statsObj.mode },
             );

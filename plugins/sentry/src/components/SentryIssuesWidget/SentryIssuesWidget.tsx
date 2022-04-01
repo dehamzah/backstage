@@ -16,7 +16,7 @@
 
 import { Entity } from '@backstage/catalog-model';
 import React, { useEffect } from 'react';
-import { useAsync } from 'react-use';
+import useAsync from 'react-use/lib/useAsync';
 import { sentryApiRef } from '../../api';
 import SentryIssuesTable from '../SentryIssuesTable/SentryIssuesTable';
 import {
@@ -33,15 +33,20 @@ import {
 } from '@backstage/core-components';
 
 import { ErrorApi, errorApiRef, useApi } from '@backstage/core-plugin-api';
+import { Options } from '@material-table/core';
 
 export const SentryIssuesWidget = ({
   entity,
-  statsFor = '24h',
+  statsFor,
+  tableOptions,
   variant = 'gridItem',
+  query = '',
 }: {
   entity: Entity;
-  statsFor?: '24h' | '12h';
+  statsFor: '24h' | '14d' | '';
+  tableOptions: Options<never>;
   variant?: InfoCardVariants;
+  query?: string;
 }) => {
   const errorApi = useApi<ErrorApi>(errorApiRef);
   const sentryApi = useApi(sentryApiRef);
@@ -49,8 +54,8 @@ export const SentryIssuesWidget = ({
   const projectId = useProjectSlug(entity);
 
   const { loading, value, error } = useAsync(
-    () => sentryApi.fetchIssues(projectId, statsFor),
-    [sentryApi, statsFor, projectId],
+    () => sentryApi.fetchIssues(projectId, statsFor, query),
+    [sentryApi, statsFor, projectId, query],
   );
 
   useEffect(() => {
@@ -81,5 +86,11 @@ export const SentryIssuesWidget = ({
     );
   }
 
-  return <SentryIssuesTable sentryIssues={value || []} statsFor={statsFor} />;
+  return (
+    <SentryIssuesTable
+      sentryIssues={value || []}
+      statsFor={statsFor}
+      tableOptions={tableOptions}
+    />
+  );
 };

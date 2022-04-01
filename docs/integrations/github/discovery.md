@@ -12,6 +12,52 @@ organization and register entities matching the configured path. This can be
 useful as an alternative to static locations or manually adding things to the
 catalog.
 
+## Installation
+
+You will have to add the processors in the catalog initialization code of your
+backend. They are not installed by default, therefore you have to add a
+dependency to `@backstage/plugin-catalog-backend-module-github` to your backend
+package.
+
+```bash
+# From your Backstage root directory
+yarn add --cwd packages/backend @backstage/plugin-catalog-backend-module-github
+```
+
+And then add the processors to your catalog builder:
+
+```diff
+// In packages/backend/src/plugins/catalog.ts
++import {
++  GithubDiscoveryProcessor,
++  GithubOrgReaderProcessor,
++} from '@backstage/plugin-catalog-backend-module-github';
++import {
++  ScmIntegrations,
++  DefaultGithubCredentialsProvider
++} from '@backstage/integration';
+
+ export default async function createPlugin(
+   env: PluginEnvironment,
+ ): Promise<Router> {
+   const builder = await CatalogBuilder.create(env);
++  const integrations = ScmIntegrations.fromConfig(env.config);
++  const githubCredentialsProvider =
++    DefaultGithubCredentialsProvider.fromIntegrations(integrations);
++  builder.addProcessor(
++    GithubDiscoveryProcessor.fromConfig(env.config, {
++      logger: env.logger,
++      githubCredentialsProvider,
++    }),
++    GithubOrgReaderProcessor.fromConfig(env.config, {
++      logger: env.logger,
++      githubCredentialsProvider,
++    }),
++  );
+```
+
+## Configuration
+
 To use the discovery processor, you'll need a GitHub integration
 [set up](locations.md) with a `GITHUB_TOKEN`. Then you can add a location target
 to the catalog configuration:
@@ -49,17 +95,27 @@ When using a custom pattern, the target is composed of three parts:
 
 ## GitHub API Rate Limits
 
-GitHub
-[rate limits](https://docs.github.com/en/rest/overview/resources-in-the-rest-api#rate-limiting)
-API requests to 5,000 per hour (or more for Enterprise accounts). The default
-Backstage catalog backend refreshes data every 100 seconds, which issues an API
-request for each discovered location.
+GitHub [rate limits] API requests to 5,000 per hour (or more for Enterprise
+accounts). The default Backstage catalog backend refreshes data every 100
+seconds, which issues an API request for each discovered location.
 
 This means if you have more than ~140 catalog entities, you may get throttled by
 rate limiting. This will soon be resolved once catalog refreshes make use of
 ETags; to work around this in the meantime, you can change the refresh rate of
-the catalog in your `packages/backend/src/plugins/catalog.ts` file, or configure
-Backstage to use the [github-apps plugin](../../plugins/github-apps.md).
+the catalog in your `packages/backend/src/plugins/catalog.ts` file:
+
+```typescript
+const builder = await CatalogBuilder.create(env);
+
+// For example, to refresh every 5 minutes (300 seconds).
+builder.setRefreshIntervalSeconds(300);
+```
+
+Alternatively, or additionally, you can configure [github-apps] authentication
+which carries a much higher rate limit at GitHub.
 
 This is true for any method of adding GitHub entities to the catalog, but
 especially easy to hit with automatic discovery.
+
+[rate limits]: https://docs.github.com/en/rest/overview/resources-in-the-rest-api#rate-limiting
+[github-apps]: ../../plugins/github-apps.md

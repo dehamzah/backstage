@@ -21,12 +21,15 @@ import { InfoCard } from '@backstage/core-components';
 import { SettingsModal } from './components';
 import { createReactExtension, useApp } from '@backstage/core-plugin-api';
 
+/**
+ * @public
+ */
 export type ComponentRenderer = {
   Renderer?: (props: RendererProps) => JSX.Element;
 };
 
 type ComponentParts = {
-  Content: () => JSX.Element;
+  Content: (props?: any) => JSX.Element;
   Actions?: () => JSX.Element;
   Settings?: () => JSX.Element;
   ContextProvider?: (props: any) => JSX.Element;
@@ -34,22 +37,29 @@ type ComponentParts = {
 
 type RendererProps = { title: string } & ComponentParts;
 
+type CardExtensionProps<T> = ComponentRenderer & { title?: string } & T;
+
+/**
+ * An extension creator to create card based components for the homepage
+ *
+ * @public
+ */
 export function createCardExtension<T>({
   title,
   components,
+  name,
 }: {
   title: string;
   components: () => Promise<ComponentParts>;
+  name?: string;
 }) {
   return createReactExtension({
+    name,
     component: {
       lazy: () =>
         components().then(({ Content, Actions, Settings, ContextProvider }) => {
-          const CardExtension = ({
-            Renderer,
-            title: overrideTitle,
-            ...childProps
-          }: ComponentRenderer & { title?: string } & T) => {
+          const CardExtension = (props: CardExtensionProps<T>) => {
+            const { Renderer, title: overrideTitle, ...childProps } = props;
             const app = useApp();
             const { Progress } = app.getComponents();
             const [settingsOpen, setSettingsOpen] = React.useState(false);
@@ -100,7 +110,7 @@ export function createCardExtension<T>({
                     <Settings />
                   </SettingsModal>
                 )}
-                <Content />
+                <Content {...childProps} />
               </InfoCard>
             );
 

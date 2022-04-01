@@ -14,14 +14,17 @@
  * limitations under the License.
  */
 
-import React, { ComponentProps } from 'react';
-import { useStarredEntities } from '../../hooks/useStarredEntities';
-import { IconButton, Tooltip, withStyles } from '@material-ui/core';
-import StarBorder from '@material-ui/icons/StarBorder';
-import Star from '@material-ui/icons/Star';
 import { Entity } from '@backstage/catalog-model';
+import { IconButton, Tooltip, withStyles } from '@material-ui/core';
+import Star from '@material-ui/icons/Star';
+import StarBorder from '@material-ui/icons/StarBorder';
+import React, { ComponentProps } from 'react';
+import { useStarredEntity } from '../../hooks/useStarredEntity';
 
-type Props = ComponentProps<typeof IconButton> & { entity: Entity };
+/** @public */
+export type FavoriteEntityProps = ComponentProps<typeof IconButton> & {
+  entity: Entity;
+};
 
 const YellowStar = withStyles({
   root: {
@@ -29,27 +32,26 @@ const YellowStar = withStyles({
   },
 })(Star);
 
-export const favoriteEntityTooltip = (isStarred: boolean) =>
-  isStarred ? 'Remove from favorites' : 'Add to favorites';
-
-export const favoriteEntityIcon = (isStarred: boolean) =>
-  isStarred ? <YellowStar /> : <StarBorder />;
-
 /**
  * IconButton for showing if a current entity is starred and adding/removing it from the favorite entities
- * @param props MaterialUI IconButton props extended by required `entity` prop
+ * @param props - MaterialUI IconButton props extended by required `entity` prop
+ * @public
  */
-export const FavoriteEntity = (props: Props) => {
-  const { toggleStarredEntity, isStarredEntity } = useStarredEntities();
-  const isStarred = isStarredEntity(props.entity);
+export const FavoriteEntity = (props: FavoriteEntityProps) => {
+  const { toggleStarredEntity, isStarredEntity } = useStarredEntity(
+    props.entity,
+  );
   return (
     <IconButton
+      aria-label="favorite"
       color="inherit"
       {...props}
-      onClick={() => toggleStarredEntity(props.entity)}
+      onClick={() => toggleStarredEntity()}
     >
-      <Tooltip title={favoriteEntityTooltip(isStarred)}>
-        {favoriteEntityIcon(isStarred)}
+      <Tooltip
+        title={isStarredEntity ? 'Remove from favorites' : 'Add to favorites'}
+      >
+        {isStarredEntity ? <YellowStar /> : <StarBorder />}
       </Tooltip>
     </IconButton>
   );

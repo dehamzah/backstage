@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-import { readFile } from 'fs-extra';
-import path from 'path';
-import { parseRepoUrl } from './util';
+import fs from 'fs-extra';
+import { parseRepoUrl, isExecutable } from './util';
 
 import {
   GithubCredentialsProvider,
@@ -24,94 +23,103 @@ import {
 } from '@backstage/integration';
 import { zipObject } from 'lodash';
 import { createTemplateAction } from '../../createTemplateAction';
-import { Octokit } from '@octokit/rest';
+import { Octokit } from 'octokit';
 import { InputError, CustomErrorBase } from '@backstage/errors';
 import { createPullRequest } from 'octokit-plugin-create-pull-request';
 import globby from 'globby';
+import { resolveSafeChildPath } from '@backstage/backend-common';
+import { getOctokitOptions } from '../github/helpers';
+
+export type Encoding = 'utf-8' | 'base64';
 
 class GithubResponseError extends CustomErrorBase {}
 
-type CreatePullRequestResponse = {
-  data: { html_url: string };
-};
-
-export interface PullRequestCreator {
-  createPullRequest(
-    options: createPullRequest.Options,
-  ): Promise<CreatePullRequestResponse | null>;
+/** @public */
+export interface OctokitWithPullRequestPluginClient {
+  createPullRequest(options: createPullRequest.Options): Promise<{
+    data: {
+      html_url: string;
+      number: number;
+    };
+  } | null>;
 }
 
-export type PullRequestCreatorConstructor = (
-  octokit: Octokit,
-) => PullRequestCreator;
-
-export type GithubPullRequestActionInput = {
-  title: string;
-  branchName: string;
-  description: string;
-  repoUrl: string;
-  targetPath?: string;
-  sourcePath?: string;
-};
-
-export type ClientFactoryInput = {
+/**
+ * The options passed to the client factory function.
+ * @public
+ */
+export type CreateGithubPullRequestClientFactoryInput = {
   integrations: ScmIntegrationRegistry;
+  githubCredentialsProvider?: GithubCredentialsProvider;
   host: string;
   owner: string;
   repo: string;
+  token?: string;
 };
 
 export const defaultClientFactory = async ({
   integrations,
+  githubCredentialsProvider,
   owner,
   repo,
   host = 'github.com',
-}: ClientFactoryInput): Promise<PullRequestCreator> => {
-  const integrationConfig = integrations.github.byHost(host)?.config;
+  token: providedToken,
+}: CreateGithubPullRequestClientFactoryInput): Promise<OctokitWithPullRequestPluginClient> => {
+  const [encodedHost, encodedOwner, encodedRepo] = [host, owner, repo].map(
+    encodeURIComponent,
+  );
 
-  if (!integrationConfig) {
-    throw new InputError(`No integration for host ${host}`);
-  }
-
-  const credentialsProvider =
-    GithubCredentialsProvider.create(integrationConfig);
-
-  if (!credentialsProvider) {
-    throw new InputError(
-      `No matching credentials for host ${host}, please check your integrations config`,
-    );
-  }
-
-  const { token } = await credentialsProvider.getCredentials({
-    url: `https://${host}/${encodeURIComponent(owner)}/${encodeURIComponent(
-      repo,
-    )}`,
+  const octokitOptions = await getOctokitOptions({
+    integrations,
+    credentialsProvider: githubCredentialsProvider,
+    repoUrl: `${encodedHost}?owner=${encodedOwner}&repo=${encodedRepo}`,
+    token: providedToken,
   });
-
-  if (!token) {
-    throw new InputError(
-      `No token available for host: ${host}, with owner ${owner}, and repo ${repo}`,
-    );
-  }
 
   const OctokitPR = Octokit.plugin(createPullRequest);
-
-  return new OctokitPR({
-    auth: token,
-    baseUrl: integrationConfig.apiBaseUrl,
-  });
+  return new OctokitPR(octokitOptions);
 };
 
-interface CreateGithubPullRequestActionOptions {
+/**
+ * The options passed to {@link createPublishGithubPullRequestAction} method
+ * @public
+ */
+export interface CreateGithubPullRequestActionOptions {
+  /**
+   * An instance of {@link @backstage/integration#ScmIntegrationRegistry} that will be used in the action.
+   */
   integrations: ScmIntegrationRegistry;
-  clientFactory?: (input: ClientFactoryInput) => Promise<PullRequestCreator>;
+  /**
+   * An instance of {@link @backstage/integration#GithubCredentialsProvider} that will be used to get credentials for the action.
+   */
+  githubCredentialsProvider?: GithubCredentialsProvider;
+  /**
+   * A method to return the Octokit client with the Pull Request Plugin.
+   */
+  clientFactory?: (
+    input: CreateGithubPullRequestClientFactoryInput,
+  ) => Promise<OctokitWithPullRequestPluginClient>;
 }
 
+/**
+ * Creates a Github Pull Request action.
+ * @public
+ */
 export const createPublishGithubPullRequestAction = ({
   integrations,
+  githubCredentialsProvider,
   clientFactory = defaultClientFactory,
 }: CreateGithubPullRequestActionOptions) => {
-  return createTemplateAction<GithubPullRequestActionInput>({
+  return createTemplateAction<{
+    title: string;
+    branchName: string;
+    description: string;
+    repoUrl: string;
+    draft?: boolean;
+    targetPath?: string;
+    sourcePath?: string;
+    token?: string;
+  }>({
     id: 'publish:github:pull-request',
     schema: {
       input: {
@@ -138,6 +146,11 @@ export const createPublishGithubPullRequestAction = ({
             title: 'Pull Request Description',
             description: 'The description of the pull request',
           },
+          draft: {
+            type: 'boolean',
+            title: 'Create as Draft',
+            description: 'Create a draft pull request',
+          },
           sourcePath: {
             type: 'string',
             title: 'Working Subdirectory',
@@ -148,6 +161,11 @@ export const createPublishGithubPullRequestAction = ({
             type: 'string',
             title: 'Repository Subdirectory',
             description: 'Subdirectory of repository to apply changes to',
+          },
+          token: {
+            title: 'Authentication Token',
+            type: 'string',
+            description: 'The token to use for authorization to GitHub',
           },
         },
       },
@@ -160,6 +178,11 @@ export const createPublishGithubPullRequestAction = ({
             title: 'Pull Request URL',
             description: 'Link to the pull request in Github',
           },
+          pullRequestNumber: {
+            type: 'number',
+            title: 'Pull Request Number',
+            description: 'The pull request number',
+          },
         },
       },
     },
@@ -169,8 +192,10 @@ export const createPublishGithubPullRequestAction = ({
         branchName,
         title,
         description,
+        draft,
         targetPath,
         sourcePath,
+        token: providedToken,
       } = ctx.input;
 
       const { owner, repo, host } = parseRepoUrl(repoUrl, integrations);
@@ -181,9 +206,17 @@ export const createPublishGithubPullRequestAction = ({
         );
       }
 
-      const client = await clientFactory({ integrations, host, owner, repo });
+      const client = await clientFactory({
+        integrations,
+        githubCredentialsProvider,
+        host,
+        owner,
+        repo,
+        token: providedToken,
+      });
+
       const fileRoot = sourcePath
-        ? path.resolve(ctx.workspacePath, sourcePath)
+        ? resolveSafeChildPath(ctx.workspacePath, sourcePath)
         : ctx.workspacePath;
 
       const localFilePaths = await globby(['./**', './**/.*', '!.git'], {
@@ -193,7 +226,30 @@ export const createPublishGithubPullRequestAction = ({
       });
 
       const fileContents = await Promise.all(
-        localFilePaths.map(p => readFile(path.resolve(fileRoot, p))),
+        localFilePaths.map(filePath => {
+          const absPath = resolveSafeChildPath(fileRoot, filePath);
+          const base64EncodedContent = fs
+            .readFileSync(absPath)
+            .toString('base64');
+          const fileStat = fs.statSync(absPath);
+          // See the properties of tree items
+          // in https://docs.github.com/en/rest/reference/git#trees
+          const githubTreeItemMode = isExecutable(fileStat.mode)
+            ? '100755'
+            : '100644';
+          // Always use base64 encoding to avoid doubling a binary file in size
+          // due to interpreting a binary file as utf-8 and sending github
+          // the utf-8 encoded content.
+          //
+          // For example, the original gradle-wrapper.jar is 57.8k in https://github.com/kennethzfeng/pull-request-test/pull/5/files.
+          // Its size could be doubled to 98.3K (See https://github.com/kennethzfeng/pull-request-test/pull/4/files)
+          const encoding: Encoding = 'base64';
+          return {
+            encoding: encoding,
+            content: base64EncodedContent,
+            mode: githubTreeItemMode,
+          };
+        }),
       );
 
       const repoFilePaths = localFilePaths.map(repoFilePath => {
@@ -202,10 +258,7 @@ export const createPublishGithubPullRequestAction = ({
 
       const changes = [
         {
-          files: zipObject(
-            repoFilePaths,
-            fileContents.map(buf => buf.toString()),
-          ),
+          files: zipObject(repoFilePaths, fileContents),
           commit: title,
         },
       ];
@@ -218,6 +271,7 @@ export const createPublishGithubPullRequestAction = ({
           changes,
           body: description,
           head: branchName,
+          draft,
         });
 
         if (!response) {
@@ -225,6 +279,7 @@ export const createPublishGithubPullRequestAction = ({
         }
 
         ctx.output('remoteUrl', response.data.html_url);
+        ctx.output('pullRequestNumber', response.data.number);
       } catch (e) {
         throw new GithubResponseError('Pull request creation failed', e);
       }

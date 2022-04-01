@@ -60,6 +60,31 @@ export interface Config {
       appPassword?: string;
     }>;
 
+    /** Integration configuration for Gerrit */
+    gerrit?: Array<{
+      /**
+       * The hostname of the given Gerrit instance
+       * @visibility frontend
+       */
+      host: string;
+      /**
+       * The base url for the Gerrit instance.
+       * @visibility frontend
+       */
+      baseUrl?: string;
+      /**
+       * The username to use for authenticated requests.
+       * @visibility secret
+       */
+      username?: string;
+      /**
+       * Gerrit password used to authenticate requests. This can be either a password
+       * or a generated access token.
+       * @visibility secret
+       */
+      password?: string;
+    }>;
+
     /** Integration configuration for GitHub */
     github?: Array<{
       /**
@@ -167,10 +192,23 @@ export interface Config {
     /** Integration configuration for AWS S3 Service */
     awsS3?: Array<{
       /**
-       * The host of the target that this matches on, e.g. "amazonaws.com".
+       * AWS Endpoint.
+       * The endpoint URI to send requests to. The default endpoint is built from the configured region.
+       * @see https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/S3.html#constructor-property
+       *
+       * Supports non-AWS providers, e.g. for LocalStack, endpoint may look like http://localhost:4566
        * @visibility frontend
        */
-      host: string;
+      endpoint?: string;
+
+      /**
+       * Whether to use path style URLs when communicating with S3.
+       * Defaults to false.
+       * This allows providers like LocalStack, Minio and Wasabi (and possibly others) to be used.
+       * @visibility frontend
+       */
+      s3ForcePathStyle?: boolean;
+
       /**
        * Account access key used to authenticate requests.
        * @visibility backend
@@ -187,6 +225,12 @@ export interface Config {
        * @visibility backend
        */
       roleArn?: string;
+
+      /**
+       * External ID to use when assuming role
+       * @visibility backend
+       */
+      externalId?: string;
     }>;
   };
 }

@@ -17,7 +17,6 @@
 import React from 'react';
 import { fireEvent } from '@testing-library/react';
 import { capitalize } from 'lodash';
-import { CatalogApi } from '@backstage/catalog-client';
 import { Entity } from '@backstage/catalog-model';
 import { TemplateTypePicker } from './TemplateTypePicker';
 import {
@@ -26,8 +25,9 @@ import {
   MockEntityListContextProvider,
 } from '@backstage/plugin-catalog-react';
 import { AlertApi, alertApiRef } from '@backstage/core-plugin-api';
-import { ApiProvider, ApiRegistry } from '@backstage/core-app-api';
-import { renderWithEffects } from '@backstage/test-utils';
+import { ApiProvider } from '@backstage/core-app-api';
+import { renderWithEffects, TestApiRegistry } from '@backstage/test-utils';
+import { GetEntityFacetsResponse } from '@backstage/catalog-client';
 
 const entities: Entity[] = [
   {
@@ -62,14 +62,19 @@ const entities: Entity[] = [
   },
 ];
 
-const apis = ApiRegistry.from([
+const apis = TestApiRegistry.from(
   [
     catalogApiRef,
     {
-      getEntities: jest
-        .fn()
-        .mockImplementation(() => Promise.resolve({ items: entities })),
-    } as unknown as CatalogApi,
+      getEntityFacets: jest.fn().mockResolvedValue({
+        facets: {
+          'spec.type': entities.map(e => ({
+            value: (e.spec as any).type,
+            count: 1,
+          })),
+        },
+      } as GetEntityFacetsResponse),
+    },
   ],
   [
     alertApiRef,
@@ -77,7 +82,7 @@ const apis = ApiRegistry.from([
       post: jest.fn(),
     } as unknown as AlertApi,
   ],
-]);
+);
 
 describe('<TemplateTypePicker/>', () => {
   it('renders available entity types', async () => {

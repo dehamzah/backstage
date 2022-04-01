@@ -15,12 +15,17 @@
  */
 
 import {
+  BackstageIdentityResponse,
   configApiRef,
   SignInPageProps,
   useApi,
 } from '@backstage/core-plugin-api';
-import { Button, Grid, Typography } from '@material-ui/core';
-import React, { useEffect, useState } from 'react';
+import { UserIdentity } from './UserIdentity';
+import Button from '@material-ui/core/Button';
+import Grid from '@material-ui/core/Grid';
+import Typography from '@material-ui/core/Typography';
+import React, { useState } from 'react';
+import { useMountEffect } from '@react-hookz/web';
 import { Progress } from '../../components/Progress';
 import { Content } from '../Content/Content';
 import { ContentHeader } from '../ContentHeader/ContentHeader';
@@ -45,7 +50,7 @@ type SingleSignInPageProps = SignInPageProps & {
 export type Props = MultiSignInPageProps | SingleSignInPageProps;
 
 export const MultiSignInPage = ({
-  onResult,
+  onSignInSuccess,
   providers = [],
   title,
   align = 'left',
@@ -56,7 +61,7 @@ export const MultiSignInPage = ({
   const signInProviders = getSignInProviders(providers);
   const [loading, providerElements] = useSignInProviders(
     signInProviders,
-    onResult,
+    onSignInSuccess,
   );
 
   if (loading) {
@@ -83,17 +88,14 @@ export const MultiSignInPage = ({
 };
 
 export const SingleSignInPage = ({
-  onResult,
   provider,
   auto,
+  onSignInSuccess,
 }: SingleSignInPageProps) => {
   const classes = useStyles();
   const authApi = useApi(provider.apiRef);
   const configApi = useApi(configApiRef);
 
-  const [autoShowPopup, setAutoShowPopup] = useState<boolean>(auto ?? false);
-  // Defaults to true so that an initial check for existing user session is made
-  const [retry, setRetry] = useState<{} | boolean | undefined>(undefined);
   const [error, setError] = useState<Error>();
 
   // The SignIn component takes some time to decide whether the user is logged-in or not.
@@ -101,52 +103,53 @@ export const SingleSignInPage = ({
   // displayed for a split second when the user is already logged-in.
   const [showLoginPage, setShowLoginPage] = useState<boolean>(false);
 
-  useEffect(() => {
-    const login = async () => {
-      try {
-        let identity;
+  type LoginOpts = { checkExisting?: boolean; showPopup?: boolean };
+  const login = async ({ checkExisting, showPopup }: LoginOpts) => {
+    try {
+      let identityResponse: BackstageIdentityResponse | undefined;
+      if (checkExisting) {
         // Do an initial check if any logged-in session exists
-        identity = await authApi.getBackstageIdentity({
+        identityResponse = await authApi.getBackstageIdentity({
           optional: true,
         });
-
-        // If no session exists, show the sign-in page
-        if (!identity && autoShowPopup) {
-          // Unless auto is set to true, this step should not happen.
-          // When user intentionally clicks the Sign In button, autoShowPopup is set to true
-          setShowLoginPage(true);
-          identity = await authApi.getBackstageIdentity({
-            instantPopup: true,
-          });
-        }
-
-        if (!identity) {
-          setShowLoginPage(true);
-          return;
-        }
-
-        const profile = await authApi.getProfile();
-        onResult({
-          userId: identity!.id,
-          profile: profile!,
-          getIdToken: () => {
-            return authApi
-              .getBackstageIdentity()
-              .then(i => i!.token ?? i!.idToken);
-          },
-          signOut: async () => {
-            await authApi.signOut();
-          },
-        });
-      } catch (err) {
-        // User closed the sign-in modal
-        setError(err);
-        setShowLoginPage(true);
       }
-    };
 
-    login();
-  }, [onResult, authApi, retry, autoShowPopup]);
+      // If no session exists, show the sign-in page
+      if (!identityResponse && (showPopup || auto)) {
+        // Unless auto is set to true, this step should not happen.
+        // When user intentionally clicks the Sign In button, autoShowPopup is set to true
+        setShowLoginPage(true);
+        identityResponse = await authApi.getBackstageIdentity({
+          instantPopup: true,
+        });
+        if (!identityResponse) {
+          throw new Error(
+            `The ${provider.title} provider is not configured to support sign-in`,
+          );
+        }
+      }
+
+      if (!identityResponse) {
+        setShowLoginPage(true);
+        return;
+      }
+
+      const profile = await authApi.getProfile();
+      onSignInSuccess(
+        UserIdentity.create({
+          identity: identityResponse.identity,
+          authApi,
+          profile,
+        }),
+      );
+    } catch (err: any) {
+      // User closed the sign-in modal
+      setError(err);
+      setShowLoginPage(true);
+    }
+  };
+
+  useMountEffect(() => login({ checkExisting: true }));
 
   return showLoginPage ? (
     <Page themeId="home">
@@ -168,8 +171,7 @@ export const SingleSignInPage = ({
                   color="primary"
                   variant="outlined"
                   onClick={() => {
-                    setRetry({});
-                    setAutoShowPopup(true);
+                    login({ showPopup: true });
                   }}
                 >
                   Sign In

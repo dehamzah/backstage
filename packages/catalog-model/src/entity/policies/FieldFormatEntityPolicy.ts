@@ -27,8 +27,9 @@ import { Entity } from '../Entity';
  * Ensures that the format of individual fields of the entity envelope
  * is valid.
  *
- * This does not take into account machine generated fields such as uid, etag
- * and generation.
+ * @remarks
+ *
+ * This does not take into account machine generated fields such as uid and etag.
  *
  * @public
  */
@@ -78,6 +79,10 @@ export class FieldFormatEntityPolicy implements EntityPolicy {
             expectation =
               'a string that is sequences of [a-z0-9] separated by [-], at most 63 characters in total';
             break;
+          case 'isValidTag':
+            expectation =
+              'a string that is sequences of [a-z0-9+#] separated by [-], at most 63 characters in total';
+            break;
           case 'isValidAnnotationValue':
             expectation = 'a string';
             break;
@@ -89,6 +94,7 @@ export class FieldFormatEntityPolicy implements EntityPolicy {
             expectation = 'a string that is a valid url';
             break;
           case 'isValidString':
+          case 'isNonEmptyString':
             expectation = 'a non empty string';
             break;
           default:
@@ -150,7 +156,7 @@ export class FieldFormatEntityPolicy implements EntityPolicy {
       optional(
         `links.${i}.title`,
         links[i]?.title,
-        CommonValidatorFunctions.isValidString,
+        CommonValidatorFunctions.isNonEmptyString,
       );
       optional(
         `links.${i}.icon`,

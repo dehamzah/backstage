@@ -25,11 +25,12 @@ import {
 import {
   PluginDatabaseManager,
   PluginEndpointDiscovery,
+  TokenManager,
 } from '@backstage/backend-common';
-import { NotFoundError } from '@backstage/errors';
+import { assertError, NotFoundError } from '@backstage/errors';
 import { CatalogClient } from '@backstage/catalog-client';
 import { Config } from '@backstage/config';
-import { createOidcRouter, DatabaseKeyStore, TokenFactory } from '../identity';
+import { createOidcRouter, TokenFactory, KeyStores } from '../identity';
 import session from 'express-session';
 import passport from 'passport';
 import { Minimatch } from 'minimatch';
@@ -41,26 +42,29 @@ export interface RouterOptions {
   database: PluginDatabaseManager;
   config: Config;
   discovery: PluginEndpointDiscovery;
+  tokenManager: TokenManager;
   providerFactories?: ProviderFactories;
 }
 
-export async function createRouter({
-  logger,
-  config,
-  discovery,
-  database,
-  providerFactories,
-}: RouterOptions): Promise<express.Router> {
+export async function createRouter(
+  options: RouterOptions,
+): Promise<express.Router> {
+  const {
+    logger,
+    config,
+    discovery,
+    database,
+    tokenManager,
+    providerFactories,
+  } = options;
   const router = Router();
 
   const appUrl = config.getString('app.baseUrl');
   const authUrl = await discovery.getExternalBaseUrl('auth');
 
+  const keyStore = await KeyStores.fromConfig(config, { logger, database });
   const keyDurationSeconds = 3600;
 
-  const keyStore = await DatabaseKeyStore.create({
-    database: await database.getClient(),
-  });
   const tokenIssuer = new TokenFactory({
     issuer: authUrl,
     keyStore,
@@ -73,7 +77,15 @@ export async function createRouter({
   if (secret) {
     router.use(cookieParser(secret));
     // TODO: Configure the server-side session storage.  The default MemoryStore is not designed for production
-    router.use(session({ secret, saveUninitialized: false, resave: false }));
+    const enforceCookieSSL = authUrl.startsWith('https');
+    router.use(
+      session({
+        secret,
+        saveUninitialized: false,
+        resave: false,
+        cookie: { secure: enforceCookieSSL ? 'auto' : false },
+      }),
+    );
     router.use(passport.initialize());
     router.use(passport.session());
   } else {
@@ -99,9 +111,14 @@ export async function createRouter({
       try {
         const provider = providerFactory({
           providerId,
-          globalConfig: { baseUrl: authUrl, appUrl, isOriginAllowed },
+          globalConfig: {
+            baseUrl: authUrl,
+            appUrl,
+            isOriginAllowed,
+          },
           config: providersConfig.getConfig(providerId),
           logger,
+          tokenManager,
           tokenIssuer,
           discovery,
           catalogApi,
@@ -121,6 +138,7 @@ export async function createRouter({
 
         router.use(`/${providerId}`, r);
       } catch (e) {
+        assertError(e);
         if (process.env.NODE_ENV !== 'development') {
           throw new Error(
             `Failed to initialize ${providerId} auth provider, ${e.message}`,

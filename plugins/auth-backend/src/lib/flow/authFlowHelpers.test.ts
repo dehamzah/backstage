@@ -50,8 +50,12 @@ describe('oauth helpers', () => {
             email: 'foo@bar.com',
           },
           backstageIdentity: {
-            id: 'a',
-            idToken: 'a.b.c',
+            token: 'a.b.c',
+            identity: {
+              type: 'user',
+              ownershipEntityRefs: [],
+              userEntityRef: 'a',
+            },
           },
         },
       };
@@ -105,8 +109,12 @@ describe('oauth helpers', () => {
             email: 'foo@bar.com',
           },
           backstageIdentity: {
-            id: 'a',
-            idToken: 'a.b.c',
+            token: 'a.b.c',
+            identity: {
+              type: 'user',
+              ownershipEntityRefs: [],
+              userEntityRef: 'a',
+            },
           },
         },
       };
@@ -147,8 +155,12 @@ describe('oauth helpers', () => {
             displayName: "Adam l'Hôpital",
           },
           backstageIdentity: {
-            id: 'a',
-            idToken: 'a.b.c',
+            token: 'a.b.c',
+            identity: {
+              type: 'user',
+              ownershipEntityRefs: [],
+              userEntityRef: 'a',
+            },
           },
         },
       };

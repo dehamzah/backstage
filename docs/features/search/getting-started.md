@@ -18,8 +18,7 @@ If you haven't setup Backstage already, start
 
 ```bash
 # From your Backstage root directory
-cd packages/app
-yarn add @backstage/plugin-search
+yarn add --cwd packages/app @backstage/plugin-search
 ```
 
 Create a new `packages/app/src/components/search/SearchPage.tsx` file in your
@@ -109,14 +108,32 @@ const routes = (
 );
 ```
 
+### Using the Search Modal
+
+In `Root.tsx`, add the `SidebarSearchModal` component:
+
+```bash
+import { SidebarSearchModal } from '@backstage/plugin-search';
+
+export const Root = ({ children }: PropsWithChildren<{}>) => (
+  <SidebarPage>
+    <Sidebar>
+      <SidebarLogo />
+      <SidebarSearchModal />
+      <SidebarDivider />
+...
+```
+
+For more information about using `Root.tsx`, please see
+[the changelog](https://github.com/backstage/backstage/blob/master/packages/create-app/CHANGELOG.md#0315).
+
 ## Adding Search to the Backend
 
 Add the following plugins into your backend app:
 
 ```bash
 # From your Backstage root directory
-cd packages/backend
-yarn add @backstage/plugin-search-backend @backstage/plugin-search-backend-node
+yarn add --cwd packages/backend @backstage/plugin-search-backend @backstage/plugin-search-backend-node
 ```
 
 Create a `packages/backend/src/plugins/search.ts` file containing the following
@@ -131,17 +148,25 @@ import {
 } from '@backstage/plugin-search-backend-node';
 import { PluginEnvironment } from '../types';
 import { DefaultCatalogCollator } from '@backstage/plugin-catalog-backend';
+import { Router } from 'express';
 
-export default async function createPlugin({
-  logger,
-  discovery,
-}: PluginEnvironment) {
-  const searchEngine = new LunrSearchEngine({ logger });
-  const indexBuilder = new IndexBuilder({ logger, searchEngine });
+export default async function createPlugin(
+  env: PluginEnvironment,
+): Promise<Router> {
+  const searchEngine = new LunrSearchEngine({
+    logger: env.logger,
+  });
+  const indexBuilder = new IndexBuilder({
+    logger: env.logger,
+    searchEngine,
+  });
 
   indexBuilder.addCollator({
     defaultRefreshIntervalSeconds: 600,
-    collator: new DefaultCatalogCollator({ discovery }),
+    collator: new DefaultCatalogCollator({
+      discovery: env.discovery,
+      tokenManager: env.tokenManager,
+    }),
   });
 
   const { scheduler } = await indexBuilder.build();
@@ -151,7 +176,7 @@ export default async function createPlugin({
 
   return await createRouter({
     engine: indexBuilder.getSearchEngine(),
-    logger,
+    logger: env.logger,
   });
 }
 ```
@@ -262,11 +287,14 @@ which are responsible for providing documents
 number of collators with the `IndexBuilder` like this:
 
 ```typescript
-const indexBuilder = new IndexBuilder({ logger, searchEngine });
+const indexBuilder = new IndexBuilder({ logger: env.logger, searchEngine });
 
 indexBuilder.addCollator({
   defaultRefreshIntervalSeconds: 600,
-  collator: new DefaultCatalogCollator({ discovery }),
+  collator: new DefaultCatalogCollator({
+    discovery: env.discovery,
+    tokenManager: env.tokenManager,
+  }),
 });
 
 indexBuilder.addCollator({
@@ -284,6 +312,9 @@ its `defaultRefreshIntervalSeconds` value, like this:
 ```typescript {3}
 indexBuilder.addCollator({
   defaultRefreshIntervalSeconds: 600,
-  collator: new DefaultCatalogCollator({ discovery }),
+  collator: new DefaultCatalogCollator({
+    discovery: env.discovery,
+    tokenManager: env.tokenManager,
+  }),
 });
 ```

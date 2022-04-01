@@ -15,8 +15,8 @@
  */
 
 import { Entity, GroupEntity } from '@backstage/catalog-model';
-import { ApiProvider, ApiRegistry } from '@backstage/core-app-api';
 import { catalogApiRef, EntityProvider } from '@backstage/plugin-catalog-react';
+import { TestApiProvider } from '@backstage/test-utils';
 import { Grid } from '@material-ui/core';
 import React from 'react';
 import { MemoryRouter } from 'react-router';
@@ -54,6 +54,7 @@ const makeUser = ({
   relations: [
     {
       type: 'memberOf',
+      targetRef: 'group:default/team-a',
       target: {
         namespace: 'default',
         kind: 'group',
@@ -99,12 +100,9 @@ const catalogApi = (items: Entity[]) => ({
   getEntities: () => Promise.resolve({ items }),
 });
 
-const apiRegistry = (items: Entity[]) =>
-  ApiRegistry.from([[catalogApiRef, catalogApi(items)]]);
-
 export const Default = () => (
   <MemoryRouter>
-    <ApiProvider apis={apiRegistry([alice, bob])}>
+    <TestApiProvider apis={[[catalogApiRef, catalogApi([alice, bob])]]}>
       <EntityProvider entity={defaultEntity}>
         <Grid container spacing={4}>
           <Grid item xs={12} md={6}>
@@ -112,13 +110,13 @@ export const Default = () => (
           </Grid>
         </Grid>
       </EntityProvider>
-    </ApiProvider>
+    </TestApiProvider>
   </MemoryRouter>
 );
 
 export const Empty = () => (
   <MemoryRouter>
-    <ApiProvider apis={apiRegistry([])}>
+    <TestApiProvider apis={[[catalogApiRef, catalogApi([])]]}>
       <EntityProvider entity={defaultEntity}>
         <Grid container spacing={4}>
           <Grid item xs={12} md={6}>
@@ -126,6 +124,6 @@ export const Empty = () => (
           </Grid>
         </Grid>
       </EntityProvider>
-    </ApiProvider>
+    </TestApiProvider>
   </MemoryRouter>
 );

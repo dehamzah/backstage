@@ -14,26 +14,44 @@
  * limitations under the License.
  */
 
-import React from 'react';
-import Grid from '@material-ui/core/Grid';
 import {
   HomePageRandomJoke,
   ComponentAccordion,
   ComponentTabs,
   ComponentTab,
+  WelcomeTitle,
+  HeaderWorldClock,
+  ClockConfig,
 } from '@backstage/plugin-home';
-import {
-  Content,
-  Header,
-  Page,
-  HomepageTimer,
-} from '@backstage/core-components';
+import { Content, Header, Page } from '@backstage/core-components';
 import { HomePageSearchBar } from '@backstage/plugin-search';
+import { HomePageCalendar } from '@backstage/plugin-gcalendar';
+import Grid from '@material-ui/core/Grid';
+import React from 'react';
 
-export const HomePage = () => (
+const clockConfigs: ClockConfig[] = [
+  {
+    label: 'NYC',
+    timeZone: 'America/New_York',
+  },
+  {
+    label: 'UTC',
+    timeZone: 'UTC',
+  },
+  {
+    label: 'STO',
+    timeZone: 'Europe/Stockholm',
+  },
+  {
+    label: 'TYO',
+    timeZone: 'Asia/Tokyo',
+  },
+];
+
+export const homePage = (
   <Page themeId="home">
-    <Header title="Home">
-      <HomepageTimer />
+    <Header title={<WelcomeTitle />} pageTitleOverride="Home">
+      <HeaderWorldClock clockConfigs={clockConfigs} />
     </Header>
     <Content>
       <Grid container spacing={3}>
@@ -82,6 +100,9 @@ export const HomePage = () => (
               },
             ]}
           />
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <HomePageCalendar />
         </Grid>
       </Grid>
     </Content>

@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-import { WebpackOptionsNormalized, WebpackPluginInstance } from 'webpack';
-import TerserPlugin from 'terser-webpack-plugin';
+import { WebpackOptionsNormalized } from 'webpack';
 import { BundlingOptions } from './types';
-import { isParallelDefault } from '../parallel';
+
+const { ESBuildMinifyPlugin } = require('esbuild-loader');
 
 export const optimization = (
   options: BundlingOptions,
@@ -26,16 +26,12 @@ export const optimization = (
 
   return {
     minimize: !isDev,
-    // Only configure when parallel is explicitly overriden from the default
-    ...(!isParallelDefault(options.parallel)
-      ? {
-          minimizer: [
-            new TerserPlugin({
-              parallel: options.parallel,
-            }) as unknown as WebpackPluginInstance,
-          ],
-        }
-      : {}),
+    minimizer: [
+      new ESBuildMinifyPlugin({
+        target: 'es2019',
+        format: 'iife',
+      }),
+    ],
     runtimeChunk: 'single',
     splitChunks: {
       automaticNameDelimiter: '-',
@@ -45,11 +41,15 @@ export const optimization = (
         // enough, if they're smaller they end up in the main
         packages: {
           chunks: 'initial',
-          test: /[\\/]node_modules[\\/]/,
+          test(module: any) {
+            return Boolean(
+              module?.resource?.match(/[\\/]node_modules[\\/](.*?)([\\/]|$)/),
+            );
+          },
           name(module: any) {
             // get the name. E.g. node_modules/packageName/not/this/part.js
             // or node_modules/packageName
-            const packageName = module.context.match(
+            const packageName = module.resource.match(
               /[\\/]node_modules[\\/](.*?)([\\/]|$)/,
             )[1];
 

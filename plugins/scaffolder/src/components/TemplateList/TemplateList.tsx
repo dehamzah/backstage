@@ -15,28 +15,60 @@
  */
 
 import React, { ComponentType } from 'react';
+import { Entity, stringifyEntityRef } from '@backstage/catalog-model';
+import { TemplateEntityV1beta3 } from '@backstage/plugin-scaffolder-common';
 import {
-  stringifyEntityRef,
-  TemplateEntityV1beta2,
-} from '@backstage/catalog-model';
-import {
+  Content,
+  ContentHeader,
   ItemCardGrid,
+  Link,
   Progress,
   WarningPanel,
 } from '@backstage/core-components';
-import { useEntityListProvider } from '@backstage/plugin-catalog-react';
-import { Link, Typography } from '@material-ui/core';
+import { useEntityList } from '@backstage/plugin-catalog-react';
+import { Typography } from '@material-ui/core';
 import { TemplateCard } from '../TemplateCard';
 
+/**
+ * @internal
+ */
 export type TemplateListProps = {
   TemplateCardComponent?:
-    | ComponentType<{ template: TemplateEntityV1beta2 }>
+    | ComponentType<{ template: TemplateEntityV1beta3 }>
     | undefined;
+  group?: {
+    title?: React.ReactNode;
+    filter: (entity: Entity) => boolean;
+  };
 };
 
-export const TemplateList = ({ TemplateCardComponent }: TemplateListProps) => {
-  const { loading, error, entities } = useEntityListProvider();
+/**
+ * @internal
+ */
+export const TemplateList = ({
+  TemplateCardComponent,
+  group,
+}: TemplateListProps) => {
+  const { loading, error, entities } = useEntityList();
   const Card = TemplateCardComponent || TemplateCard;
+  const maybeFilteredEntities = group
+    ? entities.filter(e => group.filter(e))
+    : entities;
+
+  const titleComponent: React.ReactNode = (() => {
+    if (group && group.title) {
+      if (typeof group.title === 'string') {
+        return <ContentHeader title={group.title} />;
+      }
+      return group.title;
+    }
+
+    return <ContentHeader title="Other Templates" />;
+  })();
+
+  if (group && maybeFilteredEntities.length === 0) {
+    return null;
+  }
   return (
     <>
       {loading && <Progress />}
@@ -50,23 +82,27 @@ export const TemplateList = ({ TemplateCardComponent }: TemplateListProps) => {
       {!error && !loading && !entities.length && (
         <Typography variant="body2">
           No templates found that match your filter. Learn more about{' '}
-          <Link href="https://backstage.io/docs/features/software-templates/adding-templates">
+          <Link to="https://backstage.io/docs/features/software-templates/adding-templates">
             adding templates
           </Link>
           .
         </Typography>
       )}
 
-      <ItemCardGrid>
-        {entities &&
-          entities?.length > 0 &&
-          entities.map(template => (
-            <Card
-              key={stringifyEntityRef(template)}
-              template={template as TemplateEntityV1beta2}
-            />
-          ))}
-      </ItemCardGrid>
+      <Content>
+        {titleComponent}
+        <ItemCardGrid>
+          {maybeFilteredEntities &&
+            maybeFilteredEntities?.length > 0 &&
+            maybeFilteredEntities.map((template: Entity) => (
+              <Card
+                key={stringifyEntityRef(template)}
+                template={template as TemplateEntityV1beta3}
+                deprecated={template.apiVersion === 'backstage.io/v1beta2'}
+              />
+            ))}
+        </ItemCardGrid>
+      </Content>
     </>
   );
 };

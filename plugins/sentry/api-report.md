@@ -9,18 +9,27 @@ import { ApiRef } from '@backstage/core-plugin-api';
 import { BackstagePlugin } from '@backstage/core-plugin-api';
 import { DiscoveryApi } from '@backstage/core-plugin-api';
 import { Entity } from '@backstage/catalog-model';
+import { IdentityApi } from '@backstage/core-plugin-api';
 import { InfoCardVariants } from '@backstage/core-components';
+import { Options } from '@material-table/core';
 import { RouteRef } from '@backstage/core-plugin-api';
 
+// Warning: (ae-forgotten-export) The symbol "SentryPageProps" needs to be exported by the entry point index.d.ts
 // Warning: (ae-missing-release-tag) "EntitySentryCard" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
 //
 // @public (undocumented)
-export const EntitySentryCard: () => JSX.Element;
+export const EntitySentryCard: ({
+  statsFor,
+  tableOptions,
+}: SentryPageProps) => JSX.Element;
 
 // Warning: (ae-missing-release-tag) "EntitySentryContent" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
 //
 // @public (undocumented)
-export const EntitySentryContent: () => JSX.Element;
+export const EntitySentryContent: ({
+  statsFor,
+  tableOptions,
+}: SentryPageProps) => JSX.Element;
 
 // Warning: (ae-missing-release-tag) "MockSentryApi" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
 //
@@ -34,9 +43,17 @@ export class MockSentryApi implements SentryApi {
 //
 // @public (undocumented)
 export class ProductionSentryApi implements SentryApi {
-  constructor(discoveryApi: DiscoveryApi, organization: string);
+  constructor(
+    discoveryApi: DiscoveryApi,
+    organization: string,
+    identityApi?: IdentityApi | undefined,
+  );
   // (undocumented)
-  fetchIssues(project: string, statsFor: string): Promise<SentryIssue[]>;
+  fetchIssues(
+    project: string,
+    statsFor: string,
+    query?: string,
+  ): Promise<SentryIssue[]>;
 }
 
 // Warning: (ae-missing-release-tag) "Router" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
@@ -49,7 +66,11 @@ export const Router: ({ entity }: { entity: Entity }) => JSX.Element;
 // @public (undocumented)
 export interface SentryApi {
   // (undocumented)
-  fetchIssues(project: string, statsFor: string): Promise<SentryIssue[]>;
+  fetchIssues(
+    project: string,
+    statsFor: string,
+    query?: string,
+  ): Promise<SentryIssue[]>;
 }
 
 // Warning: (ae-missing-release-tag) "sentryApiRef" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
@@ -67,7 +88,7 @@ export type SentryIssue = {
   userCount: number;
   stats: {
     '24h'?: EventPoint[];
-    '12h'?: EventPoint[];
+    '14d'?: EventPoint[];
   };
   culprit: string;
   title: string;
@@ -99,11 +120,15 @@ export type SentryIssue = {
 export const SentryIssuesWidget: ({
   entity,
   statsFor,
+  tableOptions,
   variant,
+  query,
 }: {
   entity: Entity;
-  statsFor?: '12h' | '24h' | undefined;
+  statsFor: '24h' | '14d' | '';
+  tableOptions: Options<never>;
   variant?: InfoCardVariants | undefined;
+  query?: string | undefined;
 }) => JSX.Element;
 
 // Warning: (ae-missing-release-tag) "sentryPlugin" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)

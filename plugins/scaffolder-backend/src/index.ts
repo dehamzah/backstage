@@ -22,4 +22,5 @@
 
 export * from './scaffolder';
 export * from './service/router';
-export * from './lib/catalog';
+export * from './lib';
+export * from './processor';

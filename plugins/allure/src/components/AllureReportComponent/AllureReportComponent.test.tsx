@@ -19,12 +19,16 @@ import { ThemeProvider } from '@material-ui/core';
 import { lightTheme } from '@backstage/theme';
 import { rest } from 'msw';
 import { setupServer } from 'msw/node';
-import { msw, renderInTestApp } from '@backstage/test-utils';
+import {
+  setupRequestMockHandlers,
+  renderInTestApp,
+} from '@backstage/test-utils';
+import { EntityProvider } from '@backstage/plugin-catalog-react';
 
 describe('ExampleComponent', () => {
   const server = setupServer();
   // Enable sane handlers for network requests
-  msw.setupDefaultHandlers(server);
+  setupRequestMockHandlers(server);
 
   // setup mock response
   beforeEach(() => {
@@ -36,7 +40,15 @@ describe('ExampleComponent', () => {
   it('should render', async () => {
     const rendered = await renderInTestApp(
       <ThemeProvider theme={lightTheme}>
-        <AllureReportComponent />
+        <EntityProvider
+          entity={{
+            apiVersion: 'backstage.io/v1alpha1',
+            kind: 'Component',
+            metadata: { name: 'test' },
+          }}
+        >
+          <AllureReportComponent />
+        </EntityProvider>
       </ThemeProvider>,
     );
     expect(rendered.getByText('Missing Annotation')).toBeInTheDocument();

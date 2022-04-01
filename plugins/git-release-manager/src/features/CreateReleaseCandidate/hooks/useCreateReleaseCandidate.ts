@@ -15,7 +15,8 @@
  */
 
 import { useEffect, useState } from 'react';
-import { useAsync, useAsyncFn } from 'react-use';
+import useAsync from 'react-use/lib/useAsync';
+import useAsyncFn from 'react-use/lib/useAsyncFn';
 import {
   GetLatestReleaseResult,
   GetRepositoryResult,
@@ -279,7 +280,7 @@ export function useCreateReleaseCandidate({
           previousTag: latestRelease?.tagName,
         });
       } catch (error) {
-        asyncCatcher(error);
+        asyncCatcher(error as Error);
       }
 
       addStepToResponseSteps({

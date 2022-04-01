@@ -87,6 +87,10 @@ td {
   background-color: #121212;
 }
 
+.MainContent--gradient {
+  background: linear-gradient(90.49deg, #121212 15.36%, #282828 70.44%);
+}
+
 /* marketing page */
 
 .blockContent h2 {
@@ -1073,11 +1077,13 @@ code {
 .Banner {
   position: relative;
   padding: 14px;
-  margin: 14px 20px;
+  padding-right: 50px; /* space for the dismiss button */
+  margin: 36px 20px;
   border-radius: 4px;
   background-color: $primaryColor;
   font-family: Helvetica Neue, sans-serif;
   color: #000;
+  display: flex;
 }
 
 .Banner--hidden {
@@ -1094,10 +1100,27 @@ code {
   position: relative;
   overflow: visible;
   z-index: 100;
-
+  margin: 25px auto 0 auto;
   max-width: 1430px;
   height: 0;
-  margin: -14px auto 14px auto;
+}
+
+@media only screen and (max-width: 1024px) {
+  .Banner__Container {
+    margin-top: 20px;
+  }
+}
+
+@media only screen and (max-width: 645px) {
+  .Banner__Container {
+    margin-top: 60px;
+  }
+}
+
+@media only screen and (max-width: 335px) {
+  .Banner__Container {
+    margin-top: 90px;
+  }
 }
 
 .Banner__DismissButton {
@@ -1199,4 +1222,8 @@ code {
 /* Zoomed images using the medium-zoom library should be on top of screen. */
 .medium-zoom-image {
   z-index: 10000;
+}
+
+h3.collapsible span.arrow {
+  margin-right: 4px;
 }

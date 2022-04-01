@@ -20,6 +20,7 @@ import { ReaderFactory, UrlReader } from './types';
 import { UrlReaderPredicateMux } from './UrlReaderPredicateMux';
 import { AzureUrlReader } from './AzureUrlReader';
 import { BitbucketUrlReader } from './BitbucketUrlReader';
+import { GerritUrlReader } from './GerritUrlReader';
 import { GithubUrlReader } from './GithubUrlReader';
 import { GitlabUrlReader } from './GitlabUrlReader';
 import { DefaultReadTreeResponseFactory } from './tree';
@@ -27,7 +28,11 @@ import { FetchUrlReader } from './FetchUrlReader';
 import { GoogleGcsUrlReader } from './GoogleGcsUrlReader';
 import { AwsS3UrlReader } from './AwsS3UrlReader';
 
-/** @public */
+/**
+ * Creation options for {@link UrlReaders}.
+ *
+ * @public
+ */
 export type UrlReadersOptions = {
   /** Root config object */
   config: Config;
@@ -38,15 +43,16 @@ export type UrlReadersOptions = {
 };
 
 /**
- * UrlReaders provide various utilities related to the UrlReader interface.
+ * Helps construct {@link UrlReader}s.
  *
  * @public
  */
 export class UrlReaders {
   /**
-   * Creates a UrlReader without any known types.
+   * Creates a custom {@link UrlReader} wrapper for your own set of factories.
    */
-  static create({ logger, config, factories }: UrlReadersOptions): UrlReader {
+  static create(options: UrlReadersOptions): UrlReader {
+    const { logger, config, factories } = options;
     const mux = new UrlReaderPredicateMux(logger);
     const treeResponseFactory = DefaultReadTreeResponseFactory.create({
       config,
@@ -64,17 +70,20 @@ export class UrlReaders {
   }
 
   /**
-   * Creates a UrlReader that includes all the default factories from this package.
+   * Creates a {@link UrlReader} wrapper that includes all the default factories
+   * from this package.
    *
    * Any additional factories passed will be loaded before the default ones.
    */
-  static default({ logger, config, factories = [] }: UrlReadersOptions) {
+  static default(options: UrlReadersOptions) {
+    const { logger, config, factories = [] } = options;
     return UrlReaders.create({
       logger,
       config,
       factories: factories.concat([
         AzureUrlReader.factory,
         BitbucketUrlReader.factory,
+        GerritUrlReader.factory,
         GithubUrlReader.factory,
         GitlabUrlReader.factory,
         GoogleGcsUrlReader.factory,

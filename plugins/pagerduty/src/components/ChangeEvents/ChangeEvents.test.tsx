@@ -16,15 +16,15 @@
 import React from 'react';
 import { render, waitFor } from '@testing-library/react';
 import { ChangeEvent } from '../types';
-import { wrapInTestApp } from '@backstage/test-utils';
+import { TestApiRegistry, wrapInTestApp } from '@backstage/test-utils';
 import { pagerDutyApiRef } from '../../api';
-import { ApiProvider, ApiRegistry } from '@backstage/core-app-api';
+import { ApiProvider } from '@backstage/core-app-api';
 import { ChangeEvents } from './ChangeEvents';
 
 const mockPagerDutyApi = {
-  getChangeEventsByServiceId: () => [],
+  getChangeEventsByServiceId: jest.fn(),
 };
-const apis = ApiRegistry.from([[pagerDutyApiRef, mockPagerDutyApi]]);
+const apis = TestApiRegistry.from([pagerDutyApiRef, mockPagerDutyApi]);
 
 describe('Incidents', () => {
   it('Renders an empty state when there are no change events', async () => {
@@ -90,6 +90,54 @@ describe('Incidents', () => {
 
     // assert links, mailto and hrefs, date calculation
     expect(getAllByTitle('View in PagerDuty').length).toEqual(2);
+  });
+
+  it('Does not render a pagerduty link when html_url is not present in response', async () => {
+    mockPagerDutyApi.getChangeEventsByServiceId = jest
+      .fn()
+      .mockImplementationOnce(
+        async () =>
+          [
+            {
+              id: 'id1',
+              source: 'changeSource1',
+              links: [
+                {
+                  href: 'www.externalLink1.com',
+                  text: 'link1',
+                },
+              ],
+              summary: 'summary of event',
+              timestamp: '2020-07-17T08:42:58.315+0000',
+            },
+            {
+              id: 'id2',
+              source: 'changeSource1',
+              html_url: 'www.pdlink.com/link',
+              links: [
+                {
+                  href: 'www.externalLink1.com',
+                  text: 'link1',
+                },
+              ],
+              summary: 'sum of EVENT',
+              timestamp: '2020-07-18T08:42:58.315+0000',
+            },
+          ] as ChangeEvent[],
+      );
+    const { getByText, getAllByTitle, queryByTestId } = render(
+      wrapInTestApp(
+        <ApiProvider apis={apis}>
+          <ChangeEvents serviceId="abc" refreshEvents={false} />
+        </ApiProvider>,
+      ),
+    );
+    await waitFor(() => !queryByTestId('progress'));
+    expect(getByText('summary of event')).toBeInTheDocument();
+    expect(getByText('sum of EVENT')).toBeInTheDocument();
+
+    // assert links, mailto and hrefs, date calculation
+    expect(getAllByTitle('View in PagerDuty').length).toEqual(1);
   });
 
   it('Handle errors', async () => {

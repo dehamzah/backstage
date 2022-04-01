@@ -10,8 +10,7 @@ The Sentry Plugin displays issues from [Sentry](https://sentry.io).
 
 ```bash
 # From your Backstage root directory
-cd packages/app
-yarn add @backstage/plugin-sentry
+yarn add --cwd packages/app @backstage/plugin-sentry
 ```
 
 2. Add the `EntitySentryCard` to the EntityPage:
@@ -93,7 +92,7 @@ You can add it by overriding the `sentryApiRef`:
 ```ts
 // packages/app/src/apis.ts
 
-import { createApiFactory } from '@backstage/core';
+import { createApiFactory } from '@backstage/core-plugin-api';
 import { MockSentryApi, sentryApiRef } from '@backstage/plugin-sentry';
 
 export const apis = [

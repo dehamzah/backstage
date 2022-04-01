@@ -26,3 +26,22 @@ catalog:
 ```
 
 Note the `s3-discovery` type, as this is not a regular `url` processor.
+
+As this processor is not one of the default providers, you will first need to install the AWS catalog plugin:
+
+```bash
+# From the Backstage root directory
+yarn install --cwd packages/backend @backstage/plugin-catalog-backend-module-aws
+```
+
+Once you've done that, you'll also need to add the segment below to `packages/backend/src/plugins/catalog.ts`:
+
+```ts
+/* packages/backend/src/plugins/catalog.ts */
+
+import { AwsS3DiscoveryProcessor } from '@backstage/plugin-catalog-backend-module-aws';
+
+const builder = await CatalogBuilder.create(env);
+/** ... other processors ... */
+builder.addProcessor(new AwsS3DiscoveryProcessor(env.reader));
+```

@@ -7,6 +7,7 @@
 
 - The Backstage PagerDuty plugin allows PagerDuty information about a Backstage entity to be displayed within Backstage. This includes active incidents, recent change events, as well as the current on-call responders' names, email addresses, and links to their profiles in PagerDuty.
 - Incidents can be manually triggered via the plugin with a user-provided description, which will in turn notify the current on-call responders.
+- Change events will be displayed in a separate tab. If the change event payload has additional links the first link only will be rendered.
 
 # Requirements
 
@@ -41,8 +42,7 @@ First, install the PagerDuty plugin via a CLI:
 
 ```bash
 # From your Backstage app root directory
-cd packages/app
-yarn add @backstage/plugin-pagerduty
+yarn add --cwd packages/app @backstage/plugin-pagerduty
 ```
 
 Next, add the plugin to `EntityPage.tsx` in `packages/app/src/components/catalog` by adding the following code snippets.
@@ -132,8 +132,7 @@ pagerduty:
 
 ```bash
 # From your Backstage root directory
-cd packages/app
-yarn remove @backstage/plugin-pagerduty
+yarn remove --cwd packages/app @backstage/plugin-pagerduty
 ```
 
 4. [Delete the integration](https://support.pagerduty.com/docs/services-and-integrations#delete-an-integration-from-a-service) from the service in PagerDuty

@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-import { AppConfig, JsonObject } from '@backstage/config';
+import { AppConfig } from '@backstage/config';
+import { JsonObject } from '@backstage/types';
 
 /**
  * An sub-set of configuration schema.
@@ -50,7 +51,14 @@ export const DEFAULT_CONFIG_VISIBILITY: ConfigVisibility = 'backend';
 /**
  * An explanation of a configuration validation error.
  */
-type ValidationError = string;
+export type ValidationError = {
+  keyword: string;
+  instancePath: string;
+  schemaPath: string;
+  params: Record<string, any>;
+  propertyName?: string;
+  message?: string;
+};
 
 /**
  * The result of validating configuration data using a schema.
@@ -65,7 +73,21 @@ type ValidationResult = {
    *
    * The path in the key uses the form `/<key>/<sub-key>/<array-index>/<leaf-key>`
    */
-  visibilityByPath: Map<string, ConfigVisibility>;
+  visibilityByDataPath: Map<string, ConfigVisibility>;
+
+  /**
+   * The configuration visibilities that were discovered during validation.
+   *
+   * The path in the key uses the form `/properties/<key>/items/additionalProperties/<leaf-key>`
+   */
+  visibilityBySchemaPath: Map<string, ConfigVisibility>;
+
+  /**
+   * The deprecated options that were discovered during validation.
+   *
+   * The path in the key uses the form `/<key>/<sub-key>/<array-index>/<leaf-key>`
+   */
+  deprecationByDataPath: Map<string, string>;
 };
 
 /**
@@ -109,6 +131,13 @@ export type ConfigSchemaProcessingOptions = {
    * Default: `false`.
    */
   withFilteredKeys?: boolean;
+
+  /**
+   * Whether or not to include the `deprecatedKeys` property in the output `AppConfig`s.
+   *
+   * Default: `true`.
+   */
+  withDeprecatedKeys?: boolean;
 };
 
 /**

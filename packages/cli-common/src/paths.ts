@@ -17,7 +17,12 @@
 import fs from 'fs';
 import { dirname, resolve as resolvePath } from 'path';
 
-/** @public */
+/**
+ * A function that takes a set of path fragments and resolves them into a
+ * single complete path, relative to some root.
+ *
+ * @public
+ */
 export type ResolveFunc = (...paths: string[]) => string;
 
 /**
@@ -115,7 +120,7 @@ export function findPaths(searchDir: string): Paths {
   // Drive letter can end up being lowercased here on Windows, bring back to uppercase for consistency
   const targetDir = fs
     .realpathSync(process.cwd())
-    .replace(/^[a-z]:/, str => str.toUpperCase());
+    .replace(/^[a-z]:/, str => str.toLocaleUpperCase('en-US'));
 
   // Lazy load this as it will throw an error if we're not inside the Backstage repo.
   let ownRoot = '';
@@ -162,3 +167,10 @@ export function findPaths(searchDir: string): Paths {
     resolveTargetRoot: (...paths) => resolvePath(getTargetRoot(), ...paths),
   };
 }
+
+/**
+ * The name of the backstage's config file
+ *
+ * @public
+ */
+export const BACKSTAGE_JSON = 'backstage.json';

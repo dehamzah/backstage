@@ -16,6 +16,7 @@
 
 import Docker from 'dockerode';
 import fs from 'fs-extra';
+import { ForwardedError } from '@backstage/errors';
 import { PassThrough } from 'stream';
 import { ContainerRunner, RunContainerOptions } from './ContainerRunner';
 
@@ -23,30 +24,37 @@ export type UserOptions = {
   User?: string;
 };
 
-/** @public */
+/**
+ * A {@link ContainerRunner} for Docker containers.
+ *
+ * @public
+ */
 export class DockerContainerRunner implements ContainerRunner {
   private readonly dockerClient: Docker;
 
-  constructor({ dockerClient }: { dockerClient: Docker }) {
-    this.dockerClient = dockerClient;
+  constructor(options: { dockerClient: Docker }) {
+    this.dockerClient = options.dockerClient;
   }
 
-  async runContainer({
-    imageName,
-    command,
-    args,
-    logStream = new PassThrough(),
-    mountDirs = {},
-    workingDir,
-    envVars = {},
-    pullImage = true,
-  }: RunContainerOptions) {
+  async runContainer(options: RunContainerOptions) {
+    const {
+      imageName,
+      command,
+      args,
+      logStream = new PassThrough(),
+      mountDirs = {},
+      workingDir,
+      envVars = {},
+      pullImage = true,
+    } = options;
+
     // Show a better error message when Docker is unavailable.
     try {
       await this.dockerClient.ping();
     } catch (e) {
-      throw new Error(
-        `This operation requires Docker. Docker does not appear to be available. Docker.ping() failed with: ${e.message}`,
+      throw new ForwardedError(
+        'This operation requires Docker. Docker does not appear to be available. Docker.ping() failed with',
+        e,
       );
     }
 
@@ -97,6 +105,7 @@ export class DockerContainerRunner implements ContainerRunner {
       await this.dockerClient.run(imageName, args, logStream, {
         Volumes,
         HostConfig: {
+          AutoRemove: true,
           Binds,
         },
         ...(workingDir ? { WorkingDir: workingDir } : {}),

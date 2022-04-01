@@ -4,16 +4,20 @@
 
 ```ts
 import { ContainerRunner } from '@backstage/backend-common';
+import { JsonObject } from '@backstage/types';
 import { ScmIntegrations } from '@backstage/integration';
 import { TemplateAction } from '@backstage/plugin-scaffolder-backend';
 import { UrlReader } from '@backstage/backend-common';
 
-// Warning: (ae-missing-release-tag) "createFetchRailsAction" is exported by the package, but it is missing a release tag (@alpha, @beta, @public, or @internal)
-//
-// @public (undocumented)
+// @public
 export function createFetchRailsAction(options: {
   reader: UrlReader;
   integrations: ScmIntegrations;
   containerRunner: ContainerRunner;
-}): TemplateAction<any>;
+}): TemplateAction<{
+  url: string;
+  targetPath?: string | undefined;
+  values: JsonObject;
+  imageName?: string | undefined;
+}>;
 ```

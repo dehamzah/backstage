@@ -64,7 +64,7 @@ spec:
 
 This is the same entity as returned in JSON from the software catalog API:
 
-```js
+```json
 {
   "apiVersion": "backstage.io/v1alpha1",
   "kind": "Component",
@@ -76,15 +76,16 @@ This is the same entity as returned in JSON from the software catalog API:
     },
     "description": "The place to be, for great artists",
     "etag": "ZjU2MWRkZWUtMmMxZS00YTZiLWFmMWMtOTE1NGNiZDdlYzNk",
-    "generation": 1,
     "labels": {
       "example.com/custom": "custom_label_value"
     },
-    "links": [{
-      "url": "https://admin.example-org.com",
-      "title": "Admin Dashboard",
-      "icon": "dashboard"
-    }],
+    "links": [
+      {
+        "url": "https://admin.example-org.com",
+        "title": "Admin Dashboard",
+        "icon": "dashboard"
+      }
+    ],
     "tags": ["java"],
     "name": "artist-web",
     "uid": "2152f463-549d-4d8d-a94d-ce2b7676c6e2"
@@ -144,7 +145,8 @@ spec:
 
 Note that to be able to read from targets that are outside of the normal
 integration points such as `github.com`, you'll need to explicitly allow it by
-adding an entry in the `backend.reading.allow` list. For example:
+adding an entry in the `backend.reading.allow` list. Paths can be specified to
+further restrict targets For example:
 
 ```yml
 backend:
@@ -153,6 +155,8 @@ backend:
     allow:
       - host: example.com
       - host: '*.examples.org'
+      - host: example.net
+        paths: ['/api/']
 ```
 
 ## Common to All Kinds: The Envelope
@@ -502,6 +506,8 @@ spec:
   lifecycle: production
   owner: artist-relations-team
   system: artist-engagement-portal
+  dependsOn:
+    - resource:default/artists-db
   providesApis:
     - artist-api
 ```
@@ -620,9 +626,6 @@ The following describes the following entity kind:
 | `apiVersion` | `backstage.io/v1beta2` |
 | `kind`       | `Template`             |
 
-If you're looking for docs on `v1alpha1` you can find them
-[here](../software-templates/legacy.md)
-
 A template definition describes both the parameters that are rendered in the
 frontend part of the scaffolding wizard, and the steps that are executed when
 scaffolding that component.
@@ -725,7 +728,7 @@ filtering templates, and should ideally match the Component
 You can find out more about the `parameters` key
 [here](../software-templates/writing-templates.md)
 
-### `spec.steps` [optional]
+### `spec.steps` [required]
 
 You can find out more about the `steps` key
 [here](../software-templates/writing-templates.md)
@@ -1119,6 +1122,17 @@ This field is optional.
 | [`Component`](#kind-component)          | Same as this entity, typically `default`   | [`dependsOn`, and reverse `dependencyOf`](well-known-relations.md#dependson-and-dependencyof) |
 | [`Resource`](#kind-resource)            | Same as this entity, typically `default`   | [`dependsOn`, and reverse `dependencyOf`](well-known-relations.md#dependson-and-dependencyof) |
 
+### `spec.dependencyOf` [optional]
+
+An array of [entity references](references.md#string-references) to the
+components and resources that the resource is a dependency of, e.g. `artist-lookup`.
+This field is optional.
+
+| [`kind`](#apiversion-and-kind-required) | Default [`namespace`](#namespace-optional) | Generated [relation](well-known-relations.md) type                                            |
+| --------------------------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| [`Component`](#kind-component)          | Same as this entity, typically `default`   | [`dependencyOf`, and reverse `dependsOn`](well-known-relations.md#dependson-and-dependencyof) |
+| [`Resource`](#kind-resource)            | Same as this entity, typically `default`   | [`dependencyOf`, and reverse `dependsOn`](well-known-relations.md#dependson-and-dependencyof) |
+
 ## Kind: System
 
 Describes the following entity kind:
@@ -1263,6 +1277,10 @@ shape, this kind has the following structure.
 ### `apiVersion` and `kind` [required]
 
 Exactly equal to `backstage.io/v1alpha1` and `Location`, respectively.
+
+### `spec` [required]
+
+The `spec` field is required. The minimal spec should be an empty object.
 
 ### `spec.type` [optional]
 

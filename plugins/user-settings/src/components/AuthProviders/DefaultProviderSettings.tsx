@@ -17,13 +17,14 @@ import Star from '@material-ui/icons/Star';
 import React from 'react';
 import { ProviderSettingsItem } from './ProviderSettingsItem';
 import {
-  auth0AuthApiRef,
   githubAuthApiRef,
   gitlabAuthApiRef,
   googleAuthApiRef,
-  oauth2ApiRef,
   oktaAuthApiRef,
   microsoftAuthApiRef,
+  bitbucketAuthApiRef,
+  atlassianAuthApiRef,
+  oneloginAuthApiRef,
 } from '@backstage/core-plugin-api';
 
 type Props = {
@@ -64,14 +65,6 @@ export const DefaultProviderSettings = ({ configuredProviders }: Props) => (
         icon={Star}
       />
     )}
-    {configuredProviders.includes('auth0') && (
-      <ProviderSettingsItem
-        title="Auth0"
-        description="Provides authentication towards Auth0 APIs"
-        apiRef={auth0AuthApiRef}
-        icon={Star}
-      />
-    )}
     {configuredProviders.includes('okta') && (
       <ProviderSettingsItem
         title="Okta"
@@ -80,11 +73,27 @@ export const DefaultProviderSettings = ({ configuredProviders }: Props) => (
         icon={Star}
       />
     )}
-    {configuredProviders.includes('oauth2') && (
+    {configuredProviders.includes('bitbucket') && (
       <ProviderSettingsItem
-        title="YourOrg"
-        description="Example of how to use oauth2 custom provider"
-        apiRef={oauth2ApiRef}
+        title="Bitbucket"
+        description="Provides authentication towards Bitbucket APIs"
+        apiRef={bitbucketAuthApiRef}
+        icon={Star}
+      />
+    )}
+    {configuredProviders.includes('onelogin') && (
+      <ProviderSettingsItem
+        title="OneLogin"
+        description="Provides authentication towards OneLogin APIs"
+        apiRef={oneloginAuthApiRef}
+        icon={Star}
+      />
+    )}
+    {configuredProviders.includes('atlassian') && (
+      <ProviderSettingsItem
+        title="Atlassian"
+        description="Provides authentication towards Atlassian APIs"
+        apiRef={atlassianAuthApiRef}
         icon={Star}
       />
     )}

@@ -17,10 +17,10 @@
 import React from 'react';
 import { EmptyState } from './EmptyState';
 import { renderWithEffects, wrapInTestApp } from '@backstage/test-utils';
-import { Button } from '@material-ui/core';
+import Button from '@material-ui/core/Button';
 
 describe('<EmptyState />', () => {
-  it('render EmptyState component with type annotaion is missing', async () => {
+  it('render EmptyState component with type annotation is missing', async () => {
     const rendered = await renderWithEffects(
       wrapInTestApp(
         <EmptyState

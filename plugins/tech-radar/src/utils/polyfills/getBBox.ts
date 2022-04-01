@@ -19,8 +19,7 @@
 // JSDOM doesn't support this: https://github.com/jsdom/jsdom/issues/1664
 class GetBBoxPolyfill {
   static exists(): boolean {
-    // @ts-ignore
-    return typeof window.Element.prototype.getBBox !== 'undefined';
+    return typeof (window.Element.prototype as any).getBBox !== 'undefined';
   }
 
   static create(
@@ -35,6 +34,7 @@ class GetBBoxPolyfill {
 
     Object.defineProperty(window.Element.prototype, 'getBBox', {
       writable: false,
+      configurable: true,
       value: () => ({ x, y, width, height }),
     });
   }
@@ -44,8 +44,7 @@ class GetBBoxPolyfill {
       return;
     }
 
-    // @ts-ignore
-    delete window.Element.prototype.getBBox;
+    delete (window.Element.prototype as any).getBBox;
   }
 }
 

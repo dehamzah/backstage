@@ -16,11 +16,10 @@
 import { PluginDatabaseManager } from '@backstage/backend-common';
 import { SearchEngine } from '@backstage/plugin-search-backend-node';
 import {
-  IndexableDocument,
   SearchQuery,
-  SearchResultSet,
-} from '@backstage/search-common';
-import { chunk } from 'lodash';
+  IndexableResultSet,
+} from '@backstage/plugin-search-common';
+import { PgSearchEngineIndexer } from './PgSearchEngineIndexer';
 import {
   DatabaseDocumentStore,
   DatabaseStore,
@@ -35,13 +34,11 @@ export type ConcretePgSearchQuery = {
 export class PgSearchEngine implements SearchEngine {
   constructor(private readonly databaseStore: DatabaseStore) {}
 
-  static async from({
-    database,
-  }: {
+  static async from(options: {
     database: PluginDatabaseManager;
   }): Promise<PgSearchEngine> {
     return new PgSearchEngine(
-      await DatabaseDocumentStore.create(await database.getClient()),
+      await DatabaseDocumentStore.create(await options.database.getClient()),
     );
   }
 
@@ -79,20 +76,15 @@ export class PgSearchEngine implements SearchEngine {
     this.translator = translator;
   }
 
-  async index(type: string, documents: IndexableDocument[]): Promise<void> {
-    await this.databaseStore.transaction(async tx => {
-      await this.databaseStore.prepareInsert(tx);
-
-      const batchSize = 100;
-      for (const documentBatch of chunk(documents, batchSize)) {
-        await this.databaseStore.insertDocuments(tx, type, documentBatch);
-      }
-
-      await this.databaseStore.completeInsert(tx, type);
+  async getIndexer(type: string) {
+    return new PgSearchEngineIndexer({
+      batchSize: 100,
+      type,
+      databaseStore: this.databaseStore,
     });
   }
 
-  async query(query: SearchQuery): Promise<SearchResultSet> {
+  async query(query: SearchQuery): Promise<IndexableResultSet> {
     const { pgQuery, pageSize } = this.translator(query);
 
     const rows = await this.databaseStore.transaction(async tx =>

@@ -21,7 +21,6 @@
  */
 
 export * from './service/router';
-export { IdentityClient } from './identity';
 export type { TokenIssuer } from './identity';
 export * from './providers';
 
@@ -29,5 +28,7 @@ export * from './providers';
 // ensuresXRequestedWith and postMessageResponse to safely handle CORS requests for login. The WebMessageResponse type in flow is used to type the response from the login-popup
 export * from './lib/flow';
 
-// OAuth wrapper over a passport or a custom `startegy`.
+// OAuth wrapper over a passport or a custom `strategy`.
 export * from './lib/oauth';
+
+export * from './lib/catalog';

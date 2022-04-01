@@ -12,11 +12,10 @@ Website: [https://jenkins.io/](https://jenkins.io/)
 
 ```bash
 # From your Backstage root directory
-cd packages/app
-yarn add @backstage/plugin-jenkins
+yarn add --cwd packages/app @backstage/plugin-jenkins
 ```
 
-2. Add and configure the backend plugin according to it's instructions
+2. Add and configure the [jenkins-backend](../jenkins-backend) plugin according to it's instructions
 
 3. Add the `EntityJenkinsContent` extension to the `CI/CD` page and `EntityLatestJenkinsRunCard` to the `overview` page in the app (or wherever you'd prefer):
 

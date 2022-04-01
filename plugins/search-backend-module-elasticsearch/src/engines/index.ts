@@ -15,4 +15,11 @@
  */
 
 export { ElasticSearchSearchEngine } from './ElasticSearchSearchEngine';
-export type { ConcreteElasticSearchQuery } from './ElasticSearchSearchEngine';
+export type {
+  ConcreteElasticSearchQuery,
+  ElasticSearchClientOptions,
+} from './ElasticSearchSearchEngine';
+export type {
+  ElasticSearchSearchEngineIndexer,
+  ElasticSearchSearchEngineIndexerOptions,
+} from './ElasticSearchSearchEngineIndexer';

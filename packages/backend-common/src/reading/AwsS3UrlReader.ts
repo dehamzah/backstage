@@ -18,6 +18,7 @@ import aws, { Credentials, S3 } from 'aws-sdk';
 import { CredentialsOptions } from 'aws-sdk/lib/credentials';
 import {
   ReaderFactory,
+  ReadTreeOptions,
   ReadTreeResponse,
   ReadTreeResponseFactory,
   ReadUrlOptions,
@@ -26,51 +27,108 @@ import {
   UrlReader,
 } from './types';
 import getRawBody from 'raw-body';
-import { AwsS3Integration, ScmIntegrations } from '@backstage/integration';
+import {
+  AwsS3Integration,
+  ScmIntegrations,
+  AwsS3IntegrationConfig,
+} from '@backstage/integration';
+import { ForwardedError, NotModifiedError } from '@backstage/errors';
 import { ListObjectsV2Output, ObjectList } from 'aws-sdk/clients/s3';
 
-const parseURL = (
+/**
+ * Path style URLs: https://s3.(region).amazonaws.com/(bucket)/(key)
+ * The region can also be on the old form: https://s3-(region).amazonaws.com/(bucket)/(key)
+ * Virtual hosted style URLs: https://(bucket).s3.(region).amazonaws.com/(key)
+ * See https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html#path-style-access
+ */
+export function parseUrl(
   url: string,
-): { path: string; bucket: string; region: string } => {
-  let { host, pathname } = new URL(url);
+  config: AwsS3IntegrationConfig,
+): { path: string; bucket: string; region: string } {
+  const parsedUrl = new URL(url);
 
   /**
    * Removes the leading '/' from the pathname to be processed
    * as a parameter by AWS S3 SDK getObject method.
    */
-  pathname = pathname.substr(1);
+  const pathname = parsedUrl.pathname.substring(1);
+  const host = parsedUrl.host;
 
-  /**
-   * Checks that the given URL is a valid S3 object url.
-   * Format of a Valid S3 URL: https://bucket-name.s3.Region.amazonaws.com/keyname
-   */
-  const validHost = new RegExp(
-    /^[a-z\d][a-z\d\.-]{1,61}[a-z\d]\.s3\.[a-z\d-]+\.amazonaws.com$/,
-  );
-  if (!validHost.test(host)) {
-    throw new Error(`not a valid AWS S3 URL: ${url}`);
+  // Treat Amazon hosted separately because it has special region logic
+  if (config.host === 'amazonaws.com') {
+    const match = host.match(
+      /^(?:([a-z0-9.-]+)\.)?s3[.-]([a-z0-9-]+)\.amazonaws\.com$/,
+    );
+    if (!match) {
+      throw new Error(`Invalid AWS S3 URL ${url}`);
+    }
+
+    const [, hostBucket, hostRegion] = match;
+
+    if (config.s3ForcePathStyle || !hostBucket) {
+      const slashIndex = pathname.indexOf('/');
+      if (slashIndex < 0) {
+        throw new Error(
+          `Invalid path-style AWS S3 URL ${url}, does not contain bucket in the path`,
+        );
+      }
+
+      return {
+        path: pathname.substring(slashIndex + 1),
+        bucket: pathname.substring(0, slashIndex),
+        region: hostRegion,
+      };
+    }
+
+    return {
+      path: pathname,
+      bucket: hostBucket,
+      region: hostRegion,
+    };
   }
 
-  const [bucket] = host.split(/\.s3\.[a-z\d-]+\.amazonaws.com/);
-  host = host.substring(bucket.length);
-  const [, , region, ,] = host.split('.');
+  const usePathStyle =
+    config.s3ForcePathStyle || host.length === config.host.length;
+
+  if (usePathStyle) {
+    const slashIndex = pathname.indexOf('/');
+    if (slashIndex < 0) {
+      throw new Error(
+        `Invalid path-style AWS S3 URL ${url}, does not contain bucket in the path`,
+      );
+    }
+
+    return {
+      path: pathname.substring(slashIndex + 1),
+      bucket: pathname.substring(0, slashIndex),
+      region: '',
+    };
+  }
 
   return {
     path: pathname,
-    bucket: bucket,
-    region: region,
+    bucket: host.substring(0, host.length - config.host.length - 1),
+    region: '',
   };
-};
+}
 
+/**
+ * Implements a {@link UrlReader} for AWS S3 buckets.
+ *
+ * @public
+ */
 export class AwsS3UrlReader implements UrlReader {
   static factory: ReaderFactory = ({ config, treeResponseFactory }) => {
     const integrations = ScmIntegrations.fromConfig(config);
 
     return integrations.awsS3.list().map(integration => {
-      const creds = AwsS3UrlReader.buildCredentials(integration);
+      const credentials = AwsS3UrlReader.buildCredentials(integration);
+
       const s3 = new S3({
         apiVersion: '2006-03-01',
-        credentials: creds,
+        credentials,
+        endpoint: integration.config.endpoint,
+        s3ForcePathStyle: integration.config.s3ForcePathStyle,
       });
       const reader = new AwsS3UrlReader(integration, {
         s3,
@@ -91,7 +149,7 @@ export class AwsS3UrlReader implements UrlReader {
   ) {}
 
   /**
-   * If accesKeyId and secretAccessKey are missing, the standard credentials provider chain will be used:
+   * If accessKeyId and secretAccessKey are missing, the standard credentials provider chain will be used:
    * https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/auth/DefaultAWSCredentialsProviderChain.html
    */
   private static buildCredentials(
@@ -119,6 +177,7 @@ export class AwsS3UrlReader implements UrlReader {
         params: {
           RoleSessionName: 'backstage-aws-s3-url-reader',
           RoleArn: roleArn,
+          ExternalId: integration.config.externalId,
         },
       });
     }
@@ -136,7 +195,7 @@ export class AwsS3UrlReader implements UrlReader {
     options?: ReadUrlOptions,
   ): Promise<ReadUrlResponse> {
     try {
-      const { path, bucket, region } = parseURL(url);
+      const { path, bucket, region } = parseUrl(url, this.integration.config);
       aws.config.update({ region: region });
 
       let params;
@@ -153,35 +212,43 @@ export class AwsS3UrlReader implements UrlReader {
         };
       }
 
-      const response = this.deps.s3.getObject(params);
-      const buffer = await getRawBody(response.createReadStream());
-      const etag = (await response.promise()).ETag;
+      const request = this.deps.s3.getObject(params);
+      options?.signal?.addEventListener('abort', () => request.abort());
+      const buffer = await getRawBody(request.createReadStream());
+      const etag = (await request.promise()).ETag;
 
       return {
         buffer: async () => buffer,
         etag: etag,
       };
     } catch (e) {
-      throw new Error(`Could not retrieve file from S3: ${e.message}`);
+      if (e.statusCode === 304) {
+        throw new NotModifiedError();
+      }
+
+      throw new ForwardedError('Could not retrieve file from S3', e);
     }
   }
 
-  async readTree(url: string): Promise<ReadTreeResponse> {
+  async readTree(
+    url: string,
+    options?: ReadTreeOptions,
+  ): Promise<ReadTreeResponse> {
     try {
-      const { path, bucket, region } = parseURL(url);
+      const { path, bucket, region } = parseUrl(url, this.integration.config);
       const allObjects: ObjectList = [];
       const responses = [];
       let continuationToken: string | undefined;
       let output: ListObjectsV2Output;
       do {
         aws.config.update({ region: region });
-        output = await this.deps.s3
-          .listObjectsV2({
-            Bucket: bucket,
-            ContinuationToken: continuationToken,
-            Prefix: path,
-          })
-          .promise();
+        const request = this.deps.s3.listObjectsV2({
+          Bucket: bucket,
+          ContinuationToken: continuationToken,
+          Prefix: path,
+        });
+        options?.signal?.addEventListener('abort', () => request.abort());
+        output = await request.promise();
         if (output.Contents) {
           output.Contents.forEach(contents => {
             allObjects.push(contents);
@@ -203,7 +270,7 @@ export class AwsS3UrlReader implements UrlReader {
 
       return await this.deps.treeResponseFactory.fromReadableArray(responses);
     } catch (e) {
-      throw new Error(`Could not retrieve file tree from S3: ${e.message}`);
+      throw new ForwardedError('Could not retrieve file tree from S3', e);
     }
   }
 

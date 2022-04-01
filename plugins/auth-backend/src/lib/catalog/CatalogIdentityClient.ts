@@ -18,13 +18,13 @@ import { Logger } from 'winston';
 import { ConflictError, NotFoundError } from '@backstage/errors';
 import { CatalogApi } from '@backstage/catalog-client';
 import {
-  EntityName,
+  CompoundEntityRef,
   parseEntityRef,
   RELATION_MEMBER_OF,
   stringifyEntityRef,
   UserEntity,
 } from '@backstage/catalog-model';
-import { TokenIssuer } from '../../identity';
+import { TokenManager } from '@backstage/backend-common';
 
 type UserQuery = {
   annotations: Record<string, string>;
@@ -40,11 +40,11 @@ type MemberClaimQuery = {
  */
 export class CatalogIdentityClient {
   private readonly catalogApi: CatalogApi;
-  private readonly tokenIssuer: TokenIssuer;
+  private readonly tokenManager: TokenManager;
 
-  constructor(options: { catalogApi: CatalogApi; tokenIssuer: TokenIssuer }) {
+  constructor(options: { catalogApi: CatalogApi; tokenManager: TokenManager }) {
     this.catalogApi = options.catalogApi;
-    this.tokenIssuer = options.tokenIssuer;
+    this.tokenManager = options.tokenManager;
   }
 
   /**
@@ -60,10 +60,7 @@ export class CatalogIdentityClient {
       filter[`metadata.annotations.${key}`] = value;
     }
 
-    // TODO(Rugvip): cache the token
-    const token = await this.tokenIssuer.issueToken({
-      claims: { sub: 'backstage.io/auth-backend' },
-    });
+    const { token } = await this.tokenManager.getToken();
     const { items } = await this.catalogApi.getEntities({ filter }, { token });
 
     if (items.length !== 1) {
@@ -84,10 +81,8 @@ export class CatalogIdentityClient {
    *
    * Returns a superset of the entity names that can be passed directly to `issueToken` as `ent`.
    */
-  async resolveCatalogMembership({
-    entityRefs,
-    logger,
-  }: MemberClaimQuery): Promise<string[]> {
+  async resolveCatalogMembership(query: MemberClaimQuery): Promise<string[]> {
+    const { entityRefs, logger } = query;
     const resolvedEntityRefs = entityRefs
       .map((ref: string) => {
         try {
@@ -101,15 +96,16 @@ export class CatalogIdentityClient {
           return null;
         }
       })
-      .filter((ref): ref is EntityName => ref !== null);
+      .filter((ref): ref is CompoundEntityRef => ref !== null);
 
     const filter = resolvedEntityRefs.map(ref => ({
       kind: ref.kind,
       'metadata.namespace': ref.namespace,
       'metadata.name': ref.name,
     }));
+    const { token } = await this.tokenManager.getToken();
     const entities = await this.catalogApi
-      .getEntities({ filter })
+      .getEntities({ filter }, { token })
       .then(r => r.items);
 
     if (entityRefs.length !== entities.length) {
@@ -124,11 +120,11 @@ export class CatalogIdentityClient {
       e =>
         e!.relations
           ?.filter(r => r.type === RELATION_MEMBER_OF)
-          .map(r => r.target) ?? [],
+          .map(r => r.targetRef) ?? [],
     );
 
     const newEntityRefs = [
-      ...new Set(resolvedEntityRefs.concat(memberOf).map(stringifyEntityRef)),
+      ...new Set(resolvedEntityRefs.map(stringifyEntityRef).concat(memberOf)),
     ];
 
     logger?.debug(`Found catalog membership: ${newEntityRefs.join()}`);

@@ -14,6 +14,30 @@
  * limitations under the License.
  */
 
+import { createApp } from '@backstage/app-defaults';
+import { FlatRoutes } from '@backstage/core-app-api';
+import {
+  AlertDisplay,
+  OAuthRequestDialog,
+  Sidebar,
+  SidebarDivider,
+  SidebarItem,
+  SidebarPage,
+  SidebarSpace,
+  SidebarSpacer,
+} from '@backstage/core-components';
+import {
+  AnyApiFactory,
+  ApiFactory,
+  AppTheme,
+  attachComponentData,
+  BackstagePlugin,
+  configApiRef,
+  createApiFactory,
+  createRouteRef,
+  IconComponent,
+  RouteRef,
+} from '@backstage/core-plugin-api';
 import {
   ScmIntegrationsApi,
   scmIntegrationsApiRef,
@@ -24,30 +48,7 @@ import React, { ComponentType, ReactNode } from 'react';
 import ReactDOM from 'react-dom';
 import { hot } from 'react-hot-loader';
 import { Route } from 'react-router';
-
-import {
-  AlertDisplay,
-  OAuthRequestDialog,
-  Sidebar,
-  SidebarItem,
-  SidebarPage,
-  SidebarSpacer,
-} from '@backstage/core-components';
-
-import {
-  AnyApiFactory,
-  ApiFactory,
-  AppTheme,
-  attachComponentData,
-  configApiRef,
-  createApiFactory,
-  createRouteRef,
-  IconComponent,
-  RouteRef,
-  BackstagePlugin,
-} from '@backstage/core-plugin-api';
-
-import { createApp, FlatRoutes } from '@backstage/core-app-api';
+import { SidebarThemeSwitcher } from './SidebarThemeSwitcher';
 
 const GatheringRoute: (props: {
   path: string;
@@ -147,7 +148,7 @@ export class DevAppBuilder {
   }
 
   /**
-   * Adds an array of themes to overide the default theme.
+   * Adds an array of themes to override the default theme.
    */
   addThemes(themes: AppTheme[]) {
     this.themes = themes;
@@ -158,7 +159,7 @@ export class DevAppBuilder {
    * Build a DevApp component using the resources registered so far
    */
   build(): ComponentType<{}> {
-    const dummyRouteRef = createRouteRef({ title: 'Page of another plugin' });
+    const dummyRouteRef = createRouteRef({ id: 'dummy' });
     const DummyPage = () => <Box p={3}>Page belonging to another plugin.</Box>;
     attachComponentData(DummyPage, 'core.mountPoint', dummyRouteRef);
 
@@ -202,6 +203,9 @@ export class DevAppBuilder {
               <Sidebar>
                 <SidebarSpacer />
                 {this.sidebarItems}
+                <SidebarSpace />
+                <SidebarDivider />
+                <SidebarThemeSwitcher />
               </Sidebar>
               <FlatRoutes>
                 {this.routes}

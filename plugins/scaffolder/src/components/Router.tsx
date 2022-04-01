@@ -16,11 +16,14 @@
 
 import React, { ComponentType } from 'react';
 import { Routes, Route, useOutlet } from 'react-router';
-import { TemplateEntityV1beta2 } from '@backstage/catalog-model';
+import { Entity } from '@backstage/catalog-model';
+import { TemplateEntityV1beta3 } from '@backstage/plugin-scaffolder-common';
 import { ScaffolderPage } from './ScaffolderPage';
 import { TemplatePage } from './TemplatePage';
 import { TaskPage } from './TaskPage';
 import { ActionsPage } from './ActionsPage';
+import { SecretsContextProvider } from './secrets/SecretsContext';
+import { TemplatePreviewPage } from './TemplatePreviewPage';
 
 import {
   FieldExtensionOptions,
@@ -30,14 +33,36 @@ import {
 } from '../extensions';
 import { useElementFilter } from '@backstage/core-plugin-api';
 
-type RouterProps = {
-  TemplateCardComponent?:
-    | ComponentType<{ template: TemplateEntityV1beta2 }>
-    | undefined;
+/**
+ * The props for the entrypoint `ScaffolderPage` component the plugin.
+ * @public
+ */
+export type RouterProps = {
+  components?: {
+    TemplateCardComponent?:
+      | ComponentType<{ template: TemplateEntityV1beta3 }>
+      | undefined;
+    TaskPageComponent?: ComponentType<{}>;
+  };
+  groups?: Array<{
+    title?: React.ReactNode;
+    filter: (entity: Entity) => boolean;
+  }>;
+  defaultPreviewTemplate?: string;
 };
 
-export const Router = ({ TemplateCardComponent }: RouterProps) => {
+/**
+ * The main entrypoint `Router` for the `ScaffolderPlugin`.
+ *
+ * @public
+ */
+export const Router = (props: RouterProps) => {
+  const { groups, components = {}, defaultPreviewTemplate } = props;
+
+  const { TemplateCardComponent, TaskPageComponent } = components;
+
   const outlet = useOutlet();
+  const TaskPageElement = TaskPageComponent ?? TaskPage;
 
   const customFieldExtensions = useElementFilter(outlet, elements =>
     elements
@@ -64,15 +89,33 @@ export const Router = ({ TemplateCardComponent }: RouterProps) => {
       <Route
         path="/"
         element={
-          <ScaffolderPage TemplateCardComponent={TemplateCardComponent} />
+          <ScaffolderPage
+            groups={groups}
+            TemplateCardComponent={TemplateCardComponent}
+          />
         }
       />
       <Route
         path="/templates/:templateName"
-        element={<TemplatePage customFieldExtensions={fieldExtensions} />}
+        element={
+          <SecretsContextProvider>
+            <TemplatePage customFieldExtensions={fieldExtensions} />
+          </SecretsContextProvider>
+        }
       />
-      <Route path="/tasks/:taskId" element={<TaskPage />} />
+      <Route path="/tasks/:taskId" element={<TaskPageElement />} />
       <Route path="/actions" element={<ActionsPage />} />
+      <Route
+        path="/preview"
+        element={
+          <SecretsContextProvider>
+            <TemplatePreviewPage
+              defaultPreviewTemplate={defaultPreviewTemplate}
+              customFieldExtensions={fieldExtensions}
+            />
+          </SecretsContextProvider>
+        }
+      />
     </Routes>
   );
 };

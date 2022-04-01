@@ -24,9 +24,15 @@ export {
   homePlugin,
   HomepageCompositionRoot,
   HomePageRandomJoke,
+  HomePageToolkit,
+  HomePageCompanyLogo,
+  HomePageStarredEntities,
   ComponentAccordion,
   ComponentTabs,
   ComponentTab,
+  WelcomeTitle,
 } from './plugin';
-export { SettingsModal } from './components';
+export { SettingsModal, HeaderWorldClock } from './components';
+export type { ClockConfig } from './components';
 export { createCardExtension } from './extensions';
+export type { ComponentRenderer } from './extensions';

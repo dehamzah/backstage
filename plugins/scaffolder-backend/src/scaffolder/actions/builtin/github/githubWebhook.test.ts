@@ -14,13 +14,31 @@
  * limitations under the License.
  */
 
-jest.mock('@octokit/rest');
-
 import { createGithubWebhookAction } from './githubWebhook';
-import { ScmIntegrations } from '@backstage/integration';
+import {
+  ScmIntegrations,
+  DefaultGithubCredentialsProvider,
+  GithubCredentialsProvider,
+} from '@backstage/integration';
 import { ConfigReader } from '@backstage/config';
 import { getVoidLogger } from '@backstage/backend-common';
 import { PassThrough } from 'stream';
+import { TemplateAction } from '../..';
+
+const mockOctokit = {
+  rest: {
+    repos: {
+      createWebhook: jest.fn(),
+    },
+  },
+};
+jest.mock('octokit', () => ({
+  Octokit: class {
+    constructor() {
+      return mockOctokit;
+    }
+  },
+}));
 
 describe('github:repository:webhook:create', () => {
   const config = new ConfigReader({
@@ -33,10 +51,19 @@ describe('github:repository:webhook:create', () => {
   });
 
   const integrations = ScmIntegrations.fromConfig(config);
+  let githubCredentialsProvider: GithubCredentialsProvider;
   const defaultWebhookSecret = 'aafdfdivierernfdk23f';
-  const action = createGithubWebhookAction({
-    integrations,
-    defaultWebhookSecret,
+  let action: TemplateAction<any>;
+
+  beforeEach(() => {
+    jest.resetAllMocks();
+    githubCredentialsProvider =
+      DefaultGithubCredentialsProvider.fromIntegrations(integrations);
+    action = createGithubWebhookAction({
+      integrations,
+      defaultWebhookSecret,
+      githubCredentialsProvider,
+    });
   });
 
   const mockContext = {
@@ -51,12 +78,6 @@ describe('github:repository:webhook:create', () => {
     createTemporaryDirectory: jest.fn(),
   };
 
-  const { mockGithubClient } = require('@octokit/rest');
-
-  beforeEach(() => {
-    jest.resetAllMocks();
-  });
-
   it('should call the githubApi for creating repository Webhook', async () => {
     const repoUrl = 'github.com?repo=repo&owner=owner';
     const webhookUrl = 'https://example.com/payload';
@@ -65,7 +86,7 @@ describe('github:repository:webhook:create', () => {
     });
     await action.handler(ctx);
 
-    expect(mockGithubClient.repos.createWebhook).toHaveBeenCalledWith({
+    expect(mockOctokit.rest.repos.createWebhook).toHaveBeenCalledWith({
       owner: 'owner',
       repo: 'repo',
       events: ['push'],
@@ -87,7 +108,7 @@ describe('github:repository:webhook:create', () => {
       },
     });
 
-    expect(mockGithubClient.repos.createWebhook).toHaveBeenCalledWith({
+    expect(mockOctokit.rest.repos.createWebhook).toHaveBeenCalledWith({
       owner: 'owner',
       repo: 'repo',
       events: ['push'],
@@ -108,7 +129,7 @@ describe('github:repository:webhook:create', () => {
       },
     });
 
-    expect(mockGithubClient.repos.createWebhook).toHaveBeenCalledWith({
+    expect(mockOctokit.rest.repos.createWebhook).toHaveBeenCalledWith({
       owner: 'owner',
       repo: 'repo',
       events: ['push', 'pull_request'],
@@ -129,7 +150,7 @@ describe('github:repository:webhook:create', () => {
       },
     });
 
-    expect(mockGithubClient.repos.createWebhook).toHaveBeenCalledWith({
+    expect(mockOctokit.rest.repos.createWebhook).toHaveBeenCalledWith({
       owner: 'owner',
       repo: 'repo',
       events: ['push'],
@@ -150,7 +171,7 @@ describe('github:repository:webhook:create', () => {
       },
     });
 
-    expect(mockGithubClient.repos.createWebhook).toHaveBeenCalledWith({
+    expect(mockOctokit.rest.repos.createWebhook).toHaveBeenCalledWith({
       owner: 'owner',
       repo: 'repo',
       events: ['push'],
@@ -171,7 +192,7 @@ describe('github:repository:webhook:create', () => {
       },
     });
 
-    expect(mockGithubClient.repos.createWebhook).toHaveBeenCalledWith({
+    expect(mockOctokit.rest.repos.createWebhook).toHaveBeenCalledWith({
       owner: 'owner',
       repo: 'repo',
       events: ['push'],
@@ -192,7 +213,7 @@ describe('github:repository:webhook:create', () => {
       },
     });
 
-    expect(mockGithubClient.repos.createWebhook).toHaveBeenCalledWith({
+    expect(mockOctokit.rest.repos.createWebhook).toHaveBeenCalledWith({
       owner: 'owner',
       repo: 'repo',
       events: ['push'],

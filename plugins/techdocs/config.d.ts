@@ -33,11 +33,15 @@ export interface Config {
      */
     legacyUseCaseSensitiveTripletPaths?: boolean;
 
-    /**
-     * @example http://localhost:7000/api/techdocs
-     * @visibility frontend
-     * @deprecated
-     */
-    requestUrl?: string;
+    sanitizer?: {
+      /**
+       * Allows iframe tag only for listed hosts
+       * Example:
+       *  allowedIframeHosts: ["example.com"]
+       *  this will allow all iframes with the host `example.com` in the src attribute
+       * @visibility frontend
+       */
+      allowedIframeHosts?: string[];
+    };
   };
 }

@@ -1,5 +1,197 @@
 # @backstage/plugin-xcmetrics
 
+## 0.2.24-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.9.3-next.0
+
+## 0.2.23
+
+### Patch Changes
+
+- a422d7ce5e: chore(deps): bump `@testing-library/react` from 11.2.6 to 12.1.3
+- f24ef7864e: Minor typo fixes
+- Updated dependencies
+  - @backstage/core-components@0.9.2
+  - @backstage/core-plugin-api@1.0.0
+  - @backstage/errors@1.0.0
+
+## 0.2.22
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.9.1
+
+## 0.2.22-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.9.1-next.0
+
+## 0.2.21
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.9.0
+  - @backstage/core-plugin-api@0.8.0
+
+## 0.2.20
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.8.10
+  - @backstage/core-plugin-api@0.7.0
+
+## 0.2.19
+
+### Patch Changes
+
+- 1ed305728b: Bump `node-fetch` to version 2.6.7 and `cross-fetch` to version 3.1.5
+- c77c5c7eb6: Added `backstage.role` to `package.json`
+- Updated dependencies
+  - @backstage/core-components@0.8.9
+  - @backstage/core-plugin-api@0.6.1
+  - @backstage/errors@0.2.1
+  - @backstage/theme@0.2.15
+
+## 0.2.18
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.8.8
+
+## 0.2.18-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.8.8-next.0
+
+## 0.2.17
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.8.7
+
+## 0.2.17-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.8.7-next.0
+
+## 0.2.16
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.8.5
+  - @backstage/core-plugin-api@0.6.0
+
+## 0.2.16-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.8.5-next.0
+  - @backstage/core-plugin-api@0.6.0-next.0
+
+## 0.2.15
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.8.4
+  - @backstage/core-plugin-api@0.5.0
+  - @backstage/errors@0.2.0
+
+## 0.2.14
+
+### Patch Changes
+
+- 4ce51ab0f1: Internal refactor of the `react-use` imports to use `react-use/lib/*` instead.
+- Updated dependencies
+  - @backstage/core-plugin-api@0.4.1
+  - @backstage/core-components@0.8.3
+
+## 0.2.13
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@0.4.0
+  - @backstage/core-components@0.8.2
+
+## 0.2.12
+
+### Patch Changes
+
+- cd450844f6: Moved React dependencies to `peerDependencies` and allow both React v16 and v17 to be used.
+- 343ef34599: Handle a case where XCode data from backend (before 0.0.8) could be missing
+- Updated dependencies
+  - @backstage/core-components@0.8.0
+  - @backstage/core-plugin-api@0.3.0
+
+## 0.2.11
+
+### Patch Changes
+
+- af09b1e059: Fix bug where invalid build statuses led to crashes
+- Updated dependencies
+  - @backstage/core-components@0.7.6
+  - @backstage/theme@0.2.14
+  - @backstage/core-plugin-api@0.2.2
+
+## 0.2.10
+
+### Patch Changes
+
+- a125278b81: Refactor out the deprecated path and icon from RouteRefs
+- Updated dependencies
+  - @backstage/core-components@0.7.4
+  - @backstage/core-plugin-api@0.2.0
+
+## 0.2.9
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.7.0
+  - @backstage/theme@0.2.11
+
+## 0.2.8
+
+### Patch Changes
+
+- ca0559444c: Avoid usage of `.to*Case()`, preferring `.toLocale*Case('en-US')` instead.
+- 81a41ec249: Added a `name` key to all extensions in order to improve Analytics API metadata.
+- Updated dependencies
+  - @backstage/core-components@0.6.1
+  - @backstage/core-plugin-api@0.1.10
+
+## 0.2.7
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@0.1.9
+  - @backstage/core-components@0.6.0
+
+## 0.2.6
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.5.0
+
 ## 0.2.5
 
 ### Patch Changes

@@ -15,9 +15,12 @@
  */
 
 import fs from 'fs-extra';
+import semver from 'semver';
 import { paths } from './paths';
+import { Lockfile } from './versioning';
 
-/* eslint-disable import/no-extraneous-dependencies,monorepo/no-internal-import */
+/* eslint-disable monorepo/no-relative-import */
+
 /*
 This is a list of all packages used by the templates. If dependencies are added or removed,
 this list should be updated as well.
@@ -31,17 +34,18 @@ Rollup will extract the value of the version field in each package at build time
 leaving any imports in place.
 */
 
-import { version as backendCommon } from '@backstage/backend-common/package.json';
-import { version as cli } from '@backstage/cli/package.json';
-import { version as config } from '@backstage/config/package.json';
-import { version as coreAppApi } from '@backstage/core-app-api/package.json';
-import { version as coreComponents } from '@backstage/core-components/package.json';
-import { version as corePluginApi } from '@backstage/core-plugin-api/package.json';
-import { version as devUtils } from '@backstage/dev-utils/package.json';
-import { version as testUtils } from '@backstage/test-utils/package.json';
-import { version as theme } from '@backstage/theme/package.json';
+import { version as backendCommon } from '../../../../packages/backend-common/package.json';
+import { version as cli } from '../../../../packages/cli/package.json';
+import { version as config } from '../../../../packages/config/package.json';
+import { version as coreAppApi } from '../../../../packages/core-app-api/package.json';
+import { version as coreComponents } from '../../../../packages/core-components/package.json';
+import { version as corePluginApi } from '../../../../packages/core-plugin-api/package.json';
+import { version as devUtils } from '../../../../packages/dev-utils/package.json';
+import { version as testUtils } from '../../../../packages/test-utils/package.json';
+import { version as theme } from '../../../../packages/theme/package.json';
+import { version as scaffolderBackend } from '../../../../plugins/scaffolder-backend/package.json';
 
-export const packageVersions = {
+export const packageVersions: Record<string, string> = {
   '@backstage/backend-common': backendCommon,
   '@backstage/cli': cli,
   '@backstage/config': config,
@@ -51,6 +55,7 @@ export const packageVersions = {
   '@backstage/dev-utils': devUtils,
   '@backstage/test-utils': testUtils,
   '@backstage/theme': theme,
+  '@backstage/plugin-scaffolder-backend': scaffolderBackend,
 };
 
 export function findVersion() {
@@ -60,3 +65,36 @@ export function findVersion() {
 
 export const version = findVersion();
 export const isDev = fs.pathExistsSync(paths.resolveOwn('src'));
+
+export function createPackageVersionProvider(lockfile?: Lockfile) {
+  return (name: string, versionHint?: string): string => {
+    const packageVersion = packageVersions[name];
+    const targetVersion = versionHint || packageVersion;
+    if (!targetVersion) {
+      throw new Error(`No version available for package ${name}`);
+    }
+
+    const lockfileEntries = lockfile?.get(name);
+    if (
+      name.startsWith('@types/') &&
+      lockfileEntries?.some(entry => entry.range === '*')
+    ) {
+      return '*';
+    }
+    const validRanges = lockfileEntries?.filter(entry =>
+      semver.satisfies(targetVersion, entry.range),
+    );
+    const highestRange = validRanges?.slice(-1)[0];
+
+    if (highestRange?.range) {
+      return highestRange?.range;
+    }
+    if (packageVersion) {
+      return `^${packageVersion}`;
+    }
+    if (semver.parse(versionHint)?.prerelease.length) {
+      return versionHint!;
+    }
+    return versionHint?.match(/^[\d\.]+$/) ? `^${versionHint}` : versionHint!;
+  };
+}

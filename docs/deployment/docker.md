@@ -7,9 +7,9 @@ description: How to build a Backstage Docker image for deployment
 
 This section describes how to build a Backstage App into a deployable Docker
 image. It is split into three sections, first covering the host build approach,
-which is recommended due its speed and more efficient and often simpler caching.
-The second section covers a full multi-stage Docker build, and the last section
-covers how to deploy the frontend and backend as separate images.
+which is recommended due to its speed and more efficient and often simpler
+caching. The second section covers a full multi-stage Docker build, and the last
+section covers how to deploy the frontend and backend as separate images.
 
 Something that goes for all of these docker deployment strategies is that they
 are stateless, so for a production deployment you will want to set up and
@@ -56,7 +56,7 @@ Once the host build is complete, we are ready to build our image. The following
 `Dockerfile` is included when creating a new app with `@backstage/create-app`:
 
 ```Dockerfile
-FROM node:14-buster-slim
+FROM node:16-bullseye-slim
 
 WORKDIR /app
 # Copy repo skeleton first, to avoid unnecessary docker cache invalidation.
@@ -64,6 +64,12 @@ WORKDIR /app
 # and along with yarn.lock and the root package.json, that's enough to run yarn install.
 COPY yarn.lock package.json packages/backend/dist/skeleton.tar.gz ./
 RUN tar xzf skeleton.tar.gz && rm skeleton.tar.gz
+
+# install sqlite3 dependencies
+RUN apt-get update && \
+    apt-get install -y libsqlite3-dev python3 cmake g++ && \
+    rm -rf /var/lib/apt/lists/* && \
+    yarn config set python /usr/bin/python3
 
 RUN yarn install --frozen-lockfile --production --network-timeout 300000 && rm -rf "$(yarn cache dir)"
 
@@ -76,7 +82,7 @@ CMD ["node", "packages/backend", "--config", "app-config.yaml"]
 
 For more details on how the `backend:bundle` command and the `skeleton.tar.gz`
 file works, see the
-[`backend:bundle` command docs](../cli/commands.md#backendbundle).
+[`backend:bundle` command docs](../local-dev/cli-commands.md#backendbundle).
 
 The `Dockerfile` is located at `packages/backend/Dockerfile`, but needs to be
 executed with the root of the repo as the build context, in order to get access
@@ -105,11 +111,11 @@ docker image build . -f packages/backend/Dockerfile --tag backstage
 To try out the image locally you can run the following:
 
 ```sh
-docker run -it -p 7000:7000 backstage
+docker run -it -p 7007:7007 backstage
 ```
 
 You should then start to get logs in your terminal, and then you can open your
-browser at `http://localhost:7000`
+browser at `http://localhost:7007`
 
 ## Multi-stage Build
 
@@ -134,38 +140,51 @@ the repo root:
 
 ```Dockerfile
 # Stage 1 - Create yarn install skeleton layer
-FROM node:14-buster-slim AS packages
+FROM node:16-bullseye-slim AS packages
 
 WORKDIR /app
 COPY package.json yarn.lock ./
 
 COPY packages packages
+
 # Comment this out if you don't have any internal plugins
 COPY plugins plugins
 
 RUN find packages \! -name "package.json" -mindepth 2 -maxdepth 2 -exec rm -rf {} \+
 
 # Stage 2 - Install dependencies and build packages
-FROM node:14-buster-slim AS build
+FROM node:16-bullseye-slim AS build
 
 WORKDIR /app
 COPY --from=packages /app .
+
+# install sqlite3 dependencies
+RUN apt-get update && apt-get install -y libsqlite3-dev python3 cmake g++ && \
+    yarn config set python /usr/bin/python3
 
 RUN yarn install --frozen-lockfile --network-timeout 600000 && rm -rf "$(yarn cache dir)"
 
 COPY . .
 
 RUN yarn tsc
-RUN yarn --cwd packages/backend backstage-cli backend:bundle --build-dependencies
+RUN yarn --cwd packages/backend build
+# If you have not yet migrated to package roles, use the following command instead:
+# RUN yarn --cwd packages/backend backstage-cli backend:bundle --build-dependencies
 
 # Stage 3 - Build the actual backend image and install production dependencies
-FROM node:14-buster-slim
+FROM node:16-bullseye-slim
 
 WORKDIR /app
 
 # Copy the install dependencies from the build stage and context
 COPY --from=build /app/yarn.lock /app/package.json /app/packages/backend/dist/skeleton.tar.gz ./
 RUN tar xzf skeleton.tar.gz && rm skeleton.tar.gz
+
+# install sqlite3 dependencies
+RUN apt-get update && \
+    apt-get install -y libsqlite3-dev python3 cmake g++ && \
+    rm -rf /var/lib/apt/lists/* && \
+    yarn config set python /usr/bin/python3
 
 RUN yarn install --frozen-lockfile --production --network-timeout 600000 && rm -rf "$(yarn cache dir)"
 
@@ -208,11 +227,11 @@ docker image build -t backstage .
 To try out the image locally you can run the following:
 
 ```sh
-docker run -it -p 7000:7000 backstage
+docker run -it -p 7007:7007 backstage
 ```
 
 You should then start to get logs in your terminal, and then you can open your
-browser at `http://localhost:7000`
+browser at `http://localhost:7007`
 
 ## Separate Frontend
 

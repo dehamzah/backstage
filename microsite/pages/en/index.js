@@ -19,7 +19,19 @@ class Index extends React.Component {
     const { baseUrl } = siteConfig;
 
     return (
-      <main className="MainContent">
+      <main className="MainContent MainContent--gradient">
+        <Banner.Container>
+          <Banner.Dismissable storageKey="2022-03-16-newsletter-cta">
+            <div>
+              🗞️ Want to stay up to date with Backstage? Sign up for our{' '}
+              <a href="https://mailchi.mp/spotify/backstage-community">
+                Newsletter
+              </a>
+              !
+            </div>
+          </Banner.Dismissable>
+        </Banner.Container>
+
         <Block small className="bg-black-grey stripe-bottom">
           <Block.Container>
             <Block.TextBox>
@@ -53,15 +65,6 @@ class Index extends React.Component {
             </Block.Graphics>
           </Block.Container>
         </Block>
-
-        <Banner.Container>
-          <Banner.Dismissable storageKey="k8s-launch">
-            🎉 New feature: Kubernetes for service owners.{' '}
-            <a href="https://backstage.io/blog/2021/01/12/new-backstage-feature-kubernetes-for-service-owners">
-              Learn more.
-            </a>
-          </Banner.Dismissable>
-        </Banner.Container>
 
         <Block small className="stripe-top bg-black">
           <Block.Container wrapped>
@@ -104,15 +107,7 @@ class Index extends React.Component {
                 className="Block__GIF"
                 src={`${baseUrl}animations/backstage-software-catalog-icon-1.gif`}
               />
-              <Block.Subtitle>
-                Backstage Software Catalog{' '}
-                <a
-                  title="Submit feedback for this feature. Click to learn more about this release."
-                  href="https://backstage.io/blog/2020/06/22/backstage-service-catalog-alpha"
-                >
-                  (alpha)
-                </a>
-              </Block.Subtitle>
+              <Block.Subtitle>Backstage Software Catalog</Block.Subtitle>
               <Block.Title half>
                 Build an ecosystem, not a wilderness
               </Block.Title>
@@ -195,7 +190,7 @@ class Index extends React.Component {
             Learn more about the software catalog
           </ActionBlock.Title>
           <ActionBlock.Link
-            href={`https://backstage.io/blog/2020/06/22/backstage-service-catalog-alpha`}
+            href={`https://backstage.io/docs/features/software-catalog/software-catalog-overview`}
           >
             Read
           </ActionBlock.Link>
@@ -208,15 +203,7 @@ class Index extends React.Component {
                 className="Block__GIF"
                 src={`${baseUrl}animations/backstage-software-templates-icon-5.gif`}
               />
-              <Block.Subtitle>
-                Backstage Software Templates{' '}
-                <a
-                  title="Submit feedback for this feature. Click to learn more about this release."
-                  href="https://backstage.io/blog/2021/07/26/software-templates-are-now-in-beta"
-                >
-                  (beta)
-                </a>
-              </Block.Subtitle>
+              <Block.Subtitle>Backstage Software Templates</Block.Subtitle>
               <Block.Title small>Standards can set you free</Block.Title>
             </Block.TextBox>
             <Breakpoint
@@ -306,15 +293,7 @@ class Index extends React.Component {
                 src={`${baseUrl}animations/backstage-techdocs-icon-1.gif`}
               />
 
-              <Block.Subtitle>
-                Backstage TechDocs{' '}
-                <a
-                  title="Submit feedback for this feature. Click to learn more about this release."
-                  href="https://backstage.io/blog/2021/09/16/the-techdocs-beta-has-landed"
-                >
-                  (beta)
-                </a>
-              </Block.Subtitle>
+              <Block.Subtitle>Backstage TechDocs</Block.Subtitle>
               <Block.Title small>Docs like code</Block.Title>
             </Block.TextBox>
             <Breakpoint
@@ -554,7 +533,7 @@ class Index extends React.Component {
               <a href="https://www.cncf.io">
                 Cloud Native Computing Foundation
               </a>{' '}
-              sandbox project
+              incubation project
               <div className="cncf-logo" />
             </Block.SmallTitle>
           </Block.Container>

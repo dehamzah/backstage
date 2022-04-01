@@ -15,14 +15,15 @@
  */
 
 /* eslint-disable import/no-extraneous-dependencies */
+/* eslint-disable no-restricted-imports */
 
-// eslint-disable-next-line no-restricted-imports
 import {
   resolve as resolvePath,
   relative as relativePath,
   dirname,
   join,
 } from 'path';
+import { spawnSync } from 'child_process';
 import prettier from 'prettier';
 import fs from 'fs-extra';
 import {
@@ -30,8 +31,15 @@ import {
   ExtractorConfig,
   CompilerState,
   ExtractorLogLevel,
+  ExtractorMessage,
 } from '@microsoft/api-extractor';
-import { DocNode, IDocNodeContainerParameters } from '@microsoft/tsdoc';
+import { Program } from 'typescript';
+import {
+  DocNode,
+  IDocNodeContainerParameters,
+  TSDocTagSyntaxKind,
+} from '@microsoft/tsdoc';
+import { TSDocConfigFile } from '@microsoft/tsdoc-config';
 import { ApiPackage, ApiModel } from '@microsoft/api-extractor-model';
 import {
   IMarkdownDocumenterOptions,
@@ -42,6 +50,7 @@ import { DocTableRow } from '@microsoft/api-documenter/lib/nodes/DocTableRow';
 import { DocHeading } from '@microsoft/api-documenter/lib/nodes/DocHeading';
 import { CustomMarkdownEmitter } from '@microsoft/api-documenter/lib/markdown/CustomMarkdownEmitter';
 import { IMarkdownEmitterContext } from '@microsoft/api-documenter/lib/markdown/MarkdownEmitter';
+import { AstDeclaration } from '@microsoft/api-extractor/lib/analyzer/AstDeclaration';
 
 const tmpDir = resolvePath(__dirname, '../node_modules/.cache/api-extractor');
 
@@ -79,11 +88,107 @@ const {
   ApiReportGenerator,
 } = require('@microsoft/api-extractor/lib/generators/ApiReportGenerator');
 
+function patchFileMessageFetcher(
+  router: any,
+  transform: (messages: ExtractorMessage[], ast?: AstDeclaration) => void,
+) {
+  const {
+    fetchAssociatedMessagesForReviewFile,
+    fetchUnassociatedMessagesForReviewFile,
+  } = router;
+
+  router.fetchAssociatedMessagesForReviewFile =
+    function patchedFetchAssociatedMessagesForReviewFile(ast) {
+      const messages = fetchAssociatedMessagesForReviewFile.call(this, ast);
+      return transform(messages, ast);
+    };
+  router.fetchUnassociatedMessagesForReviewFile =
+    function patchedFetchUnassociatedMessagesForReviewFile() {
+      const messages = fetchUnassociatedMessagesForReviewFile.call(this);
+      return transform(messages);
+    };
+}
+
 const originalGenerateReviewFileContent =
   ApiReportGenerator.generateReviewFileContent;
 ApiReportGenerator.generateReviewFileContent =
-  function decoratedGenerateReviewFileContent(...args) {
-    const content = originalGenerateReviewFileContent.apply(this, args);
+  function decoratedGenerateReviewFileContent(collector, ...moreArgs) {
+    const program = collector.program as Program;
+
+    // The purpose of this override is to allow the @ignore tag to be used to ignore warnings
+    // of the form "Warning: (ae-forgotten-export) The symbol "FooBar" needs to be exported by the entry point index.d.ts"
+    patchFileMessageFetcher(
+      collector.messageRouter,
+      (messages: ExtractorMessage[]) => {
+        return messages.filter(message => {
+          if (message.messageId !== 'ae-forgotten-export') {
+            return true;
+          }
+
+          // Symbol name has to be extracted from the message :(
+          // There's frequently no AST for these exports because type literals
+          // aren't traversed by the generator.
+          const symbolMatch = message.text.match(/The symbol "([^"]+)"/);
+          if (!symbolMatch) {
+            throw new Error(
+              `Failed to extract symbol name from message "${message.text}"`,
+            );
+          }
+          const [, symbolName] = symbolMatch;
+
+          const sourceFile = program.getSourceFile(message.sourceFilePath);
+          if (!sourceFile) {
+            throw new Error(
+              `Failed to find source file in program at path "${message.sourceFilePath}"`,
+            );
+          }
+
+          // The local name of the symbol within the file, rather than the exported name
+          const localName = (sourceFile as any).identifiers?.get(symbolName);
+          if (!localName) {
+            throw new Error(
+              `Unable to find local name of "${symbolName}" in ${sourceFile.fileName}`,
+            );
+          }
+
+          // The local AST node of the export that we're missing
+          const local = (sourceFile as any).locals?.get(localName);
+          if (!local) {
+            return true;
+          }
+
+          // Use the type checker to look up the actual declaration(s) rather than the one in the local file
+          const type = program.getTypeChecker().getDeclaredTypeOfSymbol(local);
+          if (!type) {
+            throw new Error(
+              `Unable to find type declaration of "${symbolName}" in ${sourceFile.fileName}`,
+            );
+          }
+          const declarations = type.aliasSymbol?.declarations;
+          if (!declarations || declarations.length === 0) {
+            return true;
+          }
+
+          // If any of the TSDoc comments contain a @ignore tag, we ignore this message
+          const isIgnored = declarations.some(declaration => {
+            const tags = [(declaration as any).jsDoc]
+              .flat()
+              .filter(Boolean)
+              .flatMap((tagNode: any) => tagNode.tags);
+
+            return tags.some(tag => tag?.tagName.text === 'ignore');
+          });
+
+          return !isIgnored;
+        });
+      },
+    );
+
+    const content = originalGenerateReviewFileContent.call(
+      this,
+      collector,
+      ...moreArgs,
+    );
     return prettier.format(content, {
       ...require('@spotify/prettier-config'),
       parser: 'markdown',
@@ -99,9 +204,110 @@ const SKIPPED_PACKAGES = [
   join('packages', 'codemods'),
   join('packages', 'create-app'),
   join('packages', 'e2e-test'),
+  join('packages', 'techdocs-cli-embedded-app'),
   join('packages', 'storybook'),
   join('packages', 'techdocs-cli'),
 ];
+
+const NO_WARNING_PACKAGES = [
+  'packages/app-defaults',
+  'packages/backend-common',
+  'packages/backend-tasks',
+  'packages/backend-test-utils',
+  'packages/catalog-client',
+  'packages/cli-common',
+  'packages/config',
+  'packages/config-loader',
+  'packages/core-app-api',
+  'packages/core-plugin-api',
+  'packages/dev-utils',
+  'packages/errors',
+  'packages/integration',
+  'packages/integration-react',
+  'packages/search-common',
+  'packages/techdocs-common',
+  'packages/test-utils',
+  'packages/theme',
+  'packages/types',
+  'packages/release-manifests',
+  'packages/version-bridge',
+  'plugins/auth-node',
+  'plugins/catalog-backend',
+  'plugins/catalog-backend-module-aws',
+  'plugins/catalog-backend-module-azure',
+  'plugins/catalog-backend-module-bitbucket',
+  'plugins/catalog-backend-module-github',
+  'plugins/catalog-backend-module-gitlab',
+  'plugins/catalog-backend-module-ldap',
+  'plugins/catalog-backend-module-msgraph',
+  'plugins/catalog-common',
+  'plugins/catalog-graph',
+  'plugins/catalog-react',
+  'plugins/periskop',
+  'plugins/periskop-backend',
+  'plugins/permission-backend',
+  'plugins/permission-common',
+  'plugins/permission-node',
+  'plugins/permission-react',
+  'plugins/scaffolder-backend-module-cookiecutter',
+  'plugins/scaffolder-backend-module-rails',
+  'plugins/scaffolder-backend-module-yeoman',
+  'plugins/scaffolder-common',
+  'plugins/search-backend-node',
+  'plugins/search-common',
+  'plugins/techdocs-backend',
+  'plugins/techdocs-node',
+  'plugins/tech-insights',
+  'plugins/tech-insights-backend',
+  'plugins/tech-insights-backend-module-jsonfc',
+  'plugins/tech-insights-common',
+  'plugins/tech-insights-node',
+  'plugins/techdocs',
+  'plugins/todo',
+  'plugins/todo-backend',
+];
+
+async function resolvePackagePath(
+  packagePath: string,
+): Promise<string | undefined> {
+  const projectRoot = resolvePath(__dirname, '..');
+  const fullPackageDir = resolvePath(projectRoot, packagePath);
+
+  const stat = await fs.stat(fullPackageDir);
+  if (!stat.isDirectory()) {
+    return undefined;
+  }
+
+  try {
+    const packageJsonPath = join(fullPackageDir, 'package.json');
+    await fs.access(packageJsonPath);
+  } catch (_) {
+    return undefined;
+  }
+
+  return relativePath(projectRoot, fullPackageDir);
+}
+
+async function findSpecificPackageDirs(unresolvedPackageDirs: string[]) {
+  const packageDirs = new Array<string>();
+
+  for (const unresolvedPackageDir of unresolvedPackageDirs) {
+    const packageDir = await resolvePackagePath(unresolvedPackageDir);
+    if (!packageDir) {
+      throw new Error(`'${unresolvedPackageDir}' is not a valid package path`);
+    }
+    if (SKIPPED_PACKAGES.includes(packageDir)) {
+      throw new Error(`'${packageDir}' does not have an API report`);
+    }
+    packageDirs.push(packageDir);
+  }
+
+  if (packageDirs.length === 0) {
+    return undefined;
+  }
+
+  return packageDirs;
+}
 
 async function findPackageDirs() {
   const packageDirs = new Array<string>();
@@ -110,21 +316,11 @@ async function findPackageDirs() {
   for (const packageRoot of PACKAGE_ROOTS) {
     const dirs = await fs.readdir(resolvePath(projectRoot, packageRoot));
     for (const dir of dirs) {
-      const fullPackageDir = resolvePath(projectRoot, packageRoot, dir);
-
-      const stat = await fs.stat(fullPackageDir);
-      if (!stat.isDirectory()) {
+      const packageDir = await resolvePackagePath(join(packageRoot, dir));
+      if (!packageDir) {
         continue;
       }
 
-      try {
-        const packageJsonPath = join(fullPackageDir, 'package.json');
-        await fs.access(packageJsonPath);
-      } catch (_) {
-        continue;
-      }
-
-      const packageDir = relativePath(projectRoot, fullPackageDir);
       if (!SKIPPED_PACKAGES.includes(packageDir)) {
         packageDirs.push(packageDir);
       }
@@ -134,16 +330,95 @@ async function findPackageDirs() {
   return packageDirs;
 }
 
+async function createTemporaryTsConfig(includedPackageDirs: string[]) {
+  const path = resolvePath(__dirname, '..', 'tsconfig.tmp.json');
+
+  process.once('exit', () => {
+    fs.removeSync(path);
+  });
+
+  await fs.writeJson(path, {
+    extends: './tsconfig.json',
+    include: [
+      // These two contain global definitions that are needed for stable API report generation
+      'packages/cli/asset-types/asset-types.d.ts',
+      ...includedPackageDirs.map(dir => join(dir, 'src')),
+    ],
+  });
+
+  return path;
+}
+
+async function countApiReportWarnings(projectFolder: string) {
+  const path = resolvePath(projectFolder, 'api-report.md');
+  try {
+    const content = await fs.readFile(path, 'utf8');
+    const lines = content.split('\n');
+
+    const lineWarnings = lines.filter(line =>
+      line.includes('// Warning:'),
+    ).length;
+
+    const trailerStart = lines.findIndex(
+      line => line === '// Warnings were encountered during analysis:',
+    );
+    const trailerWarnings =
+      trailerStart === -1
+        ? 0
+        : lines.length -
+          trailerStart -
+          4; /* 4 lines at the trailer and after are not warnings */
+
+    return lineWarnings + trailerWarnings;
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      return 0;
+    }
+    throw error;
+  }
+}
+
+async function getTsDocConfig() {
+  const tsdocConfigFile = await TSDocConfigFile.loadFile(
+    require.resolve('@microsoft/api-extractor/extends/tsdoc-base.json'),
+  );
+  tsdocConfigFile.addTagDefinition({
+    tagName: '@ignore',
+    syntaxKind: TSDocTagSyntaxKind.ModifierTag,
+  });
+  tsdocConfigFile.setSupportForTag('@ignore', true);
+  return tsdocConfigFile;
+}
+
+function logApiReportInstructions() {
+  console.log('');
+  console.log(
+    '*************************************************************************************',
+  );
+  console.log(
+    '* You have uncommitted changes to the public API of a package.                      *',
+  );
+  console.log(
+    '* To solve this, run `yarn build:api-reports` and commit all api-report.md changes. *',
+  );
+  console.log(
+    '*************************************************************************************',
+  );
+  console.log('');
+}
+
 interface ApiExtractionOptions {
   packageDirs: string[];
   outputDir: string;
   isLocalBuild: boolean;
+  tsconfigFilePath: string;
 }
 
 async function runApiExtraction({
   packageDirs,
   outputDir,
   isLocalBuild,
+  tsconfigFilePath,
 }: ApiExtractionOptions) {
   await fs.remove(outputDir);
 
@@ -153,10 +428,14 @@ async function runApiExtraction({
 
   let compilerState: CompilerState | undefined = undefined;
 
+  const warnings = new Array<string>();
+
   for (const packageDir of packageDirs) {
     console.log(`## Processing ${packageDir}`);
     const projectFolder = resolvePath(__dirname, '..', packageDir);
     const packageFolder = resolvePath(__dirname, '../dist-types', packageDir);
+
+    const warningCountBefore = await countApiReportWarnings(projectFolder);
 
     const extractorConfig = ExtractorConfig.prepare({
       configObject: {
@@ -164,7 +443,7 @@ async function runApiExtraction({
         bundledPackages: [],
 
         compiler: {
-          tsconfigFilePath: resolvePath(__dirname, '../tsconfig.json'),
+          tsconfigFilePath,
         },
 
         apiReport: {
@@ -219,6 +498,7 @@ async function runApiExtraction({
       },
       configObjectFullPath: projectFolder,
       packageJsonFullPath: resolvePath(projectFolder, 'package.json'),
+      tsdocConfigFile: await getTsDocConfig(),
     });
 
     // The `packageFolder` needs to point to the location within `dist-types` in order for relative
@@ -267,20 +547,7 @@ async function runApiExtraction({
 
     if (!extractorResult.succeeded) {
       if (shouldLogInstructions) {
-        console.log('');
-        console.log(
-          '*************************************************************************************',
-        );
-        console.log(
-          '* You have uncommitted changes to the public API of a package.                      *',
-        );
-        console.log(
-          '* To solve this, run `yarn build:api-reports` and commit all api-report.md changes. *',
-        );
-        console.log(
-          '*************************************************************************************',
-        );
-        console.log('');
+        logApiReportInstructions();
 
         if (conflictingFile) {
           console.log('');
@@ -294,7 +561,8 @@ async function runApiExtraction({
 
           const content = await fs.readFile(conflictingFile, 'utf8');
           console.log(content);
-          console.log('');
+
+          logApiReportInstructions();
         }
       }
 
@@ -303,6 +571,27 @@ async function runApiExtraction({
           ` and ${extractorResult.warningCount} warnings`,
       );
     }
+
+    const warningCountAfter = await countApiReportWarnings(projectFolder);
+    if (NO_WARNING_PACKAGES.includes(packageDir) && warningCountAfter > 0) {
+      throw new Error(
+        `The API Report for ${packageDir} is not allowed to have warnings`,
+      );
+    }
+    if (warningCountAfter > warningCountBefore) {
+      warnings.push(
+        `The API Report for ${packageDir} introduces new warnings. ` +
+          'Please fix these warnings in order to keep the API Reports tidy.',
+      );
+    }
+  }
+
+  if (warnings.length > 0) {
+    console.warn();
+    for (const warning of warnings) {
+      console.warn(warning);
+    }
+    console.warn();
   }
 }
 
@@ -310,9 +599,219 @@ async function runApiExtraction({
 WARNING: Bring a blanket if you're gonna read the code below
 
 There's some weird shit going on here, and it's because we cba
-forking rushstash to modify the api-documenter markdown generation,
+forking rushstack to modify the api-documenter markdown generation,
 which otherwise is the recommended way to do customizations.
 */
+
+type ExcerptToken = {
+  kind: string;
+  text: string;
+  canonicalReference?: string;
+};
+
+class ExcerptTokenMatcher {
+  readonly #tokens: ExcerptToken[];
+
+  constructor(tokens: ExcerptToken[]) {
+    this.#tokens = tokens.slice();
+  }
+
+  nextContent() {
+    const token = this.#tokens.shift();
+    if (token?.kind === 'Content') {
+      return token.text;
+    }
+    return undefined;
+  }
+
+  matchContent(expectedText: string) {
+    const text = this.nextContent();
+    return text !== expectedText;
+  }
+
+  getTokensUntilArrow() {
+    const tokens = [];
+    for (;;) {
+      const token = this.#tokens.shift();
+      if (token === undefined) {
+        return undefined;
+      }
+      if (token.kind === 'Content' && token.text === ') => ') {
+        return tokens;
+      }
+      tokens.push(token);
+    }
+  }
+
+  getComponentReturnTokens() {
+    const first = this.#tokens.shift();
+    if (!first) {
+      return undefined;
+    }
+    const second = this.#tokens.shift();
+
+    if (this.#tokens.length !== 0) {
+      return undefined;
+    }
+    if (first.kind !== 'Reference' || first.text !== 'JSX.Element') {
+      return undefined;
+    }
+    if (!second) {
+      return [first];
+    } else if (second.kind === 'Content' && second.text === ' | null') {
+      return [first, second];
+    }
+    return undefined;
+  }
+}
+
+class ApiModelTransforms {
+  static deserializeWithTransforms(
+    serialized: any,
+    transforms: Array<(member: any) => any>,
+  ): ApiPackage {
+    if (serialized.kind !== 'Package') {
+      throw new Error(
+        `Unexpected root kind in serialized ApiPackage, ${serialized.kind}`,
+      );
+    }
+    if (serialized.members.length !== 1) {
+      throw new Error(
+        `Unexpected members in serialized ApiPackage, [${serialized.members
+          .map(m => m.kind)
+          .join(' ')}]`,
+      );
+    }
+    const [entryPoint] = serialized.members;
+    if (entryPoint.kind !== 'EntryPoint') {
+      throw new Error(
+        `Unexpected kind in serialized ApiPackage member, ${entryPoint.kind}`,
+      );
+    }
+
+    const transformed = {
+      ...serialized,
+      members: [
+        {
+          ...entryPoint,
+          members: entryPoint.members.map(member =>
+            transforms.reduce((m, t) => t(m), member),
+          ),
+        },
+      ],
+    };
+
+    return ApiPackage.deserialize(
+      transformed,
+      transformed.metadata,
+    ) as ApiPackage;
+  }
+
+  static transformArrowComponents = (member: any) => {
+    if (member.kind !== 'Variable') {
+      return member;
+    }
+
+    const { name, excerptTokens } = member;
+
+    // First letter in name must be uppercase
+    const [firstChar] = name;
+    if (firstChar.toLocaleUpperCase('en-US') !== firstChar) {
+      return member;
+    }
+
+    // First content must match expected declaration format
+    const tokens = new ExcerptTokenMatcher(excerptTokens);
+    if (tokens.nextContent() !== `${name}: `) {
+      return member;
+    }
+
+    // Next needs to be an arrow with `props` parameters or no parameters
+    // followed by a return type of `JSX.Element | null` or just `JSX.Element`
+    const declStart = tokens.nextContent();
+    if (declStart === '(props: ' || declStart === '(_props: ') {
+      const props = tokens.getTokensUntilArrow();
+      const ret = tokens.getComponentReturnTokens();
+      if (props && ret) {
+        return this.makeComponentMember(member, ret, props);
+      }
+    } else if (declStart === '() => ') {
+      const ret = tokens.getComponentReturnTokens();
+      if (ret) {
+        return this.makeComponentMember(member, ret);
+      }
+    }
+    return member;
+  };
+
+  static makeComponentMember(
+    member: any,
+    ret: ExcerptToken[],
+    props?: ExcerptToken[],
+  ) {
+    const declTokens = props
+      ? [
+          {
+            kind: 'Content',
+            text: `export declare function ${member.name}(props: `,
+          },
+          ...props,
+          {
+            kind: 'Content',
+            text: '): ',
+          },
+        ]
+      : [
+          {
+            kind: 'Content',
+            text: `export declare function ${member.name}(): `,
+          },
+        ];
+
+    return {
+      kind: 'Function',
+      name: member.name,
+      releaseTag: member.releaseTag,
+      docComment: member.docComment ?? '',
+      canonicalReference: member.canonicalReference,
+      excerptTokens: [...declTokens, ...ret],
+      returnTypeTokenRange: {
+        startIndex: declTokens.length,
+        endIndex: declTokens.length + ret.length,
+      },
+      parameters: props
+        ? [
+            {
+              parameterName: 'props',
+              parameterTypeTokenRange: {
+                startIndex: 1,
+                endIndex: 1 + props.length,
+              },
+            },
+          ]
+        : [],
+      overloadIndex: 1,
+    };
+  }
+
+  static transformTrimDeclare = (member: any) => {
+    const { excerptTokens } = member;
+    const firstContent = new ExcerptTokenMatcher(excerptTokens).nextContent();
+    if (firstContent && firstContent.startsWith('export declare ')) {
+      return {
+        ...member,
+        excerptTokens: [
+          {
+            kind: 'Content',
+            text: firstContent.slice('export declare '.length),
+          },
+          ...excerptTokens.slice(1),
+        ],
+      };
+    }
+    return member;
+  };
+}
 
 async function buildDocs({
   inputDir,
@@ -337,13 +836,12 @@ async function buildDocs({
 
   const newModel = new ApiModel();
   for (const serialized of serializedPackages) {
-    // Add any docs filtering logic here
-
-    const pkg = ApiPackage.deserialize(
-      serialized,
-      serialized.metadata,
-    ) as ApiPackage;
-    newModel.addMember(pkg);
+    newModel.addMember(
+      ApiModelTransforms.deserializeWithTransforms(serialized, [
+        ApiModelTransforms.transformArrowComponents,
+        ApiModelTransforms.transformTrimDeclare,
+      ]),
+    );
   }
 
   // The doc AST need to be extended with custom nodes if we want to
@@ -372,6 +870,18 @@ async function buildDocs({
   // This is where we actually write the markdown and where we can hook
   // in the rendering of our own nodes.
   class CustomCustomMarkdownEmitter extends CustomMarkdownEmitter {
+    // Until https://github.com/microsoft/rushstack/issues/2914 gets fixed or we change markdown renderer we need a fix
+    // to render pipe | character correctly.
+    protected getEscapedText(text: string): string {
+      return text
+        .replace(/\\/g, '\\\\') // first replace the escape character
+        .replace(/[*#[\]_`~]/g, x => `\\${x}`) // then escape any special characters
+        .replace(/---/g, '\\-\\-\\-') // hyphens only if it's 3 or more
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\|/g, '&#124;');
+    }
     /** @override */
     protected writeNode(
       docNode: DocNode,
@@ -539,23 +1049,74 @@ async function buildDocs({
 }
 
 async function main() {
+  const projectRoot = resolvePath(__dirname, '..');
   const isCiBuild = process.argv.includes('--ci');
   const isDocsBuild = process.argv.includes('--docs');
+  const runTsc = process.argv.includes('--tsc');
 
-  const packageDirs = await findPackageDirs();
+  const selectedPackageDirs = await findSpecificPackageDirs(
+    process.argv.slice(2).filter(arg => !arg.startsWith('--')),
+  );
+  if (selectedPackageDirs && isCiBuild) {
+    throw new Error(
+      'Package path arguments are not supported together with the --ci flag',
+    );
+  }
+  if (!selectedPackageDirs && !isCiBuild && !isDocsBuild) {
+    console.log('');
+    console.log(
+      'TIP: You can generate api-reports for select packages by passing package paths:',
+    );
+    console.log('');
+    console.log(
+      '       yarn build:api-reports packages/config packages/core-plugin-api',
+    );
+    console.log('');
+  }
+
+  let temporaryTsConfigPath: string | undefined;
+  if (selectedPackageDirs) {
+    temporaryTsConfigPath = await createTemporaryTsConfig(selectedPackageDirs);
+  }
+  const tsconfigFilePath =
+    temporaryTsConfigPath ?? resolvePath(projectRoot, 'tsconfig.json');
+
+  if (runTsc) {
+    await fs.remove(resolvePath(projectRoot, 'dist-types'));
+    const { status } = spawnSync(
+      'yarn',
+      [
+        'tsc',
+        ['--project', tsconfigFilePath],
+        ['--skipLibCheck', 'false'],
+        ['--incremental', 'false'],
+      ].flat(),
+      {
+        stdio: 'inherit',
+        shell: true,
+        cwd: projectRoot,
+      },
+    );
+    if (status !== 0) {
+      process.exit(status);
+    }
+  }
+
+  const packageDirs = selectedPackageDirs ?? (await findPackageDirs());
 
   console.log('# Generating package API reports');
   await runApiExtraction({
     packageDirs,
     outputDir: tmpDir,
     isLocalBuild: !isCiBuild,
+    tsconfigFilePath,
   });
 
   if (isDocsBuild) {
     console.log('# Generating package documentation');
     await buildDocs({
       inputDir: tmpDir,
-      outputDir: resolvePath(__dirname, '..', 'docs/reference'),
+      outputDir: resolvePath(projectRoot, 'docs/reference'),
     });
   }
 }

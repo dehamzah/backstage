@@ -4,7 +4,7 @@
 
 ```ts
 import { AppConfig } from '@backstage/config';
-import { JsonObject } from '@backstage/config';
+import { JsonObject } from '@backstage/types';
 import { JSONSchema7 } from 'json-schema';
 
 // @public
@@ -21,27 +21,49 @@ export type ConfigSchemaProcessingOptions = {
   visibility?: ConfigVisibility[];
   valueTransform?: TransformFunc<any>;
   withFilteredKeys?: boolean;
+  withDeprecatedKeys?: boolean;
 };
+
+// @public (undocumented)
+export type ConfigTarget =
+  | {
+      path: string;
+    }
+  | {
+      url: string;
+    };
 
 // @public
 export type ConfigVisibility = 'frontend' | 'backend' | 'secret';
 
-// @public (undocumented)
-export type EnvFunc = (name: string) => Promise<string | undefined>;
+// @public
+export function loadConfig(
+  options: LoadConfigOptions,
+): Promise<LoadConfigResult>;
 
 // @public
-export function loadConfig(options: LoadConfigOptions): Promise<AppConfig[]>;
-
-// @public (undocumented)
 export type LoadConfigOptions = {
   configRoot: string;
-  configPaths: string[];
-  env?: string;
-  experimentalEnvFunc?: EnvFunc;
-  watch?: {
-    onChange: (configs: AppConfig[]) => void;
-    stopSignal?: Promise<void>;
-  };
+  configTargets: ConfigTarget[];
+  experimentalEnvFunc?: (name: string) => Promise<string | undefined>;
+  remote?: LoadConfigOptionsRemote;
+  watch?: LoadConfigOptionsWatch;
+};
+
+// @public (undocumented)
+export type LoadConfigOptionsRemote = {
+  reloadIntervalSeconds: number;
+};
+
+// @public (undocumented)
+export type LoadConfigOptionsWatch = {
+  onChange: (configs: AppConfig[]) => void;
+  stopSignal?: Promise<void>;
+};
+
+// @public
+export type LoadConfigResult = {
+  appConfigs: AppConfig[];
 };
 
 // @public
@@ -49,10 +71,11 @@ export function loadConfigSchema(
   options: LoadConfigSchemaOptions,
 ): Promise<ConfigSchema>;
 
-// @public (undocumented)
+// @public
 export type LoadConfigSchemaOptions =
   | {
       dependencies: string[];
+      packagePaths?: string[];
     }
   | {
       serialized: JsonObject;

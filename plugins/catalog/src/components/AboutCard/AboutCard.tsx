@@ -15,10 +15,9 @@
  */
 
 import {
-  Entity,
-  ENTITY_DEFAULT_NAMESPACE,
-  RELATION_CONSUMES_API,
-  RELATION_PROVIDES_API,
+  ANNOTATION_EDIT_URL,
+  ANNOTATION_LOCATION,
+  DEFAULT_NAMESPACE,
   stringifyEntityRef,
 } from '@backstage/catalog-model';
 import {
@@ -34,8 +33,6 @@ import {
 } from '@backstage/integration-react';
 import {
   catalogApiRef,
-  getEntityMetadataEditUrl,
-  getEntityRelations,
   getEntitySourceLocation,
   useEntity,
 } from '@backstage/plugin-catalog-react';
@@ -50,7 +47,6 @@ import {
 import CachedIcon from '@material-ui/icons/Cached';
 import DocsIcon from '@material-ui/icons/Description';
 import EditIcon from '@material-ui/icons/Edit';
-import ExtensionIcon from '@material-ui/icons/Extension';
 import React, { useCallback } from 'react';
 import { viewTechDocRouteRef } from '../../routes';
 import { AboutContent } from './AboutContent';
@@ -75,13 +71,20 @@ const useStyles = makeStyles({
   },
 });
 
-type AboutCardProps = {
-  /** @deprecated The entity is now grabbed from context instead */
-  entity?: Entity;
+/**
+ * Props for {@link EntityAboutCard}.
+ *
+ * @public
+ */
+export interface AboutCardProps {
   variant?: InfoCardVariants;
-};
+}
 
-export function AboutCard({ variant }: AboutCardProps) {
+/**
+ * Exported publicly via the EntityAboutCard
+ */
+export function AboutCard(props: AboutCardProps) {
+  const { variant } = props;
   const classes = useStyles();
   const { entity } = useEntity();
   const scmIntegrationsApi = useApi(scmIntegrationsApiRef);
@@ -93,17 +96,8 @@ export function AboutCard({ variant }: AboutCardProps) {
     entity,
     scmIntegrationsApi,
   );
-  const entityMetadataEditUrl = getEntityMetadataEditUrl(entity);
-  const providesApiRelations = getEntityRelations(
-    entity,
-    RELATION_PROVIDES_API,
-  );
-  const consumesApiRelations = getEntityRelations(
-    entity,
-    RELATION_CONSUMES_API,
-  );
-  const hasApis =
-    providesApiRelations.length > 0 || consumesApiRelations.length > 0;
+  const entityMetadataEditUrl =
+    entity.metadata.annotations?.[ANNOTATION_EDIT_URL];
 
   const viewInSource: IconLinkVerticalProps = {
     label: 'View Source',
@@ -120,17 +114,10 @@ export function AboutCard({ variant }: AboutCardProps) {
     href:
       viewTechdocLink &&
       viewTechdocLink({
-        namespace: entity.metadata.namespace || ENTITY_DEFAULT_NAMESPACE,
+        namespace: entity.metadata.namespace || DEFAULT_NAMESPACE,
         kind: entity.kind,
         name: entity.metadata.name,
       }),
-  };
-  const viewApi: IconLinkVerticalProps = {
-    title: hasApis ? '' : 'No APIs available',
-    label: 'View API',
-    disabled: !hasApis,
-    icon: <ExtensionIcon />,
-    href: 'api',
   };
 
   let cardClass = '';
@@ -147,6 +134,10 @@ export function AboutCard({ variant }: AboutCardProps) {
     cardContentClass = classes.fullHeightCardContent;
   }
 
+  const entityLocation = entity.metadata.annotations?.[ANNOTATION_LOCATION];
+  // Limiting the ability to manually refresh to the less expensive locations
+  const allowRefresh =
+    entityLocation?.startsWith('url:') || entityLocation?.startsWith('file:');
   const refreshEntity = useCallback(async () => {
     await catalogApi.refreshEntity(stringifyEntityRef(entity));
     alertApi.post({ message: 'Refresh scheduled', severity: 'info' });
@@ -158,13 +149,15 @@ export function AboutCard({ variant }: AboutCardProps) {
         title="About"
         action={
           <>
-            <IconButton
-              aria-label="Refresh"
-              title="Schedule entity refresh"
-              onClick={refreshEntity}
-            >
-              <CachedIcon />
-            </IconButton>
+            {allowRefresh && (
+              <IconButton
+                aria-label="Refresh"
+                title="Schedule entity refresh"
+                onClick={refreshEntity}
+              >
+                <CachedIcon />
+              </IconButton>
+            )}
             <IconButton
               component={Link}
               aria-label="Edit"
@@ -176,9 +169,7 @@ export function AboutCard({ variant }: AboutCardProps) {
             </IconButton>
           </>
         }
-        subheader={
-          <HeaderIconLinkRow links={[viewInSource, viewInTechDocs, viewApi]} />
-        }
+        subheader={<HeaderIconLinkRow links={[viewInSource, viewInTechDocs]} />}
       />
       <Divider />
       <CardContent className={cardContentClass}>

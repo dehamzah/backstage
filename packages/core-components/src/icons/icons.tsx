@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+import { IconComponent, useApp } from '@backstage/core-plugin-api';
 import MuiBrokenImageIcon from '@material-ui/icons/BrokenImage';
 import React, { ComponentProps } from 'react';
-import { useApp, IconComponent } from '@backstage/core-plugin-api';
 
 type IconComponentProps = ComponentProps<IconComponent>;
 
@@ -27,36 +27,52 @@ function useSystemIcon(key: string, props: IconComponentProps) {
 }
 
 // Should match the list of overridable system icon keys in @backstage/core-app-api
+/**
+ * Broken Image Icon
+ *
+ * @public
+ *
+ */
 export function BrokenImageIcon(props: IconComponentProps) {
   return useSystemIcon('brokenImage', props);
 }
+/** @public */
 export function CatalogIcon(props: IconComponentProps) {
   return useSystemIcon('catalog', props);
 }
+/** @public */
 export function ChatIcon(props: IconComponentProps) {
   return useSystemIcon('chat', props);
 }
+/** @public */
 export function DashboardIcon(props: IconComponentProps) {
   return useSystemIcon('dashboard', props);
 }
+/** @public */
 export function DocsIcon(props: IconComponentProps) {
   return useSystemIcon('docs', props);
 }
+/** @public */
 export function EmailIcon(props: IconComponentProps) {
   return useSystemIcon('email', props);
 }
+/** @public */
 export function GitHubIcon(props: IconComponentProps) {
   return useSystemIcon('github', props);
 }
+/** @public */
 export function GroupIcon(props: IconComponentProps) {
   return useSystemIcon('group', props);
 }
+/** @public */
 export function HelpIcon(props: IconComponentProps) {
   return useSystemIcon('help', props);
 }
+/** @public */
 export function UserIcon(props: IconComponentProps) {
   return useSystemIcon('user', props);
 }
+/** @public */
 export function WarningIcon(props: IconComponentProps) {
   return useSystemIcon('warning', props);
 }

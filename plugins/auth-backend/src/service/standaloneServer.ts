@@ -17,6 +17,7 @@
 import {
   createServiceBuilder,
   loadBackendConfig,
+  ServerTokenManager,
   SingleHostDiscovery,
   useHotMemoize,
 } from '@backstage/backend-common';
@@ -38,7 +39,7 @@ export async function startStandaloneServer(
 
   const database = useHotMemoize(module, () => {
     const knex = Knex({
-      client: 'sqlite3',
+      client: 'better-sqlite3',
       connection: ':memory:',
       useNullAsDefault: true,
     });
@@ -58,6 +59,7 @@ export async function startStandaloneServer(
       },
     },
     discovery,
+    tokenManager: ServerTokenManager.noop(),
   });
 
   const service = createServiceBuilder(module)

@@ -13,10 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ConfigReader, JsonObject } from '@backstage/config';
+
+import { ConfigReader } from '@backstage/config';
+import { JsonObject } from '@backstage/types';
 import { getVoidLogger } from '../logging';
 import { DefaultReadTreeResponseFactory } from './tree';
-import { AwsS3UrlReader } from './AwsS3UrlReader';
+import { AwsS3UrlReader, parseUrl } from './AwsS3UrlReader';
 import {
   AwsS3Integration,
   readAwsS3IntegrationConfig,
@@ -25,9 +27,86 @@ import { UrlReaderPredicateTuple } from './types';
 import AWSMock from 'aws-sdk-mock';
 import aws from 'aws-sdk';
 import path from 'path';
+import { NotModifiedError } from '@backstage/errors';
 
 const treeResponseFactory = DefaultReadTreeResponseFactory.create({
   config: new ConfigReader({}),
+});
+
+describe('parseUrl', () => {
+  it('supports all aws formats', () => {
+    expect(
+      parseUrl('https://s3.us-west-2.amazonaws.com/my.bucket-3/a/puppy.jpg', {
+        host: 'amazonaws.com',
+      }),
+    ).toEqual({
+      path: 'a/puppy.jpg',
+      bucket: 'my.bucket-3',
+      region: 'us-west-2',
+    });
+    expect(
+      parseUrl('https://s3-us-west-2.amazonaws.com/my.bucket-3/a/puppy.jpg', {
+        host: 'amazonaws.com',
+      }),
+    ).toEqual({
+      path: 'a/puppy.jpg',
+      bucket: 'my.bucket-3',
+      region: 'us-west-2',
+    });
+    expect(
+      parseUrl('https://my.bucket-3.s3.us-west-2.amazonaws.com/a/puppy.jpg', {
+        host: 'amazonaws.com',
+      }),
+    ).toEqual({
+      path: 'a/puppy.jpg',
+      bucket: 'my.bucket-3',
+      region: 'us-west-2',
+    });
+    expect(
+      parseUrl(
+        'https://ignored.s3.us-west-2.amazonaws.com/my.bucket-3/a/puppy.jpg',
+        {
+          host: 'amazonaws.com',
+          s3ForcePathStyle: true,
+        },
+      ),
+    ).toEqual({
+      path: 'a/puppy.jpg',
+      bucket: 'my.bucket-3',
+      region: 'us-west-2',
+    });
+  });
+
+  it('supports all non-aws formats', () => {
+    expect(
+      parseUrl('https://my-host.com/my.bucket-3/a/puppy.jpg', {
+        host: 'my-host.com',
+      }),
+    ).toEqual({
+      path: 'a/puppy.jpg',
+      bucket: 'my.bucket-3',
+      region: '',
+    });
+    expect(
+      parseUrl('https://my.bucket-3.my-host.com/a/puppy.jpg', {
+        host: 'my-host.com',
+      }),
+    ).toEqual({
+      path: 'a/puppy.jpg',
+      bucket: 'my.bucket-3',
+      region: '',
+    });
+    expect(
+      parseUrl('https://ignored.my-host.com/my.bucket-3/a/puppy.jpg', {
+        host: 'my-host.com',
+        s3ForcePathStyle: true,
+      }),
+    ).toEqual({
+      path: 'a/puppy.jpg',
+      bucket: 'my.bucket-3',
+      region: '',
+    });
+  });
 });
 
 describe('AwsS3UrlReader', () => {
@@ -129,35 +208,37 @@ describe('AwsS3UrlReader', () => {
   });
 
   describe('read', () => {
-    AWSMock.setSDKInstance(aws);
-    AWSMock.mock(
-      'S3',
-      'getObject',
-      Buffer.from(
-        require('fs').readFileSync(
-          path.resolve(
-            'src',
-            'reading',
-            '__fixtures__',
-            'awsS3',
-            'awsS3-mock-object.yaml',
+    let awsS3UrlReader: AwsS3UrlReader;
+
+    beforeAll(() => {
+      AWSMock.setSDKInstance(aws);
+      AWSMock.mock(
+        'S3',
+        'getObject',
+        Buffer.from(
+          require('fs').readFileSync(
+            path.resolve(
+              __dirname,
+              '__fixtures__/awsS3/awsS3-mock-object.yaml',
+            ),
           ),
         ),
-      ),
-    );
-    const s3 = new aws.S3();
-    const awsS3UrlReader = new AwsS3UrlReader(
-      new AwsS3Integration(
-        readAwsS3IntegrationConfig(
-          new ConfigReader({
-            host: 'amazonaws.com',
-            accessKeyId: 'fake-access-key',
-            secretAccessKey: 'fake-secret-key',
-          }),
+      );
+
+      const s3 = new aws.S3();
+      awsS3UrlReader = new AwsS3UrlReader(
+        new AwsS3Integration(
+          readAwsS3IntegrationConfig(
+            new ConfigReader({
+              host: 'amazonaws.com',
+              accessKeyId: 'fake-access-key',
+              secretAccessKey: 'fake-secret-key',
+            }),
+          ),
         ),
-      ),
-      { s3, treeResponseFactory },
-    );
+        { s3, treeResponseFactory },
+      );
+    });
 
     it('returns contents of an object in a bucket', async () => {
       const response = await awsS3UrlReader.read(
@@ -173,45 +254,46 @@ describe('AwsS3UrlReader', () => {
         ),
       ).rejects.toThrow(
         Error(
-          `Could not retrieve file from S3: not a valid AWS S3 URL: https://test-bucket.s3.us-east-2.NOTamazonaws.com/file.yaml`,
+          `Could not retrieve file from S3; caused by Error: Invalid AWS S3 URL https://test-bucket.s3.us-east-2.NOTamazonaws.com/file.yaml`,
         ),
       );
     });
   });
 
   describe('readUrl', () => {
-    AWSMock.setSDKInstance(aws);
+    let awsS3UrlReader: AwsS3UrlReader;
 
-    AWSMock.mock(
-      'S3',
-      'getObject',
-      Buffer.from(
-        require('fs').readFileSync(
-          path.resolve(
-            'src',
-            'reading',
-            '__fixtures__',
-            'awsS3',
-            'awsS3-mock-object.yaml',
+    beforeAll(() => {
+      AWSMock.setSDKInstance(aws);
+
+      AWSMock.mock(
+        'S3',
+        'getObject',
+        Buffer.from(
+          require('fs').readFileSync(
+            path.resolve(
+              __dirname,
+              '__fixtures__/awsS3/awsS3-mock-object.yaml',
+            ),
           ),
         ),
-      ),
-    );
+      );
 
-    const s3 = new aws.S3();
+      const s3 = new aws.S3();
 
-    const awsS3UrlReader = new AwsS3UrlReader(
-      new AwsS3Integration(
-        readAwsS3IntegrationConfig(
-          new ConfigReader({
-            host: 'amazonaws.com',
-            accessKeyId: 'fake-access-key',
-            secretAccessKey: 'fake-secret-key',
-          }),
+      awsS3UrlReader = new AwsS3UrlReader(
+        new AwsS3Integration(
+          readAwsS3IntegrationConfig(
+            new ConfigReader({
+              host: 'amazonaws.com',
+              accessKeyId: 'fake-access-key',
+              secretAccessKey: 'fake-secret-key',
+            }),
+          ),
         ),
-      ),
-      { s3, treeResponseFactory },
-    );
+        { s3, treeResponseFactory },
+      );
+    });
 
     it('returns contents of an object in a bucket', async () => {
       const response = await awsS3UrlReader.readUrl(
@@ -228,51 +310,101 @@ describe('AwsS3UrlReader', () => {
         ),
       ).rejects.toThrow(
         Error(
-          `Could not retrieve file from S3: not a valid AWS S3 URL: https://test-bucket.s3.us-east-2.NOTamazonaws.com/file.yaml`,
+          `Could not retrieve file from S3; caused by Error: Invalid AWS S3 URL https://test-bucket.s3.us-east-2.NOTamazonaws.com/file.yaml`,
         ),
       );
     });
   });
-  describe('readTree', () => {
-    const object: aws.S3.Types.Object = {
-      Key: 'awsS3-mock-object.yaml',
-    };
-    const objectList: aws.S3.ObjectList = [object];
-    const output: aws.S3.Types.ListObjectsV2Output = {
-      Contents: objectList,
-    };
-    AWSMock.setSDKInstance(aws);
-    AWSMock.mock('S3', 'listObjectsV2', output);
 
-    AWSMock.mock(
-      'S3',
-      'getObject',
-      Buffer.from(
-        require('fs').readFileSync(
-          path.resolve(
-            'src',
-            'reading',
-            '__fixtures__',
-            'awsS3',
-            'awsS3-mock-object.yaml',
+  describe('readUrl with etag', () => {
+    let awsS3UrlReader: AwsS3UrlReader;
+
+    beforeAll(() => {
+      AWSMock.setSDKInstance(aws);
+
+      AWSMock.mock('S3', 'getObject', (_, callback) => {
+        const error: aws.AWSError = {
+          code: 'NotModified',
+          message: 'Not Modified',
+          statusCode: 304,
+          name: 'oops',
+          time: new Date('2019-01-01T00:00:00.000Z'),
+        };
+        callback(error, undefined);
+      });
+
+      const s3 = new aws.S3();
+
+      awsS3UrlReader = new AwsS3UrlReader(
+        new AwsS3Integration(
+          readAwsS3IntegrationConfig(
+            new ConfigReader({
+              host: 'amazonaws.com',
+              accessKeyId: 'fake-access-key',
+              secretAccessKey: 'fake-secret-key',
+            }),
           ),
         ),
-      ),
-    );
+        { s3, treeResponseFactory },
+      );
+    });
 
-    const s3 = new aws.S3();
-    const awsS3UrlReader = new AwsS3UrlReader(
-      new AwsS3Integration(
-        readAwsS3IntegrationConfig(
-          new ConfigReader({
-            host: '.amazonaws.com',
-            accessKeyId: 'fake-access-key',
-            secretAccessKey: 'fake-secret-key',
-          }),
+    it('returns contents of an object in a bucket', async () => {
+      await expect(
+        awsS3UrlReader.readUrl(
+          'https://test-bucket.s3.us-east-2.amazonaws.com/awsS3-mock-object.yaml',
+          {
+            etag: 'abc123',
+          },
         ),
-      ),
-      { s3, treeResponseFactory },
-    );
+      ).rejects.toThrow(NotModifiedError);
+    });
+  });
+
+  describe('readTree', () => {
+    let awsS3UrlReader: AwsS3UrlReader;
+
+    beforeAll(() => {
+      const object: aws.S3.Types.Object = {
+        Key: 'awsS3-mock-object.yaml',
+      };
+
+      const objectList: aws.S3.ObjectList = [object];
+      const output: aws.S3.Types.ListObjectsV2Output = {
+        Contents: objectList,
+      };
+
+      AWSMock.setSDKInstance(aws);
+      AWSMock.mock('S3', 'listObjectsV2', output);
+
+      AWSMock.mock(
+        'S3',
+        'getObject',
+        Buffer.from(
+          require('fs').readFileSync(
+            path.resolve(
+              __dirname,
+              '__fixtures__/awsS3/awsS3-mock-object.yaml',
+            ),
+          ),
+        ),
+      );
+
+      const s3 = new aws.S3();
+      awsS3UrlReader = new AwsS3UrlReader(
+        new AwsS3Integration(
+          readAwsS3IntegrationConfig(
+            new ConfigReader({
+              host: '.amazonaws.com',
+              accessKeyId: 'fake-access-key',
+              secretAccessKey: 'fake-secret-key',
+            }),
+          ),
+        ),
+        { s3, treeResponseFactory },
+      );
+    });
+
     it('returns contents of an object in a bucket', async () => {
       const response = await awsS3UrlReader.readTree(
         'https://test.s3.us-east-2.amazonaws.com',
@@ -281,6 +413,49 @@ describe('AwsS3UrlReader', () => {
       const body = await files[0].content();
 
       expect(body.toString().trim()).toBe('site_name: Test');
+    });
+  });
+
+  describe('readNonAwsHost', () => {
+    let awsS3UrlReader: AwsS3UrlReader;
+
+    beforeAll(() => {
+      AWSMock.setSDKInstance(aws);
+      AWSMock.mock(
+        'S3',
+        'getObject',
+        Buffer.from(
+          require('fs').readFileSync(
+            path.resolve(
+              __dirname,
+              '__fixtures__/awsS3/awsS3-mock-object.yaml',
+            ),
+          ),
+        ),
+      );
+
+      const s3 = new aws.S3();
+      awsS3UrlReader = new AwsS3UrlReader(
+        new AwsS3Integration(
+          readAwsS3IntegrationConfig(
+            new ConfigReader({
+              host: 'localhost:4566',
+              accessKeyId: 'fake-access-key',
+              secretAccessKey: 'fake-secret-key',
+              endpoint: 'http://localhost:4566',
+              s3ForcePathStyle: true,
+            }),
+          ),
+        ),
+        { s3, treeResponseFactory },
+      );
+    });
+
+    it('returns contents of an object in a bucket', async () => {
+      const response = await awsS3UrlReader.read(
+        'http://localhost:4566/test-bucket/awsS3-mock-object.yaml',
+      );
+      expect(response.toString().trim()).toBe('site_name: Test');
     });
   });
 });

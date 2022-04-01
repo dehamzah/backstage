@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import { LocationSpec } from '@backstage/catalog-model';
 import { Config } from '@backstage/config';
 import { Logger } from 'winston';
 import {
@@ -28,11 +27,14 @@ import {
 import {
   CatalogProcessor,
   CatalogProcessorEmit,
-  results,
+  LocationSpec,
+  processingResult,
 } from '@backstage/plugin-catalog-backend';
 
 /**
  * Extracts teams and users out of an LDAP server.
+ *
+ * @public
  */
 export class LdapOrgReaderProcessor implements CatalogProcessor {
   private readonly providers: LdapProviderConfig[];
@@ -41,17 +43,20 @@ export class LdapOrgReaderProcessor implements CatalogProcessor {
   private readonly userTransformer?: UserTransformer;
 
   static fromConfig(
-    config: Config,
+    configRoot: Config,
     options: {
       logger: Logger;
       groupTransformer?: GroupTransformer;
       userTransformer?: UserTransformer;
     },
   ) {
-    const c = config.getOptionalConfig('catalog.processors.ldapOrg');
+    // TODO(freben): Deprecate the old catalog.processors.ldapOrg config
+    const config =
+      configRoot.getOptionalConfig('ldap') ||
+      configRoot.getOptionalConfig('catalog.processors.ldapOrg');
     return new LdapOrgReaderProcessor({
       ...options,
-      providers: c ? readLdapConfig(c) : [],
+      providers: config ? readLdapConfig(config) : [],
     });
   }
 
@@ -67,6 +72,10 @@ export class LdapOrgReaderProcessor implements CatalogProcessor {
     this.userTransformer = options.userTransformer;
   }
 
+  getProcessorName(): string {
+    return 'LdapOrgReaderProcessor';
+  }
+
   async readLocation(
     location: LocationSpec,
     _optional: boolean,
@@ -79,7 +88,7 @@ export class LdapOrgReaderProcessor implements CatalogProcessor {
     const provider = this.providers.find(p => location.target === p.target);
     if (!provider) {
       throw new Error(
-        `There is no LDAP Org provider that matches ${location.target}. Please add a configuration entry for it under catalog.processors.ldapOrg.providers.`,
+        `There is no LDAP configuration that matches "${location.target}". Please add a configuration entry for it under "ldap.providers".`,
       );
     }
 
@@ -113,10 +122,10 @@ export class LdapOrgReaderProcessor implements CatalogProcessor {
 
     // Done!
     for (const group of groups) {
-      emit(results.entity(location, group));
+      emit(processingResult.entity(location, group));
     }
     for (const user of users) {
-      emit(results.entity(location, user));
+      emit(processingResult.entity(location, user));
     }
 
     return true;

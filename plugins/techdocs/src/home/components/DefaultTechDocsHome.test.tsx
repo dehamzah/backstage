@@ -14,34 +14,30 @@
  * limitations under the License.
  */
 
-import { CatalogApi, catalogApiRef } from '@backstage/plugin-catalog-react';
-import { MockStorageApi, renderInTestApp } from '@backstage/test-utils';
-import { screen } from '@testing-library/react';
-import React from 'react';
-import { DefaultTechDocsHome } from './DefaultTechDocsHome';
-
-import {
-  ApiProvider,
-  ApiRegistry,
-  ConfigReader,
-} from '@backstage/core-app-api';
+import { ApiProvider, ConfigReader } from '@backstage/core-app-api';
 import {
   ConfigApi,
   configApiRef,
   storageApiRef,
 } from '@backstage/core-plugin-api';
+import {
+  CatalogApi,
+  catalogApiRef,
+  starredEntitiesApiRef,
+  MockStarredEntitiesApi,
+} from '@backstage/plugin-catalog-react';
+import {
+  MockStorageApi,
+  renderInTestApp,
+  TestApiRegistry,
+} from '@backstage/test-utils';
+import { screen } from '@testing-library/react';
+import React from 'react';
 import { rootDocsRouteRef } from '../../routes';
-
-jest.mock('@backstage/plugin-catalog-react', () => {
-  const actual = jest.requireActual('@backstage/plugin-catalog-react');
-  return {
-    ...actual,
-    useOwnUser: () => 'test-user',
-  };
-});
+import { DefaultTechDocsHome } from './DefaultTechDocsHome';
 
 const mockCatalogApi = {
-  getEntityByName: () => Promise.resolve(),
+  getEntityByRef: () => Promise.resolve(),
   getEntities: async () => ({
     items: [
       {
@@ -63,11 +59,14 @@ describe('TechDocs Home', () => {
     },
   });
 
-  const apiRegistry = ApiRegistry.from([
+  const storageApi = MockStorageApi.create();
+
+  const apiRegistry = TestApiRegistry.from(
     [catalogApiRef, mockCatalogApi],
     [configApiRef, configApi],
-    [storageApiRef, MockStorageApi.create()],
-  ]);
+    [storageApiRef, storageApi],
+    [starredEntitiesApiRef, new MockStarredEntitiesApi()],
+  );
 
   it('should render a TechDocs home page', async () => {
     await renderInTestApp(

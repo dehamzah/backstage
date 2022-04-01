@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { JsonValue } from '@backstage/config';
+import { JsonValue } from '@backstage/types';
 import { createHash } from 'crypto';
 import Keyv from 'keyv';
 
@@ -22,7 +22,11 @@ type CacheClientArgs = {
   client: Keyv;
 };
 
-/** @public */
+/**
+ * Options passed to {@link CacheClient.set}.
+ *
+ * @public
+ */
 export type CacheClientSetOptions = {
   /**
    * Optional TTL in milliseconds. Defaults to the TTL provided when the client

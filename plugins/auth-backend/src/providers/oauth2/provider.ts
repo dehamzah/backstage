@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+import {
+  DEFAULT_NAMESPACE,
+  stringifyEntityRef,
+} from '@backstage/catalog-model';
 import express from 'express';
 import passport from 'passport';
 import { Strategy as OAuth2Strategy } from 'passport-oauth2';
@@ -59,6 +63,7 @@ export type OAuth2AuthProviderOptions = OAuthProviderOptions & {
   tokenUrl: string;
   scope?: string;
   logger: Logger;
+  includeBasicAuth?: boolean;
 };
 
 export class OAuth2AuthProvider implements OAuthHandlers {
@@ -85,6 +90,14 @@ export class OAuth2AuthProvider implements OAuthHandlers {
         tokenURL: options.tokenUrl,
         passReqToCallback: false as true,
         scope: options.scope,
+        customHeaders: options.includeBasicAuth
+          ? {
+              Authorization: `Basic ${this.encodeClientCredentials(
+                options.clientId,
+                options.clientSecret,
+              )}`,
+            }
+          : undefined,
       },
       (
         accessToken: any,
@@ -118,9 +131,7 @@ export class OAuth2AuthProvider implements OAuthHandlers {
     });
   }
 
-  async handler(
-    req: express.Request,
-  ): Promise<{ response: OAuthResponse; refreshToken: string }> {
+  async handler(req: express.Request) {
     const { result, privateInfo } = await executeFrameHandlerStrategy<
       OAuthResult,
       PrivateInfo
@@ -132,33 +143,36 @@ export class OAuth2AuthProvider implements OAuthHandlers {
     };
   }
 
-  async refresh(req: OAuthRefreshRequest): Promise<OAuthResponse> {
+  async refresh(req: OAuthRefreshRequest) {
     const refreshTokenResponse = await executeRefreshTokenStrategy(
       this._strategy,
       req.refreshToken,
       req.scope,
     );
-    const {
-      accessToken,
-      params,
-      refreshToken: updatedRefreshToken,
-    } = refreshTokenResponse;
+    const { accessToken, params, refreshToken } = refreshTokenResponse;
 
     const fullProfile = await executeFetchUserProfileStrategy(
       this._strategy,
       accessToken,
     );
 
-    return this.handleResult({
-      fullProfile,
-      params,
-      accessToken,
-      refreshToken: updatedRefreshToken,
-    });
+    return {
+      response: await this.handleResult({
+        fullProfile,
+        params,
+        accessToken,
+      }),
+      refreshToken,
+    };
   }
 
   private async handleResult(result: OAuthResult) {
-    const { profile } = await this.authHandler(result);
+    const context = {
+      logger: this.logger,
+      catalogIdentityClient: this.catalogIdentityClient,
+      tokenIssuer: this.tokenIssuer,
+    };
+    const { profile } = await this.authHandler(result, context);
 
     const response: OAuthResponse = {
       providerInfo: {
@@ -176,15 +190,15 @@ export class OAuth2AuthProvider implements OAuthHandlers {
           result,
           profile,
         },
-        {
-          tokenIssuer: this.tokenIssuer,
-          catalogIdentityClient: this.catalogIdentityClient,
-          logger: this.logger,
-        },
+        context,
       );
     }
 
     return response;
+  }
+
+  encodeClientCredentials(clientID: string, clientSecret: string): string {
+    return Buffer.from(`${clientID}:${clientSecret}`).toString('base64');
   }
 }
 
@@ -200,8 +214,17 @@ export const oAuth2DefaultSignInResolver: SignInResolver<OAuthResult> = async (
 
   const userId = profile.email.split('@')[0];
 
+  const entityRef = stringifyEntityRef({
+    kind: 'User',
+    namespace: DEFAULT_NAMESPACE,
+    name: userId,
+  });
+
   const token = await ctx.tokenIssuer.issueToken({
-    claims: { sub: userId, ent: [`user:default/${userId}`] },
+    claims: {
+      sub: entityRef,
+      ent: [entityRef],
+    },
   });
 
   return { id: userId, token };
@@ -223,22 +246,27 @@ export const createOAuth2Provider = (
     globalConfig,
     config,
     tokenIssuer,
+    tokenManager,
     catalogApi,
     logger,
   }) =>
     OAuthEnvironmentHandler.mapConfig(config, envConfig => {
       const clientId = envConfig.getString('clientId');
       const clientSecret = envConfig.getString('clientSecret');
-      const callbackUrl = `${globalConfig.baseUrl}/${providerId}/handler/frame`;
+      const customCallbackUrl = envConfig.getOptionalString('callbackUrl');
+      const callbackUrl =
+        customCallbackUrl ||
+        `${globalConfig.baseUrl}/${providerId}/handler/frame`;
       const authorizationUrl = envConfig.getString('authorizationUrl');
       const tokenUrl = envConfig.getString('tokenUrl');
       const scope = envConfig.getOptionalString('scope');
+      const includeBasicAuth = envConfig.getOptionalBoolean('includeBasicAuth');
       const disableRefresh =
         envConfig.getOptionalBoolean('disableRefresh') ?? false;
 
       const catalogIdentityClient = new CatalogIdentityClient({
         catalogApi,
-        tokenIssuer,
+        tokenManager,
       });
 
       const authHandler: AuthHandler<OAuthResult> = options?.authHandler
@@ -269,12 +297,14 @@ export const createOAuth2Provider = (
         tokenUrl,
         scope,
         logger,
+        includeBasicAuth,
       });
 
       return OAuthAdapter.fromConfig(globalConfig, provider, {
         disableRefresh,
         providerId,
         tokenIssuer,
+        callbackUrl,
       });
     });
 };

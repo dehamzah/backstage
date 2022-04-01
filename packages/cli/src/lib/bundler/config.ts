@@ -23,15 +23,17 @@ import { RunScriptWebpackPlugin } from 'run-script-webpack-plugin';
 import webpack, { ProvidePlugin } from 'webpack';
 import nodeExternals from 'webpack-node-externals';
 import { isChildPath } from '@backstage/cli-common';
+import { getPackages } from '@manypkg/get-packages';
 import { optimization } from './optimization';
 import { Config } from '@backstage/config';
 import { BundlingPaths } from './paths';
 import { transforms } from './transforms';
 import { LinkedPackageResolvePlugin } from './LinkedPackageResolvePlugin';
-import { BundlingOptions, BackendBundlingOptions, LernaPackage } from './types';
+import { BundlingOptions, BackendBundlingOptions } from './types';
 import { version } from '../../lib/version';
 import { paths as cliPaths } from '../../lib/paths';
 import { runPlain } from '../run';
+import ESLintPlugin from 'eslint-webpack-plugin';
 import pickBy from 'lodash/pickBy';
 
 export function resolveBaseUrl(config: Config): URL {
@@ -73,43 +75,28 @@ async function readBuildInfo() {
   };
 }
 
-async function loadLernaPackages(): Promise<LernaPackage[]> {
-  const { Project } = require('@lerna/project');
-  const project = new Project(cliPaths.targetDir);
-  return project.getPackages();
-}
-
 export async function createConfig(
   paths: BundlingPaths,
   options: BundlingOptions,
 ): Promise<webpack.Configuration> {
   const { checksEnabled, isDev, frontendConfig } = options;
 
-  const packages = await loadLernaPackages();
   const { plugins, loaders } = transforms(options);
   // Any package that is part of the monorepo but outside the monorepo root dir need
   // separate resolution logic.
-  const externalPkgs = packages.filter(
-    p => !isChildPath(paths.root, p.location),
-  );
+  const { packages } = await getPackages(cliPaths.targetDir);
+  const externalPkgs = packages.filter(p => !isChildPath(paths.root, p.dir));
 
   const baseUrl = frontendConfig.getString('app.baseUrl');
   const validBaseUrl = new URL(baseUrl);
-
   if (checksEnabled) {
     plugins.push(
       new ForkTsCheckerWebpackPlugin({
-        typescript: paths.targetTsConfig,
-        eslint: true,
-        eslintOptions: {
-          files: ['**', '!**/__tests__/**', '!**/?(*.)(spec|test).*'],
-          options: {
-            parserOptions: {
-              project: paths.targetTsConfig,
-              tsconfigRootDir: paths.targetPath,
-            },
-          },
-        },
+        typescript: { configFile: paths.targetTsConfig, memoryLimit: 4096 },
+      }),
+      new ESLintPlugin({
+        context: paths.targetPath,
+        files: ['**', '!**/__tests__/**', '!**/?(*.)(spec|test).*'],
       }),
     );
   }
@@ -135,23 +122,7 @@ export async function createConfig(
       template: paths.targetHtml,
       templateParameters: {
         publicPath: validBaseUrl.pathname.replace(/\/$/, ''),
-        app: {
-          title: frontendConfig.getString('app.title'),
-          baseUrl: validBaseUrl.href,
-          googleAnalyticsTrackingId: frontendConfig.getOptionalString(
-            'app.googleAnalyticsTrackingId',
-          ),
-          datadogRum: {
-            env: frontendConfig.getOptionalString('app.datadogRum.env'),
-            clientToken: frontendConfig.getOptionalString(
-              'app.datadogRum.clientToken',
-            ),
-            applicationId: frontendConfig.getOptionalString(
-              'app.datadogRum.applicationId',
-            ),
-            site: frontendConfig.getOptionalString('app.datadogRum.site'),
-          },
-        },
+        config: frontendConfig,
       },
     }),
   );
@@ -162,6 +133,21 @@ export async function createConfig(
       'process.env.BUILD_INFO': JSON.stringify(buildInfo),
     }),
   );
+
+  // Detect and use the appropriate react-dom hot-loader patch based on what
+  // version of React is used within the target repo.
+  const resolveAliases: Record<string, string> = {};
+  try {
+    // eslint-disable-next-line import/no-extraneous-dependencies
+    const { version: reactDomVersion } = require('react-dom/package.json');
+    if (reactDomVersion.startsWith('16.')) {
+      resolveAliases['react-dom'] = '@hot-loader/react-dom-v16';
+    } else {
+      resolveAliases['react-dom'] = '@hot-loader/react-dom-v17';
+    }
+  } catch (error) {
+    console.warn(`WARNING: Failed to read react-dom version, ${error}`);
+  }
 
   return {
     mode: isDev ? 'development' : 'production',
@@ -201,9 +187,7 @@ export async function createConfig(
           [paths.targetPackageJson],
         ),
       ],
-      alias: {
-        'react-dom': '@hot-loader/react-dom',
-      },
+      alias: resolveAliases,
     },
     module: {
       rules: loaders,
@@ -236,16 +220,20 @@ export async function createBackendConfig(
   const { checksEnabled, isDev } = options;
 
   // Find all local monorepo packages and their node_modules, and mark them as external.
-  const packages = await await loadLernaPackages();
-  const localPackageNames = packages.map((p: any) => p.name);
-  const moduleDirs = packages.map((p: any) =>
-    resolvePath(p.location, 'node_modules'),
-  );
-  const externalPkgs = packages.filter(
-    p => !isChildPath(paths.root, p.location),
-  ); // See frontend config
+  const { packages } = await getPackages(cliPaths.targetDir);
+  const localPackageNames = packages.map(p => p.packageJson.name);
+  const moduleDirs = packages.map(p => resolvePath(p.dir, 'node_modules'));
+  // See frontend config
+  const externalPkgs = packages.filter(p => !isChildPath(paths.root, p.dir));
 
   const { loaders } = transforms(options);
+
+  const runScriptNodeArgs = new Array<string>();
+  if (options.inspectEnabled) {
+    runScriptNodeArgs.push('--inspect');
+  } else if (options.inspectBrkEnabled) {
+    runScriptNodeArgs.push('--inspect-brk');
+  }
 
   return {
     mode: isDev ? 'development' : 'production',
@@ -284,7 +272,7 @@ export async function createBackendConfig(
     ],
     resolve: {
       extensions: ['.ts', '.tsx', '.mjs', '.js', '.jsx'],
-      mainFields: ['browser', 'module', 'main'],
+      mainFields: ['main'],
       modules: [paths.rootNodeModules, ...moduleDirs],
       plugins: [
         new LinkedPackageResolvePlugin(paths.rootNodeModules, externalPkgs),
@@ -319,24 +307,17 @@ export async function createBackendConfig(
     plugins: [
       new RunScriptWebpackPlugin({
         name: 'main.js',
-        nodeArgs: options.inspectEnabled ? ['--inspect'] : undefined,
+        nodeArgs: runScriptNodeArgs.length > 0 ? runScriptNodeArgs : undefined,
         args: process.argv.slice(3), // drop `node backstage-cli backend:dev`
       }),
       new webpack.HotModuleReplacementPlugin(),
       ...(checksEnabled
         ? [
             new ForkTsCheckerWebpackPlugin({
-              typescript: paths.targetTsConfig,
-              eslint: true,
-              eslintOptions: {
-                files: ['**', '!**/__tests__/**', '!**/?(*.)(spec|test).*'],
-                options: {
-                  parserOptions: {
-                    project: paths.targetTsConfig,
-                    tsconfigRootDir: paths.targetPath,
-                  },
-                },
-              },
+              typescript: { configFile: paths.targetTsConfig },
+            }),
+            new ESLintPlugin({
+              files: ['**', '!**/__tests__/**', '!**/?(*.)(spec|test).*'],
             }),
           ]
         : []),

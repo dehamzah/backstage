@@ -14,13 +14,32 @@
  * limitations under the License.
  */
 
-jest.mock('@octokit/rest');
-
+import { TemplateAction } from '../../types';
 import { createGithubActionsDispatchAction } from './githubActionsDispatch';
-import { ScmIntegrations } from '@backstage/integration';
+
+import {
+  ScmIntegrations,
+  DefaultGithubCredentialsProvider,
+  GithubCredentialsProvider,
+} from '@backstage/integration';
 import { ConfigReader } from '@backstage/config';
 import { getVoidLogger } from '@backstage/backend-common';
 import { PassThrough } from 'stream';
+
+const mockOctokit = {
+  rest: {
+    actions: {
+      createWorkflowDispatch: jest.fn(),
+    },
+  },
+};
+jest.mock('octokit', () => ({
+  Octokit: class {
+    constructor() {
+      return mockOctokit;
+    }
+  },
+}));
 
 describe('github:actions:dispatch', () => {
   const config = new ConfigReader({
@@ -33,7 +52,8 @@ describe('github:actions:dispatch', () => {
   });
 
   const integrations = ScmIntegrations.fromConfig(config);
-  const action = createGithubActionsDispatchAction({ integrations });
+  let githubCredentialsProvider: GithubCredentialsProvider;
+  let action: TemplateAction<any>;
 
   const mockContext = {
     input: {
@@ -48,14 +68,18 @@ describe('github:actions:dispatch', () => {
     createTemporaryDirectory: jest.fn(),
   };
 
-  const { mockGithubClient } = require('@octokit/rest');
-
   beforeEach(() => {
     jest.resetAllMocks();
+    githubCredentialsProvider =
+      DefaultGithubCredentialsProvider.fromIntegrations(integrations);
+    action = createGithubActionsDispatchAction({
+      integrations,
+      githubCredentialsProvider,
+    });
   });
 
-  it('should call the githubApis for creating WorkflowDispatch', async () => {
-    mockGithubClient.rest.actions.createWorkflowDispatch.mockResolvedValue({
+  it('should call the githubApis for creating WorkflowDispatch without an input object', async () => {
+    mockOctokit.rest.actions.createWorkflowDispatch.mockResolvedValue({
       data: {
         foo: 'bar',
       },
@@ -70,12 +94,39 @@ describe('github:actions:dispatch', () => {
     await action.handler(ctx);
 
     expect(
-      mockGithubClient.rest.actions.createWorkflowDispatch,
+      mockOctokit.rest.actions.createWorkflowDispatch,
     ).toHaveBeenCalledWith({
       owner: 'owner',
       repo: 'repo',
       workflow_id: workflowId,
       ref: branchOrTagName,
+    });
+  });
+
+  it('should call the githubApis for creating WorkflowDispatch with an input object', async () => {
+    mockOctokit.rest.actions.createWorkflowDispatch.mockResolvedValue({
+      data: {
+        foo: 'bar',
+      },
+    });
+
+    const repoUrl = 'github.com?repo=repo&owner=owner';
+    const workflowId = 'dispatch_workflow';
+    const branchOrTagName = 'main';
+    const workflowInputs = '{ "foo": "bar" }';
+    const ctx = Object.assign({}, mockContext, {
+      input: { repoUrl, workflowId, branchOrTagName, workflowInputs },
+    });
+    await action.handler(ctx);
+
+    expect(
+      mockOctokit.rest.actions.createWorkflowDispatch,
+    ).toHaveBeenCalledWith({
+      owner: 'owner',
+      repo: 'repo',
+      workflow_id: workflowId,
+      ref: branchOrTagName,
+      inputs: workflowInputs,
     });
   });
 });

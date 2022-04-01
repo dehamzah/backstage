@@ -14,68 +14,91 @@
  * limitations under the License.
  */
 
-import React, { useContext, useState } from 'react';
-import { useLocalStorage } from 'react-use';
-import { Link, Typography, makeStyles, Collapse } from '@material-ui/core';
-import CloseIcon from '@material-ui/icons/Close';
 import { BackstageTheme } from '@backstage/theme';
+import Collapse from '@material-ui/core/Collapse';
+import Link from '@material-ui/core/Link';
+import { makeStyles } from '@material-ui/core/styles';
+import Typography from '@material-ui/core/Typography';
+import CloseIcon from '@material-ui/icons/Close';
+import React, { useContext, useState } from 'react';
+import { useLocalStorageValue } from '@react-hookz/web';
 import {
-  SIDEBAR_INTRO_LOCAL_STORAGE,
+  SidebarConfigContext,
+  SidebarConfig,
   SidebarContext,
-  sidebarConfig,
+  SIDEBAR_INTRO_LOCAL_STORAGE,
 } from './config';
 import { SidebarDivider } from './Items';
 
-const useStyles = makeStyles<BackstageTheme>(theme => ({
-  introCard: {
-    color: '#b5b5b5',
-    // XXX (@koroeskohr): should I be using a Mui theme variable?
-    fontSize: 12,
-    width: sidebarConfig.drawerWidthOpen,
-    marginTop: 18,
-    marginBottom: 12,
-    paddingLeft: sidebarConfig.iconPadding,
-    paddingRight: sidebarConfig.iconPadding,
-  },
-  introDismiss: {
-    display: 'flex',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  introDismissLink: {
-    color: '#dddddd',
-    display: 'flex',
-    alignItems: 'center',
-    marginBottom: 4,
-    '&:hover': {
-      color: theme.palette.linkHover,
-      transition: theme.transitions.create('color', {
-        easing: theme.transitions.easing.sharp,
-        duration: theme.transitions.duration.shortest,
-      }),
+/** @public */
+export type SidebarIntroClassKey =
+  | 'introCard'
+  | 'introDismiss'
+  | 'introDismissLink'
+  | 'introDismissText'
+  | 'introDismissIcon';
+
+const useStyles = makeStyles<BackstageTheme, { sidebarConfig: SidebarConfig }>(
+  theme => ({
+    introCard: props => ({
+      color: '#b5b5b5',
+      // XXX (@koroeskohr): should I be using a Mui theme variable?
+      fontSize: 12,
+      width: props.sidebarConfig.drawerWidthOpen,
+      marginTop: 18,
+      marginBottom: 12,
+      paddingLeft: props.sidebarConfig.iconPadding,
+      paddingRight: props.sidebarConfig.iconPadding,
+    }),
+    introDismiss: {
+      display: 'flex',
+      justifyContent: 'flex-end',
+      alignItems: 'center',
+      marginTop: 12,
     },
-  },
-  introDismissText: {
-    fontSize: '0.7rem',
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  introDismissIcon: {
-    width: 18,
-    height: 18,
-    marginRight: 12,
-  },
-}));
+    introDismissLink: {
+      color: '#dddddd',
+      display: 'flex',
+      alignItems: 'center',
+      marginBottom: 4,
+      '&:hover': {
+        color: theme.palette.linkHover,
+        transition: theme.transitions.create('color', {
+          easing: theme.transitions.easing.sharp,
+          duration: theme.transitions.duration.shortest,
+        }),
+      },
+    },
+    introDismissText: {
+      fontSize: '0.7rem',
+      fontWeight: 'bold',
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+    },
+    introDismissIcon: {
+      width: 18,
+      height: 18,
+      marginRight: 12,
+    },
+  }),
+  { name: 'BackstageSidebarIntro' },
+);
 
 type IntroCardProps = {
   text: string;
   onClose: () => void;
 };
 
+/**
+ * Closable card with information from Navigation Sidebar
+ *
+ * @public
+ *
+ */
+
 export function IntroCard(props: IntroCardProps) {
-  const classes = useStyles();
+  const { sidebarConfig } = useContext(SidebarConfigContext);
+  const classes = useStyles({ sidebarConfig });
   const { text, onClose } = props;
   const handleClose = () => onClose();
 
@@ -134,7 +157,7 @@ export function SidebarIntro(_props: {}) {
     recentlyViewedItemsDismissed: false,
   };
   const [dismissedIntro, setDismissedIntro] =
-    useLocalStorage<SidebarIntroLocalStorage>(SIDEBAR_INTRO_LOCAL_STORAGE);
+    useLocalStorageValue<SidebarIntroLocalStorage>(SIDEBAR_INTRO_LOCAL_STORAGE);
 
   const { starredItemsDismissed, recentlyViewedItemsDismissed } =
     dismissedIntro ?? {};

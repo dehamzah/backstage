@@ -14,204 +14,92 @@
  * limitations under the License.
  */
 
-import { Entity } from '@backstage/catalog-model';
+import { InfoCard, InfoCardVariants } from '@backstage/core-components';
+import { useEntity } from '@backstage/plugin-catalog-react';
 import {
-  InfoCard,
-  InfoCardVariants,
-  Link,
-  Progress,
-  ResponseErrorPanel,
-} from '@backstage/core-components';
-import { useApi, useRouteRef } from '@backstage/core-plugin-api';
-import {
-  catalogApiRef,
-  catalogRouteRef,
-  formatEntityRefTitle,
-  isOwnerOf,
-  useEntity,
-} from '@backstage/plugin-catalog-react';
-import { BackstageTheme } from '@backstage/theme';
-import {
-  Box,
-  createStyles,
-  Grid,
+  List,
+  ListItem,
+  ListItemSecondaryAction,
+  ListItemText,
   makeStyles,
-  Typography,
+  Switch,
+  Tooltip,
 } from '@material-ui/core';
-import qs from 'qs';
-import React from 'react';
-import { useAsync } from 'react-use';
+import React, { useState } from 'react';
+import { ComponentsGrid } from './ComponentsGrid';
 
-type EntityTypeProps = {
-  kind: string;
-  type: string;
-  count: number;
-};
-
-const useStyles = makeStyles((theme: BackstageTheme) =>
-  createStyles({
-    card: {
-      border: `1px solid ${theme.palette.divider}`,
-      boxShadow: theme.shadows[2],
-      borderRadius: '4px',
-      padding: theme.spacing(2),
-      color: '#fff',
-      transition: `${theme.transitions.duration.standard}ms`,
-      '&:hover': {
-        boxShadow: theme.shadows[4],
-      },
+const useStyles = makeStyles(theme => ({
+  list: {
+    [theme.breakpoints.down('xs')]: {
+      padding: `0 0 12px`,
     },
-    bold: {
-      fontWeight: theme.typography.fontWeightBold,
+  },
+  listItemText: {
+    [theme.breakpoints.down('xs')]: {
+      paddingRight: 0,
+      paddingLeft: 0,
     },
-    entityTypeBox: {
-      background: (props: { type: string }) =>
-        theme.getPageTheme({ themeId: props.type }).backgroundImage,
+  },
+  listItemSecondaryAction: {
+    [theme.breakpoints.down('xs')]: {
+      width: '100%',
+      top: 'auto',
+      right: 'auto',
+      position: 'relative',
+      transform: 'unset',
     },
-  }),
-);
-
-const EntityCountTile = ({
-  counter,
-  type,
-  name,
-  url,
-}: {
-  counter: number;
-  type: string;
-  name: string;
-  url: string;
-}) => {
-  const classes = useStyles({ type });
-
-  return (
-    <Link to={url} variant="body2">
-      <Box
-        className={`${classes.card} ${classes.entityTypeBox}`}
-        display="flex"
-        flexDirection="column"
-        alignItems="center"
-      >
-        <Typography className={classes.bold} variant="h6">
-          {counter}
-        </Typography>
-        <Typography className={classes.bold} variant="h6">
-          {name}
-        </Typography>
-      </Box>
-    </Link>
-  );
-};
-
-const getQueryParams = (
-  owner: Entity,
-  selectedEntity: EntityTypeProps,
-): string => {
-  const ownerName = formatEntityRefTitle(owner, { defaultKind: 'group' });
-  const { kind, type } = selectedEntity;
-  const queryParams = qs.stringify({
-    filters: {
-      kind,
-      type,
-      owners: ownerName,
-      user: 'all',
-    },
-  });
-
-  return queryParams;
-};
+  },
+}));
 
 export const OwnershipCard = ({
   variant,
+  entityFilterKind,
 }: {
-  /** @deprecated The entity is now grabbed from context instead */
-  entity?: Entity;
   variant?: InfoCardVariants;
+  entityFilterKind?: string[];
 }) => {
+  const classes = useStyles();
   const { entity } = useEntity();
-  const catalogApi = useApi(catalogApiRef);
-  const catalogLink = useRouteRef(catalogRouteRef);
-
-  const {
-    loading,
-    error,
-    value: componentsWithCounters,
-  } = useAsync(async () => {
-    const kinds = ['Component', 'API'];
-    const entitiesList = await catalogApi.getEntities({
-      filter: {
-        kind: kinds,
-      },
-      fields: [
-        'kind',
-        'metadata.name',
-        'metadata.namespace',
-        'spec.type',
-        'relations',
-      ],
-    });
-
-    const ownedEntitiesList = entitiesList.items.filter(component =>
-      isOwnerOf(entity, component),
-    );
-
-    const counts = ownedEntitiesList.reduce(
-      (acc: EntityTypeProps[], ownedEntity) => {
-        if (typeof ownedEntity.spec?.type !== 'string') return acc;
-
-        const match = acc.find(
-          x => x.kind === ownedEntity.kind && x.type === ownedEntity.spec?.type,
-        );
-        if (match) {
-          match.count += 1;
-        } else {
-          acc.push({
-            kind: ownedEntity.kind,
-            type: ownedEntity.spec?.type,
-            count: 1,
-          });
-        }
-        return acc;
-      },
-      [],
-    );
-
-    // Return top N (six) entities to be displayed in ownership boxes
-    const topN = counts.sort((a, b) => b.count - a.count).slice(0, 6);
-
-    return topN.map(topOwnedEntity => ({
-      counter: topOwnedEntity.count,
-      type: topOwnedEntity.type,
-      name: topOwnedEntity.type.toLocaleUpperCase('en-US'),
-      queryParams: getQueryParams(entity, topOwnedEntity),
-    })) as Array<{
-      counter: number;
-      type: string;
-      name: string;
-      queryParams: string;
-    }>;
-  }, [catalogApi, entity]);
-
-  if (loading) {
-    return <Progress />;
-  } else if (error) {
-    return <ResponseErrorPanel error={error} />;
-  }
+  const isGroup = entity.kind === 'Group';
+  const [relationsType, setRelationsType] = useState('direct');
 
   return (
     <InfoCard title="Ownership" variant={variant}>
-      <Grid container>
-        {componentsWithCounters?.map(c => (
-          <Grid item xs={6} md={6} lg={4} key={c.name}>
-            <EntityCountTile
-              counter={c.counter}
-              type={c.type}
-              name={c.name}
-              url={`${catalogLink()}/?${c.queryParams}`}
-            />
-          </Grid>
-        ))}
-      </Grid>
+      <List dense>
+        <ListItem className={classes.list}>
+          <ListItemText className={classes.listItemText} />
+          <ListItemSecondaryAction className={classes.listItemSecondaryAction}>
+            Direct Relations
+            <Tooltip
+              placement="top"
+              arrow
+              title={`${
+                relationsType === 'direct' ? 'Direct' : 'Aggregated'
+              } Relations`}
+            >
+              <Switch
+                color="primary"
+                checked={relationsType !== 'direct'}
+                onChange={() =>
+                  relationsType === 'direct'
+                    ? setRelationsType('aggregated')
+                    : setRelationsType('direct')
+                }
+                name="pin"
+                inputProps={{ 'aria-label': 'Ownership Type Switch' }}
+                disabled={!isGroup}
+              />
+            </Tooltip>
+            Aggregated Relations
+          </ListItemSecondaryAction>
+        </ListItem>
+      </List>
+      <ComponentsGrid
+        entity={entity}
+        relationsType={relationsType}
+        isGroup={isGroup}
+        entityFilterKind={entityFilterKind}
+      />
     </InfoCard>
   );
 };

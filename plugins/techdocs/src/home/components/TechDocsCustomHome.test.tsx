@@ -15,23 +15,15 @@
  */
 
 import { CatalogApi, catalogApiRef } from '@backstage/plugin-catalog-react';
-import { renderInTestApp } from '@backstage/test-utils';
+import { renderInTestApp, TestApiRegistry } from '@backstage/test-utils';
 import { screen } from '@testing-library/react';
 import React from 'react';
 import { TechDocsCustomHome, PanelType } from './TechDocsCustomHome';
-import { ApiProvider, ApiRegistry } from '@backstage/core-app-api';
+import { ApiProvider } from '@backstage/core-app-api';
 import { rootDocsRouteRef } from '../../routes';
 
-jest.mock('@backstage/plugin-catalog-react', () => {
-  const actual = jest.requireActual('@backstage/plugin-catalog-react');
-  return {
-    ...actual,
-    useOwnUser: () => 'test-user',
-  };
-});
-
 const mockCatalogApi = {
-  getEntityByName: jest.fn(),
+  getEntityByRef: jest.fn(),
   getEntities: async () => ({
     items: [
       {
@@ -47,7 +39,7 @@ const mockCatalogApi = {
 } as Partial<CatalogApi>;
 
 describe('TechDocsCustomHome', () => {
-  const apiRegistry = ApiRegistry.with(catalogApiRef, mockCatalogApi);
+  const apiRegistry = TestApiRegistry.from([catalogApiRef, mockCatalogApi]);
 
   it('should render a TechDocs home page', async () => {
     const tabsConfig = [

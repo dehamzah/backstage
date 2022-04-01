@@ -31,7 +31,7 @@ function createDatabase(): PluginDatabaseManager {
     new ConfigReader({
       backend: {
         database: {
-          client: 'sqlite3',
+          client: 'better-sqlite3',
           connection: ':memory:',
         },
       },
@@ -42,7 +42,7 @@ function createDatabase(): PluginDatabaseManager {
 const testDiscovery: jest.Mocked<PluginEndpointDiscovery> = {
   getBaseUrl: jest
     .fn()
-    .mockResolvedValue('http://localhost:7000/api/code-coverage'),
+    .mockResolvedValue('http://localhost:7007/api/code-coverage'),
   getExternalBaseUrl: jest.fn(),
 };
 const mockUrlReader = UrlReaders.default({

@@ -1,5 +1,154 @@
 # @backstage/integration
 
+## 1.1.0-next.1
+
+### Minor Changes
+
+- b7436743cb: Gerrit integration: Added an optional configuration to set the Gitiles base url.
+
+### Patch Changes
+
+- 1691c6c5c2: Clarify that config locations that emit User and Group kinds now need to declare so in the `catalog.locations.[].rules`
+
+## 1.0.1-next.0
+
+### Patch Changes
+
+- 3ef123bbf0: Support external ID when assuming roles in S3 integration
+
+  In order to assume a role created by a 3rd party as external
+  ID is needed. This change adds an optional field to the s3
+  integration configuration and consumes that in the AwsS3UrlReader.
+
+## 1.0.0
+
+### Major Changes
+
+- b58c70c223: This package has been promoted to v1.0! To understand how this change affects the package, please check out our [versioning policy](https://backstage.io/docs/overview/versioning-policy).
+
+### Patch Changes
+
+- 403837cbac: Added an integration for Gerrit
+- Updated dependencies
+  - @backstage/config@1.0.0
+
+## 0.8.0
+
+### Minor Changes
+
+- 34af86517c: ensure `apiBaseUrl` being set for Bitbucket integrations, replace hardcoded defaults
+
+### Patch Changes
+
+- 33d5e79822: Fix Bitbucket Cloud and Bitbucket Server line number reference.
+
+## 0.7.5
+
+### Patch Changes
+
+- 4e1384884f: Fixed bug in integration package where Self Hosted GitLab instances with custom ports weren't supported (because of the lack of an option to add the port in the integration configs. Now users can add the port directly in the host)
+
+## 0.7.4
+
+### Patch Changes
+
+- Fix for the previous release with missing type declarations.
+- Updated dependencies
+  - @backstage/config@0.1.15
+
+## 0.7.3
+
+### Patch Changes
+
+- 1ed305728b: Bump `node-fetch` to version 2.6.7 and `cross-fetch` to version 3.1.5
+- c77c5c7eb6: Added `backstage.role` to `package.json`
+- Updated dependencies
+  - @backstage/config@0.1.14
+
+## 0.7.2
+
+### Patch Changes
+
+- f45e99e5da: Do not return a token rather than fail where the owner is not in the allowed installation owners
+  for a GitHub app. This allows anonymous access to public files in the organisation.
+- Updated dependencies
+  - @backstage/config@0.1.13
+
+## 0.7.2-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/config@0.1.13-next.0
+
+## 0.7.1
+
+### Patch Changes
+
+- 3b4d8caff6: Adds a new GitHub credentials provider (DefaultGithubCredentialsProvider). It handles multiple app configurations. It looks up the app configuration based on the url.
+- 5333451def: Cleaned up API exports
+- Updated dependencies
+  - @backstage/config@0.1.12
+
+## 0.7.0
+
+### Minor Changes
+
+- 7d4b4e937c: Create an interface for the GitHub credentials provider in order to support providing implementations.
+
+  We have changed the name of the `GithubCredentialsProvider` to `SingleInstanceGithubCredentialsProvider`.
+
+  `GithubCredentialsProvider` is now an interface that maybe implemented to provide a custom mechanism to retrieve GitHub credentials.
+
+  In a later release we will support configuring URL readers, scaffolder tasks, and processors with customer GitHub credentials providers.
+
+  If you want to uptake this release, you will need to replace all references to `GithubCredentialsProvider.create` with `SingleInstanceGithubCredentialsProvider.create`.
+
+### Patch Changes
+
+- cf2e20a792: Added `endpoint` and `s3ForcePathStyle` as optional configuration for AWS S3 integrations.
+
+## 0.6.10
+
+### Patch Changes
+
+- 47619da24c: Narrow the types returned by the request option functions, to only the specifics that they actually do return. The reason for this change is that a full `RequestInit` is unfortunate to return because it's different between `cross-fetch` and `node-fetch`.
+
+## 0.6.9
+
+### Patch Changes
+
+- a15d028517: More API fixes: mark things public, add docs, fix exports
+- Updated dependencies
+  - @backstage/config@0.1.11
+
+## 0.6.8
+
+### Patch Changes
+
+- eab072161e: By replacing `\n` with a newline for GitHub Apps private keys, this allows users to store the private key as an environment variable and reference it in the YAML.
+
+## 0.6.7
+
+### Patch Changes
+
+- a31afc5b62: Replace slash stripping regexp with trimEnd to remove CodeQL warning
+- ca0559444c: Avoid usage of `.to*Case()`, preferring `.toLocale*Case('en-US')` instead.
+
+## 0.6.6
+
+### Patch Changes
+
+- d1f2118389: Support selective GitHub app installation for GHE
+
+## 0.6.5
+
+### Patch Changes
+
+- 8113ba5ebb: Allow file extension `.yml` to be ingested in GitLab processor
+- Updated dependencies
+  - @backstage/config@0.1.10
+
 ## 0.6.4
 
 ### Patch Changes
@@ -98,6 +247,8 @@
     locations:
       - type: github-multi-org
         target: https://github.myorg.com
+        rules:
+          - allow: [User, Group]
 
     processors:
       githubMultiOrg:
@@ -128,7 +279,7 @@
 
 - 0fd4ea443: Updates the `GithubCredentialsProvider` to return the token type, it can either be `token` or `app` depending on the authentication method.
 
-  Update the `GithubOrgReaderProcessor` NOT to query for email addresses if GitHub Apps is used for authentication, this is due to inconsistencies in the GitHub API when using server to server communications and installation tokens. https://github.community/t/api-v4-unable-to-retrieve-email-resource-not-accessible-by-integration/13831/4 for more info.
+  Update the `GithubOrgReaderProcessor` NOT to query for email addresses if GitHub Apps is used for authentication, this is due to inconsistencies in the GitHub API when using server to server communications and installation tokens. See [this community discussion](https://github.community/t/api-v4-unable-to-retrieve-email-resource-not-accessible-by-integration/13831/4) for more info.
 
   **Removes** deprecated GithubOrgReaderProcessor provider configuration(`catalog.processors.githubOrg`). If you're using the deprecated config section make sure to migrate to [integrations](https://backstage.io/docs/integrations/github/locations) instead.
 

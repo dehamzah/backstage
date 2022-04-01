@@ -5,8 +5,8 @@ sidebar_label: Okta
 description: Adding Okta OAuth as an authentication provider in Backstage
 ---
 
-The Backstage `core-api` package comes with a Okta authentication provider that
-can authenticate users using Okta OpenID Connect.
+The Backstage `core-plugin-api` package comes with a Okta authentication
+provider that can authenticate users using Okta OpenID Connect.
 
 ## Create an Application on Okta
 
@@ -22,8 +22,8 @@ To add Okta authentication, you must create an Application from Okta:
    - `App integration name`: `Backstage` (or your custom app name)
    - `Grant type`: `Authorization Code` & `Refresh Token`
    - `Sign-in redirect URIs`:
-     `http://localhost:7000/api/auth/okta/handler/frame`
-   - `Sign-out redirect URIs`: `http://localhost:7000`
+     `http://localhost:7007/api/auth/okta/handler/frame`
+   - `Sign-out redirect URIs`: `http://localhost:7007`
    - `Controlled access`: (select as appropriate)
    - Click Save
 

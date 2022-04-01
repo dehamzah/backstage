@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
-import { JsonObject } from '@backstage/config';
-import { EntityName } from '../types';
-import { UNSTABLE_EntityStatus } from './EntityStatus';
+import { JsonObject } from '@backstage/types';
+import { EntityStatus } from './EntityStatus';
 
 /**
  * The parts of the format that's common to all versions/kinds of entity.
  *
+ * @remarks
+ *
+ * See also:
+ * {@link https://kubernetes.io/docs/concepts/overview/working-with-objects/kubernetes-objects/}
  * @public
- * @see https://kubernetes.io/docs/concepts/overview/working-with-objects/kubernetes-objects/
  */
 export type Entity = {
   /**
@@ -50,22 +52,37 @@ export type Entity = {
    * The relations that this entity has with other entities.
    */
   relations?: EntityRelation[];
+};
 
+/**
+ * A version of the {@link Entity} type that contains unstable alpha fields.
+ *
+ * @remarks
+ *
+ * Available via the `@backstage/catalog-model/alpha` import.
+ *
+ * @alpha
+ */
+export interface AlphaEntity extends Entity {
   /**
    * The current status of the entity, as claimed by various sources.
    *
    * The keys are implementation defined and the values can be any JSON object
    * with semantics that match that implementation.
    */
-  status?: UNSTABLE_EntityStatus;
-};
+  status?: EntityStatus;
+}
 
 /**
  * Metadata fields common to all versions/kinds of entity.
  *
+ * @remarks
+ *
+ * See also:
+ * {@link https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#objectmeta-v1-meta}
+ * {@link https://kubernetes.io/docs/concepts/overview/working-with-objects/kubernetes-objects/}
+ *
  * @public
- * @see https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#objectmeta-v1-meta
- * @see https://kubernetes.io/docs/concepts/overview/working-with-objects/kubernetes-objects/
  */
 export type EntityMeta = JsonObject & {
   /**
@@ -90,16 +107,6 @@ export type EntityMeta = JsonObject & {
    * operation if it does not match the current stored value.
    */
   etag?: string;
-
-  /**
-   * A positive nonzero number that indicates the current generation of data
-   * for this entity; the value is incremented each time the spec changes.
-   *
-   * This field can not be set by the user at creation time, and the server
-   * will reject an attempt to do so. The field will be populated in read
-   * operations.
-   */
-  generation?: number;
 
   /**
    * The name of the entity.
@@ -178,31 +185,9 @@ export type EntityRelation = {
   type: string;
 
   /**
-   * The target entity of this relation.
+   * The entity ref of the target of this relation.
    */
-  target: EntityName;
-};
-
-/**
- * Holds the relation data for entities.
- *
- * @public
- */
-export type EntityRelationSpec = {
-  /**
-   * The source entity of this relation.
-   */
-  source: EntityName;
-
-  /**
-   * The type of the relation.
-   */
-  type: string;
-
-  /**
-   * The target entity of this relation.
-   */
-  target: EntityName;
+  targetRef: string;
 };
 
 /**

@@ -19,6 +19,7 @@ import {
   createRoutableExtension,
 } from '@backstage/core-plugin-api';
 import { createCardExtension } from './extensions';
+import { ToolkitContentProps } from './homePageComponents';
 
 import { rootRouteRef } from './routes';
 
@@ -31,6 +32,7 @@ export const homePlugin = createPlugin({
 
 export const HomepageCompositionRoot = homePlugin.provide(
   createRoutableExtension({
+    name: 'HomepageCompositionRoot',
     component: () =>
       import('./components').then(m => m.HomepageCompositionRoot),
     mountPoint: rootRouteRef,
@@ -39,6 +41,7 @@ export const HomepageCompositionRoot = homePlugin.provide(
 
 export const ComponentAccordion = homePlugin.provide(
   createComponentExtension({
+    name: 'ComponentAccordion',
     component: {
       lazy: () =>
         import('./componentRenderers').then(m => m.ComponentAccordion),
@@ -47,6 +50,7 @@ export const ComponentAccordion = homePlugin.provide(
 );
 export const ComponentTabs = homePlugin.provide(
   createComponentExtension({
+    name: 'ComponentTabs',
     component: {
       lazy: () => import('./componentRenderers').then(m => m.ComponentTabs),
     },
@@ -54,15 +58,73 @@ export const ComponentTabs = homePlugin.provide(
 );
 export const ComponentTab = homePlugin.provide(
   createComponentExtension({
+    name: 'ComponentTab',
     component: {
       lazy: () => import('./componentRenderers').then(m => m.ComponentTab),
     },
   }),
 );
 
+/**
+ * A component to display a playful greeting for the user.
+ *
+ * @public
+ */
+export const WelcomeTitle = homePlugin.provide(
+  createComponentExtension({
+    name: 'WelcomeTitle',
+    component: {
+      lazy: () =>
+        import('./homePageComponents/WelcomeTitle').then(m => m.WelcomeTitle),
+    },
+  }),
+);
+
+/**
+ * A component to display a company logo for the user.
+ *
+ * @public
+ */
+export const HomePageCompanyLogo = homePlugin.provide(
+  createComponentExtension({
+    name: 'CompanyLogo',
+    component: {
+      lazy: () =>
+        import('./homePageComponents/CompanyLogo').then(m => m.CompanyLogo),
+    },
+  }),
+);
+
 export const HomePageRandomJoke = homePlugin.provide(
   createCardExtension<{ defaultCategory?: 'any' | 'programming' }>({
+    name: 'HomePageRandomJoke',
     title: 'Random Joke',
     components: () => import('./homePageComponents/RandomJoke'),
+  }),
+);
+
+/**
+ * A component to display a list of tools for the user.
+ *
+ * @public
+ */
+export const HomePageToolkit = homePlugin.provide(
+  createCardExtension<ToolkitContentProps>({
+    name: 'HomePageToolkit',
+    title: 'Toolkit',
+    components: () => import('./homePageComponents/Toolkit'),
+  }),
+);
+
+/**
+ * A component to display a list of starred entities for the user.
+ *
+ * @public
+ */
+export const HomePageStarredEntities = homePlugin.provide(
+  createCardExtension({
+    name: 'HomePageStarredEntities',
+    title: 'Your Starred Entities',
+    components: () => import('./homePageComponents/StarredEntities'),
   }),
 );

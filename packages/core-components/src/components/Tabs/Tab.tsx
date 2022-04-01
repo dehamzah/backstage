@@ -15,7 +15,8 @@
  */
 
 import React from 'react';
-import { Tab, makeStyles } from '@material-ui/core';
+import { makeStyles } from '@material-ui/core/styles';
+import Tab from '@material-ui/core/Tab';
 import { BackstageTheme } from '@backstage/theme';
 
 interface StyledTabProps {
@@ -36,24 +37,30 @@ const tabMarginLeft = (isFirstNav: boolean, isFirstIndex: boolean) => {
   return '40px';
 };
 
-const useStyles = makeStyles<BackstageTheme, StyledTabProps>(theme => ({
-  root: {
-    textTransform: 'none',
-    height: '64px',
-    fontWeight: theme.typography.fontWeightBold,
-    fontSize: theme.typography.pxToRem(13),
-    color: theme.palette.textSubtle,
-    marginLeft: props =>
-      tabMarginLeft(props.isFirstNav as boolean, props.isFirstIndex as boolean),
-    width: '130px',
-    minWidth: '130px',
-    '&:hover': {
-      outline: 'none',
-      backgroundColor: 'transparent',
+const useStyles = makeStyles<BackstageTheme, StyledTabProps>(
+  theme => ({
+    root: {
+      textTransform: 'none',
+      height: '64px',
+      fontWeight: theme.typography.fontWeightBold,
+      fontSize: theme.typography.pxToRem(13),
       color: theme.palette.textSubtle,
+      marginLeft: props =>
+        tabMarginLeft(
+          props.isFirstNav as boolean,
+          props.isFirstIndex as boolean,
+        ),
+      width: '130px',
+      minWidth: '130px',
+      '&:hover': {
+        outline: 'none',
+        backgroundColor: 'transparent',
+        color: theme.palette.textSubtle,
+      },
     },
-  },
-}));
+  }),
+  { name: 'BackstageTab' },
+);
 
 export const StyledTab = (props: StyledTabProps) => {
   const classes = useStyles(props);

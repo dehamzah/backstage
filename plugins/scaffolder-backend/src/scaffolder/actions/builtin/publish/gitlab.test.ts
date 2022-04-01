@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 jest.mock('../helpers');
-jest.mock('@gitbeaker/node');
 
 import { createPublishGitlabAction } from './gitlab';
 import { ScmIntegrations } from '@backstage/integration';
@@ -22,6 +21,25 @@ import { ConfigReader } from '@backstage/config';
 import { getVoidLogger } from '@backstage/backend-common';
 import { PassThrough } from 'stream';
 import { initRepoAndPush } from '../helpers';
+
+const mockGitlabClient = {
+  Namespaces: {
+    show: jest.fn(),
+  },
+  Projects: {
+    create: jest.fn(),
+  },
+  Users: {
+    current: jest.fn(),
+  },
+};
+jest.mock('@gitbeaker/node', () => ({
+  Gitlab: class {
+    constructor() {
+      return mockGitlabClient;
+    }
+  },
+}));
 
 describe('publish:gitlab', () => {
   const config = new ConfigReader({
@@ -45,7 +63,7 @@ describe('publish:gitlab', () => {
   const mockContext = {
     input: {
       repoUrl: 'gitlab.com?repo=repo&owner=owner',
-      repoVisibility: 'private',
+      repoVisibility: 'private' as const,
     },
     workspacePath: 'lol',
     logger: getVoidLogger(),
@@ -53,8 +71,6 @@ describe('publish:gitlab', () => {
     output: jest.fn(),
     createTemporaryDirectory: jest.fn(),
   };
-
-  const { mockGitlabClient } = require('@gitbeaker/node');
 
   beforeEach(() => {
     jest.resetAllMocks();
@@ -94,6 +110,28 @@ describe('publish:gitlab', () => {
         },
       }),
     ).rejects.toThrow(/No token available for host/);
+  });
+
+  it('should work when there is a token provided through ctx.input', async () => {
+    mockGitlabClient.Namespaces.show.mockResolvedValue({ id: 1234 });
+    mockGitlabClient.Projects.create.mockResolvedValue({
+      http_url_to_repo: 'http://mockurl.git',
+    });
+
+    await action.handler({
+      ...mockContext,
+      input: {
+        repoUrl: 'hosted.gitlab.com?repo=bob&owner=owner',
+        token: 'token',
+      },
+    });
+
+    expect(mockGitlabClient.Namespaces.show).toHaveBeenCalledWith('owner');
+    expect(mockGitlabClient.Projects.create).toHaveBeenCalledWith({
+      namespace_id: 1234,
+      name: 'bob',
+      visibility: 'private',
+    });
   });
 
   it('should call the correct Gitlab APIs when the owner is an organization', async () => {
@@ -143,6 +181,7 @@ describe('publish:gitlab', () => {
       remoteUrl: 'http://mockurl.git',
       auth: { username: 'oauth2', password: 'tokenlols' },
       logger: mockContext.logger,
+      commitMessage: 'initial commit',
       gitAuthorInfo: {},
     });
   });
@@ -167,6 +206,7 @@ describe('publish:gitlab', () => {
       remoteUrl: 'http://mockurl.git',
       auth: { username: 'oauth2', password: 'tokenlols' },
       logger: mockContext.logger,
+      commitMessage: 'initial commit',
       gitAuthorInfo: {},
     });
   });
@@ -214,6 +254,7 @@ describe('publish:gitlab', () => {
       auth: { username: 'oauth2', password: 'tokenlols' },
       logger: mockContext.logger,
       defaultBranch: 'master',
+      commitMessage: 'initial commit',
       gitAuthorInfo: { name: 'Test', email: 'example@example.com' },
     });
   });
@@ -256,10 +297,10 @@ describe('publish:gitlab', () => {
       dir: mockContext.workspacePath,
       remoteUrl: 'http://mockurl.git',
       auth: { username: 'oauth2', password: 'tokenlols' },
-      logger: mockContext.logger,
       defaultBranch: 'master',
-      commitMessage: 'Test commit message',
+      commitMessage: 'initial commit',
       gitAuthorInfo: { email: undefined, name: undefined },
+      logger: mockContext.logger,
     });
   });
 

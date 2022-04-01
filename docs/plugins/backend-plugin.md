@@ -44,11 +44,11 @@ cd plugins/carmen-backend
 yarn start
 ```
 
-This will think for a bit, and then say `Listening on :7000`. In a different
+This will think for a bit, and then say `Listening on :7007`. In a different
 terminal window, now run
 
 ```sh
-curl localhost:7000/carmen/health
+curl localhost:7007/carmen/health
 ```
 
 This should return `{"status":"ok"}`. Success! Press `Ctrl + c` to kill it
@@ -65,10 +65,9 @@ Backstage application / backend exposes it.
 To actually attach and run the plugin router, you will make some modifications
 to your backend.
 
-```sh
+```bash
 # From the Backstage root directory
-cd packages/backend
-yarn add @internal/plugin-carmen-backend@^0.1.1 # Change this to match the plugin's package.json
+yarn add --cwd packages/backend @internal/plugin-carmen-backend@^0.1.1 # Change this to match the plugin's package.json
 ```
 
 Create a new file named `packages/backend/src/plugins/carmen.ts`, and add the
@@ -76,9 +75,12 @@ following to it
 
 ```ts
 import { createRouter } from '@internal/plugin-carmen-backend';
+import { Router } from 'express';
 import { PluginEnvironment } from '../types';
 
-export default async function createPlugin(env: PluginEnvironment) {
+export default async function createPlugin(
+  env: PluginEnvironment,
+): Promise<Router> {
   // Here is where you will add all of the required initialization code that
   // your backend plugin needs to be able to start!
 
@@ -107,7 +109,7 @@ root), you should be able to fetch data from it.
 
 ```sh
 # Note the extra /api here
-curl localhost:7000/api/carmen/health
+curl localhost:7007/api/carmen/health
 ```
 
 This should return `{"status":"ok"}` like before. Success!
@@ -124,7 +126,9 @@ function, there is a `database` field. You can use that to get a
 
 ```ts
 // in packages/backend/src/plugins/carmen.ts
-export default async function createPlugin(env: PluginEnvironment) {
+export default async function createPlugin(
+  env: PluginEnvironment,
+): Promise<Router> {
   const db: Knex<any, unknown[]> = await env.database.getClient();
 
   // You will then pass this client into your actual plugin implementation

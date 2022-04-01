@@ -1,5 +1,42 @@
 # @backstage/theme
 
+## 0.2.15
+
+### Patch Changes
+
+- c77c5c7eb6: Added `backstage.role` to `package.json`
+
+## 0.2.14
+
+### Patch Changes
+
+- e34f174fc5: Added `<SidebarSubmenu>` and `<SidebarSubmenuItem>` to enable building better sidebars. You can check out the storybook for more inspiration and how to get started.
+
+  Added two new theme props for styling the sidebar too, `navItem.hoverBackground` and `submenu.background`.
+
+- 59677fadb1: Improvements to API Reference documentation
+
+## 0.2.13
+
+### Patch Changes
+
+- c11a37710a: Added a warning variant to `DismissableBanner` component. If you are using a
+  custom theme, you will need to add the optional `palette.banner.warning` color,
+  otherwise this variant will fall back to the `palette.banner.error` color.
+
+## 0.2.12
+
+### Patch Changes
+
+- 40cfec8b3f: More theme API cleanup
+- a15d028517: More API fixes: mark things public, add docs, fix exports
+
+## 0.2.11
+
+### Patch Changes
+
+- 75bc878221: Internal refactor to avoid importing all of `@material-ui/core`.
+
 ## 0.2.10
 
 ### Patch Changes

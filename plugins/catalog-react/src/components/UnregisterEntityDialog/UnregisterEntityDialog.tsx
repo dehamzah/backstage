@@ -33,19 +33,13 @@ import { useUnregisterEntityDialogState } from './useUnregisterEntityDialogState
 
 import { alertApiRef, configApiRef, useApi } from '@backstage/core-plugin-api';
 import { Progress, ResponseErrorPanel } from '@backstage/core-components';
+import { assertError } from '@backstage/errors';
 
 const useStyles = makeStyles({
   advancedButton: {
     fontSize: '0.7em',
   },
 });
-
-type Props = {
-  open: boolean;
-  onConfirm: () => any;
-  onClose: () => any;
-  entity: Entity;
-};
 
 const Contents = ({
   entity,
@@ -70,6 +64,7 @@ const Contents = ({
           await state.unregisterLocation();
           onConfirm();
         } catch (err) {
+          assertError(err);
           alertApi.post({ message: err.message });
         } finally {
           setBusy(false);
@@ -87,6 +82,7 @@ const Contents = ({
           await state.deleteEntity();
           onConfirm();
         } catch (err) {
+          assertError(err);
           alertApi.post({ message: err.message });
         } finally {
           setBusy(false);
@@ -245,23 +241,30 @@ const Contents = ({
   return <Alert severity="error">Internal error: Unknown state</Alert>;
 };
 
-export const UnregisterEntityDialog = ({
-  open,
-  onConfirm,
-  onClose,
-  entity,
-}: Props) => (
-  <Dialog open={open} onClose={onClose}>
-    <DialogTitle id="responsive-dialog-title">
-      Are you sure you want to unregister this entity?
-    </DialogTitle>
-    <DialogContent>
-      <Contents entity={entity} onConfirm={onConfirm} />
-    </DialogContent>
-    <DialogActions>
-      <Button onClick={onClose} color="primary">
-        Cancel
-      </Button>
-    </DialogActions>
-  </Dialog>
-);
+/** @public */
+export type UnregisterEntityDialogProps = {
+  open: boolean;
+  onConfirm: () => any;
+  onClose: () => any;
+  entity: Entity;
+};
+
+/** @public */
+export const UnregisterEntityDialog = (props: UnregisterEntityDialogProps) => {
+  const { open, onConfirm, onClose, entity } = props;
+  return (
+    <Dialog open={open} onClose={onClose}>
+      <DialogTitle id="responsive-dialog-title">
+        Are you sure you want to unregister this entity?
+      </DialogTitle>
+      <DialogContent>
+        <Contents entity={entity} onConfirm={onConfirm} />
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} color="primary">
+          Cancel
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};

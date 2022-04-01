@@ -18,7 +18,7 @@ import { renderInTestApp } from '@backstage/test-utils';
 import React from 'react';
 import { useLocation, useOutlet } from 'react-router';
 import { useSearch } from '../SearchContext';
-import { SearchPage } from './';
+import { SearchPage } from './SearchPage';
 
 jest.mock('react-router', () => ({
   ...jest.requireActual('react-router'),
@@ -76,7 +76,7 @@ describe('SearchPage', () => {
     const expectedPageCursor = 'SOMEPAGE';
 
     // e.g. ?query=petstore&pageCursor=SOMEPAGE&filters[lifecycle][]=experimental&filters[kind]=Component
-    (useLocation as jest.Mock).mockReturnValueOnce({
+    (useLocation as jest.Mock).mockReturnValue({
       search: `?query=${expectedTerm}&types[]=${expectedTypes[0]}&filters[${expectedFilterField}]=${expectedFilterValue}&pageCursor=${expectedPageCursor}`,
     });
 

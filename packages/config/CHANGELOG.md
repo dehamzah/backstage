@@ -1,5 +1,92 @@
 # @backstage/config
 
+## 1.0.0
+
+### Major Changes
+
+- b58c70c223: This package has been promoted to v1.0! To understand how this change affects the package, please check out our [versioning policy](https://backstage.io/docs/overview/versioning-policy).
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/types@1.0.0
+
+## 0.1.15
+
+### Patch Changes
+
+- Fix for the previous release with missing type declarations.
+- Updated dependencies
+  - @backstage/types@0.1.3
+
+## 0.1.14
+
+### Patch Changes
+
+- c77c5c7eb6: Added `backstage.role` to `package.json`
+- Updated dependencies
+  - @backstage/types@0.1.2
+
+## 0.1.13
+
+### Patch Changes
+
+- f685e1398f: Loading of app configurations now reference the `@deprecated` construct from
+  JSDoc to determine if a property in-use has been deprecated. Users are notified
+  of deprecated keys in the format:
+
+  ```txt
+  The configuration key 'catalog.processors.githubOrg' of app-config.yaml is deprecated and may be removed soon. Configure a GitHub integration instead.
+  ```
+
+  When the `withDeprecatedKeys` option is set to `true` in the `process` method
+  of `loadConfigSchema`, the user will be notified that deprecated keys have been
+  identified in their app configuration.
+
+  The `backend-common` and `plugin-app-backend` packages have been updated to set
+  `withDeprecatedKeys` to true so that users are notified of deprecated settings
+  by default.
+
+## 0.1.13-next.0
+
+### Patch Changes
+
+- f685e1398f: Loading of app configurations now reference the `@deprecated` construct from
+  JSDoc to determine if a property in-use has been deprecated. Users are notified
+  of deprecated keys in the format:
+
+  ```txt
+  The configuration key 'catalog.processors.githubOrg' of app-config.yaml is deprecated and may be removed soon. Configure a GitHub integration instead.
+  ```
+
+  When the `withDeprecatedKeys` option is set to `true` in the `process` method
+  of `loadConfigSchema`, the user will be notified that deprecated keys have been
+  identified in their app configuration.
+
+  The `backend-common` and `plugin-app-backend` packages have been updated to set
+  `withDeprecatedKeys` to true so that users are notified of deprecated settings
+  by default.
+
+## 0.1.12
+
+### Patch Changes
+
+- f5343e7c1a: The `ConfigReader#get` method now always returns a deep clone of the configuration data.
+
+## 0.1.11
+
+### Patch Changes
+
+- 10d267a1b7: Minor exports cleanup
+- 41c49884d2: Start using the new `@backstage/types` package. Initially, this means using the `Observable` and `Json*` types from there. The types also remain in their old places but deprecated, and will be removed in a future release.
+- 925a967f36: Replace usage of test-utils-core with test-utils
+
+## 0.1.10
+
+### Patch Changes
+
+- febddedcb2: Bump `lodash` to remediate `SNYK-JS-LODASH-590103` security vulnerability
+
 ## 0.1.9
 
 ### Patch Changes

@@ -25,10 +25,9 @@ The Tech Radar can be used in two ways:
 
 For either simple or advanced installations, you'll need to add the dependency using Yarn:
 
-```sh
+```bash
 # From your Backstage root directory
-cd packages/app
-yarn add @backstage/plugin-tech-radar
+yarn add --cwd packages/app @backstage/plugin-tech-radar
 ```
 
 ### Configuration
@@ -64,6 +63,10 @@ export interface TechRadarPageProps {
 }
 ```
 
+### Radar properties
+
+When defining the radar entries you can see the available properties on the file [api](./src/api.ts)
+
 ## Frequently Asked Questions
 
 ### Who created the Tech Radar?
@@ -81,7 +84,7 @@ import {
   TechRadarLoaderResponse,
 } from '@backstage/plugin-tech-radar';
 
-class MyOwnClient implements TechRadarApi {
+export class MyOwnClient implements TechRadarApi {
   async load(id: string | undefined): Promise<TechRadarLoaderResponse> {
     // if needed id prop can be used to fetch the correct data
 

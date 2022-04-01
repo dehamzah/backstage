@@ -14,33 +14,7 @@
  * limitations under the License.
  */
 
-/**
- * A type representing all allowed JSON primitive values.
- *
- * @public
- */
-export type JsonPrimitive = number | string | boolean | null;
-
-/**
- * A type representing all allowed JSON object values.
- *
- * @public
- */
-export type JsonObject = { [key in string]?: JsonValue };
-
-/**
- * A type representing all allowed JSON array values.
- *
- * @public
- */
-export interface JsonArray extends Array<JsonValue> {}
-
-/**
- * A type representing all allowed JSON values.
- *
- * @public
- */
-export type JsonValue = JsonObject | JsonArray | JsonPrimitive;
+import { JsonObject, JsonValue } from '@backstage/types';
 
 /**
  * A serialized form of configuration data that carries additional context.
@@ -62,6 +36,12 @@ export type AppConfig = {
    * This can be used to warn the user if they try to read any of these keys.
    */
   filteredKeys?: string[];
+  /**
+   * A list of deprecated keys that were found in the  configuration when it was loaded.
+   *
+   * This can be used to warn the user if they are using deprecated properties.
+   */
+  deprecatedKeys?: { key: string; description: string }[];
 };
 
 /**

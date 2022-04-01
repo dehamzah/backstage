@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-import { Entity } from '@backstage/catalog-model';
 import {
   Box,
   Checkbox,
   FormControlLabel,
+  makeStyles,
   TextField,
   Typography,
 } from '@material-ui/core';
@@ -27,22 +27,59 @@ import CheckBoxOutlineBlankIcon from '@material-ui/icons/CheckBoxOutlineBlank';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import { Autocomplete } from '@material-ui/lab';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useEntityListProvider } from '../../hooks/useEntityListProvider';
+import { useEntityList } from '../../hooks/useEntityListProvider';
 import { EntityTagFilter } from '../../filters';
+import { useApi } from '@backstage/core-plugin-api';
+import useAsync from 'react-use/lib/useAsync';
+import { catalogApiRef } from '../../api';
+
+/** @public */
+export type CatalogReactEntityTagPickerClassKey = 'input';
+
+const useStyles = makeStyles(
+  {
+    input: {},
+  },
+  {
+    name: 'CatalogReactEntityTagPicker',
+  },
+);
 
 const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
 const checkedIcon = <CheckBoxIcon fontSize="small" />;
 
+/** @public */
 export const EntityTagPicker = () => {
-  const { updateFilters, backendEntities, filters, queryParameters } =
-    useEntityListProvider();
+  const classes = useStyles();
+  const { updateFilters, filters, queryParameters } = useEntityList();
 
-  const queryParamTags = [queryParameters.tags]
-    .flat()
-    .filter(Boolean) as string[];
+  const catalogApi = useApi(catalogApiRef);
+  const { value: availableTags } = useAsync(async () => {
+    const facet = 'metadata.tags';
+    const { facets } = await catalogApi.getEntityFacets({
+      facets: [facet],
+      filter: filters.kind?.getCatalogFilters(),
+    });
+
+    return facets[facet].map(({ value }) => value);
+  }, [filters.kind]);
+
+  const queryParamTags = useMemo(
+    () => [queryParameters.tags].flat().filter(Boolean) as string[],
+    [queryParameters],
+  );
+
   const [selectedTags, setSelectedTags] = useState(
     queryParamTags.length ? queryParamTags : filters.tags?.values ?? [],
   );
+
+  // Set selected tags on query parameter updates; this happens at initial page load and from
+  // external updates to the page location.
+  useEffect(() => {
+    if (queryParamTags.length) {
+      setSelectedTags(queryParamTags);
+    }
+  }, [queryParamTags]);
 
   useEffect(() => {
     updateFilters({
@@ -50,19 +87,7 @@ export const EntityTagPicker = () => {
     });
   }, [selectedTags, updateFilters]);
 
-  const availableTags = useMemo(
-    () =>
-      [
-        ...new Set(
-          backendEntities
-            .flatMap((e: Entity) => e.metadata.tags)
-            .filter(Boolean) as string[],
-        ),
-      ].sort(),
-    [backendEntities],
-  );
-
-  if (!availableTags.length) return null;
+  if (!availableTags?.length) return null;
 
   return (
     <Box pb={1} pt={1}>
@@ -87,7 +112,9 @@ export const EntityTagPicker = () => {
         )}
         size="small"
         popupIcon={<ExpandMoreIcon data-testid="tag-picker-expand" />}
-        renderInput={params => <TextField {...params} variant="outlined" />}
+        renderInput={params => (
+          <TextField {...params} className={classes.input} variant="outlined" />
+        )}
       />
     </Box>
   );

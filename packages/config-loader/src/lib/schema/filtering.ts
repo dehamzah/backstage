@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-import { JsonObject, JsonValue } from '@backstage/config';
+import { JsonObject, JsonValue } from '@backstage/types';
 import {
   ConfigVisibility,
   DEFAULT_CONFIG_VISIBILITY,
   TransformFunc,
+  ValidationError,
 } from './types';
 
 /**
@@ -28,11 +29,18 @@ import {
 export function filterByVisibility(
   data: JsonObject,
   includeVisibilities: ConfigVisibility[],
-  visibilityByPath: Map<string, ConfigVisibility>,
+  visibilityByDataPath: Map<string, ConfigVisibility>,
+  deprecationByDataPath: Map<string, string>,
   transformFunc?: TransformFunc<number | string | boolean>,
   withFilteredKeys?: boolean,
-): { data: JsonObject; filteredKeys?: string[] } {
+  withDeprecatedKeys?: boolean,
+): {
+  data: JsonObject;
+  filteredKeys?: string[];
+  deprecatedKeys?: { key: string; description: string }[];
+} {
   const filteredKeys = new Array<string>();
+  const deprecatedKeys = new Array<{ key: string; description: string }>();
 
   function transform(
     jsonVal: JsonValue,
@@ -40,8 +48,14 @@ export function filterByVisibility(
     filterPath: string, // Matches the format of the ConfigReader
   ): JsonValue | undefined {
     const visibility =
-      visibilityByPath.get(visibilityPath) ?? DEFAULT_CONFIG_VISIBILITY;
+      visibilityByDataPath.get(visibilityPath) ?? DEFAULT_CONFIG_VISIBILITY;
     const isVisible = includeVisibilities.includes(visibility);
+
+    // deprecated keys are added regardless of visibility indicator
+    const deprecation = deprecationByDataPath.get(visibilityPath);
+    if (deprecation) {
+      deprecatedKeys.push({ key: filterPath, description: deprecation });
+    }
 
     if (typeof jsonVal !== 'object') {
       if (isVisible) {
@@ -60,11 +74,17 @@ export function filterByVisibility(
       const arr = new Array<JsonValue>();
 
       for (const [index, value] of jsonVal.entries()) {
-        const out = transform(
-          value,
+        let path = visibilityPath;
+        const hasVisibilityInIndex = visibilityByDataPath.get(
           `${visibilityPath}/${index}`,
-          `${filterPath}[${index}]`,
         );
+
+        if (hasVisibilityInIndex || typeof value === 'object') {
+          path = `${visibilityPath}/${index}`;
+        }
+
+        const out = transform(value, path, `${filterPath}[${index}]`);
+
         if (out !== undefined) {
           arr.push(out);
         }
@@ -102,6 +122,58 @@ export function filterByVisibility(
 
   return {
     filteredKeys: withFilteredKeys ? filteredKeys : undefined,
+    deprecatedKeys: withDeprecatedKeys ? deprecatedKeys : undefined,
     data: (transform(data, '', '') as JsonObject) ?? {},
   };
+}
+
+export function filterErrorsByVisibility(
+  errors: ValidationError[] | undefined,
+  includeVisibilities: ConfigVisibility[] | undefined,
+  visibilityByDataPath: Map<string, ConfigVisibility>,
+  visibilityBySchemaPath: Map<string, ConfigVisibility>,
+): ValidationError[] {
+  if (!errors) {
+    return [];
+  }
+  if (!includeVisibilities) {
+    return errors;
+  }
+
+  const visibleSchemaPaths = Array.from(visibilityBySchemaPath)
+    .filter(([, v]) => includeVisibilities.includes(v))
+    .map(([k]) => k);
+
+  // If we're filtering by visibility we only care about the errors that happened
+  // in a visible path.
+  return errors.filter(error => {
+    // We always include structural errors as we don't know whether there are
+    // any visible paths within the structures.
+    if (
+      error.keyword === 'type' &&
+      ['object', 'array'].includes(error.params.type)
+    ) {
+      return true;
+    }
+
+    // For fields that were required we use the schema path to determine whether
+    // it was visible in addition to the data path. This is because the data path
+    // visibilities are only populated for values that we reached, which we won't
+    // if the value is missing.
+    // We don't use this method for all the errors as the data path is more robust
+    // and doesn't require us to properly trim the schema path.
+    if (error.keyword === 'required') {
+      const trimmedPath = error.schemaPath.slice(1, -'/required'.length);
+      const fullPath = `${trimmedPath}/properties/${error.params.missingProperty}`;
+      if (
+        visibleSchemaPaths.some(visiblePath => visiblePath.startsWith(fullPath))
+      ) {
+        return true;
+      }
+    }
+
+    const vis =
+      visibilityByDataPath.get(error.instancePath) ?? DEFAULT_CONFIG_VISIBILITY;
+    return vis && includeVisibilities.includes(vis);
+  });
 }

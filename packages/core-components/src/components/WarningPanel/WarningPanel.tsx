@@ -14,16 +14,12 @@
  * limitations under the License.
  */
 import { BackstageTheme } from '@backstage/theme';
-import {
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Grid,
-  makeStyles,
-  Typography,
-  darken,
-  lighten,
-} from '@material-ui/core';
+import { makeStyles, darken, lighten } from '@material-ui/core/styles';
+import Accordion from '@material-ui/core/Accordion';
+import AccordionSummary from '@material-ui/core/AccordionSummary';
+import AccordionDetails from '@material-ui/core/AccordionDetails';
+import Grid from '@material-ui/core/Grid';
+import Typography from '@material-ui/core/Typography';
 import ErrorOutline from '@material-ui/icons/ErrorOutline';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import React from 'react';
@@ -64,56 +60,66 @@ const ExpandMoreIconStyled = ({ severity }: Pick<WarningProps, 'severity'>) => {
   return <ExpandMoreIcon classes={classes} />;
 };
 
-const useStyles = makeStyles<BackstageTheme>(theme => ({
-  panel: {
-    backgroundColor: ({ severity }: WarningProps) =>
-      getWarningBackgroundColor(
-        severity as NonNullable<WarningProps['severity']>,
-        theme,
-      ),
-    color: ({ severity }: WarningProps) =>
-      getWarningTextColor(
-        severity as NonNullable<WarningProps['severity']>,
-        theme,
-      ),
-    verticalAlign: 'middle',
-  },
-  summary: {
-    display: 'flex',
-    flexDirection: 'row',
-  },
-  summaryText: {
-    color: ({ severity }: WarningProps) =>
-      getWarningTextColor(
-        severity as NonNullable<WarningProps['severity']>,
-        theme,
-      ),
-    fontWeight: 'bold',
-  },
-  message: {
-    width: '100%',
-    display: 'block',
-    color: ({ severity }: WarningProps) =>
-      getWarningTextColor(
-        severity as NonNullable<WarningProps['severity']>,
-        theme,
-      ),
-    backgroundColor: ({ severity }: WarningProps) =>
-      getWarningBackgroundColor(
-        severity as NonNullable<WarningProps['severity']>,
-        theme,
-      ),
-  },
-  details: {
-    width: '100%',
-    display: 'block',
-    color: theme.palette.textContrast,
-    backgroundColor: theme.palette.background.default,
-    border: `1px solid ${theme.palette.border}`,
-    padding: theme.spacing(2.0),
-    fontFamily: 'sans-serif',
-  },
-}));
+export type WarningPanelClassKey =
+  | 'panel'
+  | 'summary'
+  | 'summaryText'
+  | 'message'
+  | 'details';
+
+const useStyles = makeStyles<BackstageTheme>(
+  theme => ({
+    panel: {
+      backgroundColor: ({ severity }: WarningProps) =>
+        getWarningBackgroundColor(
+          severity as NonNullable<WarningProps['severity']>,
+          theme,
+        ),
+      color: ({ severity }: WarningProps) =>
+        getWarningTextColor(
+          severity as NonNullable<WarningProps['severity']>,
+          theme,
+        ),
+      verticalAlign: 'middle',
+    },
+    summary: {
+      display: 'flex',
+      flexDirection: 'row',
+    },
+    summaryText: {
+      color: ({ severity }: WarningProps) =>
+        getWarningTextColor(
+          severity as NonNullable<WarningProps['severity']>,
+          theme,
+        ),
+      fontWeight: 'bold',
+    },
+    message: {
+      width: '100%',
+      display: 'block',
+      color: ({ severity }: WarningProps) =>
+        getWarningTextColor(
+          severity as NonNullable<WarningProps['severity']>,
+          theme,
+        ),
+      backgroundColor: ({ severity }: WarningProps) =>
+        getWarningBackgroundColor(
+          severity as NonNullable<WarningProps['severity']>,
+          theme,
+        ),
+    },
+    details: {
+      width: '100%',
+      display: 'block',
+      color: theme.palette.textContrast,
+      backgroundColor: theme.palette.background.default,
+      border: `1px solid ${theme.palette.border}`,
+      padding: theme.spacing(2.0),
+      fontFamily: 'sans-serif',
+    },
+  }),
+  { name: 'BackstageWarningPanel' },
+);
 
 export type WarningProps = {
   title?: string;
@@ -128,14 +134,18 @@ const capitalize = (s: string) => {
 };
 
 /**
- * WarningPanel. Show a user friendly error message to a user similar to ErrorPanel except that the warning panel
- * only shows the warning message to the user.
+ * WarningPanel. Show a user friendly error message to a user similar to
+ * ErrorPanel except that the warning panel only shows the warning message to
+ * the user.
  *
- * @param {string} [severity=warning] Ability to change the severity of the alert.
- * @param {string} [title] A title for the warning. If not supplied, "Warning" will be used.
- * @param {Object} [message] Optional more detailed user-friendly message elaborating on the cause of the error.
- * @param {Object} [children] Objects to provide context, such as a stack trace or detailed error reporting.
- * Will be available inside an unfolded accordion.
+ * @param severity - Ability to change the severity of the alert. Default value
+ *        "warning"
+ * @param title - A title for the warning. If not supplied, "Warning" will be
+ *        used.
+ * @param message - Optional more detailed user-friendly message elaborating on
+ *        the cause of the error.
+ * @param children - Objects to provide context, such as a stack trace or detailed
+ *        error reporting. Will be available inside an unfolded accordion.
  */
 export function WarningPanel(props: WarningProps) {
   const {

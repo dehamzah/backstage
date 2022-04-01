@@ -15,8 +15,35 @@
  */
 import { ClusterLinksFormatterOptions } from '../../../types/types';
 
-export function rancherFormatter(_options: ClusterLinksFormatterOptions): URL {
-  throw new Error(
-    'Rancher formatter is not yet implemented. Please, contribute!',
+const kindMappings: Record<string, string> = {
+  deployment: 'apps.deployment',
+  ingress: 'networking.k8s.io.ingress',
+  service: 'service',
+  horizontalpodautoscaler: 'autoscaling.horizontalpodautoscaler',
+};
+
+export function rancherFormatter(options: ClusterLinksFormatterOptions): URL {
+  if (!options.dashboardUrl) {
+    throw new Error('Rancher dashboard requires a dashboardUrl option');
+  }
+  const basePath = new URL(options.dashboardUrl.href);
+  const name = encodeURIComponent(options.object.metadata?.name ?? '');
+  const namespace = encodeURIComponent(
+    options.object.metadata?.namespace ?? '',
   );
+  const validKind = kindMappings[options.kind.toLocaleLowerCase('en-US')];
+  if (!basePath.pathname.endsWith('/')) {
+    // a dashboard url with a path should end with a slash otherwise
+    // the new combined URL will replace the last segment with the appended path!
+    // https://foobar.com/abc/def + explorer/service/test  --> https://foobar.com/abc/explorer/service/test
+    // https://foobar.com/abc/def/ + explorer/service/test --> https://foobar.com/abc/def/explorer/service/test
+    basePath.pathname += '/';
+  }
+  let path = '';
+  if (validKind && name && namespace) {
+    path = `explorer/${validKind}/${namespace}/${name}`;
+  } else if (namespace) {
+    path = 'explorer/workload';
+  }
+  return new URL(path, basePath);
 }

@@ -28,30 +28,5 @@ export interface Config {
      * The commit message used when new components are created.
      */
     defaultCommitMessage?: string;
-    github?: {
-      [key: string]: string;
-      /**
-       * The visibility to set on created repositories.
-       */
-      visibility?: 'public' | 'internal' | 'private';
-    };
-    gitlab?: {
-      api: { [key: string]: string };
-      /**
-       * The visibility to set on created repositories.
-       */
-      visibility?: 'public' | 'internal' | 'private';
-    };
-    azure?: {
-      baseUrl: string;
-      api: { [key: string]: string };
-    };
-    bitbucket?: {
-      api: { [key: string]: string };
-      /**
-       * The visibility to set on created repositories.
-       */
-      visibility?: 'public' | 'private';
-    };
   };
 }

@@ -14,12 +14,50 @@
  * limitations under the License.
  */
 
-import { Entity, EntityRelationSpec, Location } from '@backstage/catalog-model';
-import { EntityFilter, EntityPagination } from '../database/types';
+import { Entity } from '@backstage/catalog-model';
 
-//
-// Entities
-//
+/**
+ * A filter expression for entities.
+ *
+ * Any (at least one) of the outer sets must match, within which all of the
+ * individual filters must match.
+ * @public
+ */
+export type EntityFilter =
+  | { allOf: EntityFilter[] }
+  | { anyOf: EntityFilter[] }
+  | { not: EntityFilter }
+  | EntitiesSearchFilter;
+
+/**
+ * A pagination rule for entities.
+ */
+export type EntityPagination = {
+  limit?: number;
+  offset?: number;
+  after?: string;
+};
+
+/**
+ * Matches rows in the search table.
+ * @public
+ */
+export type EntitiesSearchFilter = {
+  /**
+   * The key to match on.
+   *
+   * Matches are always case insensitive.
+   */
+  key: string;
+
+  /**
+   * Match on plain equality of values.
+   *
+   * Match on values that are equal to any of the given array items. Matches are
+   * always case insensitive.
+   */
+  values?: string[];
+};
 
 export type PageInfo =
   | {
@@ -34,6 +72,7 @@ export type EntitiesRequest = {
   filter?: EntityFilter;
   fields?: (entity: Entity) => Entity;
   pagination?: EntityPagination;
+  authorizationToken?: string;
 };
 
 export type EntitiesResponse = {
@@ -41,85 +80,81 @@ export type EntitiesResponse = {
   pageInfo: PageInfo;
 };
 
-export type EntityUpsertRequest = {
-  entity: Entity;
-  relations: EntityRelationSpec[];
+export type EntityAncestryResponse = {
+  rootEntityRef: string;
+  items: Array<{
+    entity: Entity;
+    parentEntityRefs: string[];
+  }>;
 };
 
-export type EntityUpsertResponse = {
-  entityId: string;
-  entity?: Entity;
-};
+/**
+ * The request shape for {@link EntitiesCatalog.facets}.
+ */
+export interface EntityFacetsRequest {
+  /**
+   * A filter to apply on the full list of entities before computing the facets.
+   */
+  filter?: EntityFilter;
+  /**
+   * The facets to compute.
+   *
+   * @remarks
+   *
+   * This is a list of strings corresponding to paths within individual entity
+   * shapes. For example, to compute the facets for all available tags, you
+   * would pass in the string 'metadata.tags'.
+   */
+  facets: string[];
+  /**
+   * The optional token that authorizes the action.
+   */
+  authorizationToken?: string;
+}
 
-export type EntitiesCatalog = {
+/**
+ * The response shape for {@link EntitiesCatalog.facets}.
+ */
+export interface EntityFacetsResponse {
+  /**
+   * The computed facets, one entry per facet in the request.
+   */
+  facets: Record<string, Array<{ value: string; count: number }>>;
+}
+
+export interface EntitiesCatalog {
   /**
    * Fetch entities.
    *
-   * @param request Request options
+   * @param request - Request options
    */
   entities(request?: EntitiesRequest): Promise<EntitiesResponse>;
 
   /**
    * Removes a single entity.
    *
-   * @param uid The metadata.uid of the entity
+   * @param uid - The metadata.uid of the entity
    */
-  removeEntityByUid(uid: string): Promise<void>;
+  removeEntityByUid(
+    uid: string,
+    options?: { authorizationToken?: string },
+  ): Promise<void>;
 
   /**
-   * Writes a number of entities efficiently to storage.
+   * Returns the full ancestry tree upward along reference edges.
    *
-   * @param requests The entities and their relations
-   * @param options.locationId The location that they all belong to (default none)
-   * @param options.dryRun Whether to throw away the results (default false)
-   * @param options.outputEntities Whether to return the resulting entities (default false)
+   * @param entityRef - An entity reference to the root of the tree
    */
-  batchAddOrUpdateEntities(
-    requests: EntityUpsertRequest[],
-    options?: {
-      locationId?: string;
-      dryRun?: boolean;
-      outputEntities?: boolean;
-    },
-  ): Promise<EntityUpsertResponse[]>;
-};
+  entityAncestry(
+    entityRef: string,
+    options?: { authorizationToken?: string },
+  ): Promise<EntityAncestryResponse>;
 
-//
-// Locations
-//
-
-export type LocationUpdateStatus = {
-  timestamp: string | null;
-  status: string | null;
-  message: string | null;
-};
-export type LocationUpdateLogEvent = {
-  id: string;
-  status: 'fail' | 'success';
-  location_id: string;
-  entity_name: string;
-  created_at?: string;
-  message?: string;
-};
-
-export type LocationResponse = {
-  data: Location;
-  currentStatus: LocationUpdateStatus;
-};
-
-export type LocationsCatalog = {
-  addLocation(location: Location): Promise<Location>;
-  removeLocation(id: string): Promise<void>;
-  locations(): Promise<LocationResponse[]>;
-  location(id: string): Promise<LocationResponse>;
-  locationHistory(id: string): Promise<LocationUpdateLogEvent[]>;
-  logUpdateSuccess(
-    locationId: string,
-    entityName?: string | string[],
-  ): Promise<void>;
-  logUpdateFailure(
-    locationId: string,
-    error?: Error,
-    entityName?: string,
-  ): Promise<void>;
-};
+  /**
+   * Computes facets for a set of entities, e.g. for populating filter lists
+   * or driving insights or similar.
+   *
+   * @param request - Request options
+   */
+  facets(request: EntityFacetsRequest): Promise<EntityFacetsResponse>;
+}

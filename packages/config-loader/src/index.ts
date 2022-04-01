@@ -25,9 +25,14 @@ export type {
   ConfigSchema,
   ConfigSchemaProcessingOptions,
   ConfigVisibility,
-  EnvFunc,
   LoadConfigSchemaOptions,
   TransformFunc,
 } from './lib';
 export { loadConfig } from './loader';
-export type { LoadConfigOptions } from './loader';
+export type {
+  ConfigTarget,
+  LoadConfigOptions,
+  LoadConfigOptionsWatch,
+  LoadConfigOptionsRemote,
+  LoadConfigResult,
+} from './loader';

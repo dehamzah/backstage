@@ -19,10 +19,9 @@ switch between database backends.
 
 First, add PostgreSQL to your `backend` package:
 
-```shell
+```bash
 # From your Backstage root directory
-cd packages/backend
-yarn add pg
+yarn add --cwd packages/backend pg
 ```
 
 ## Add PostgreSQL configuration
@@ -33,7 +32,7 @@ configuration for the backend:
 ```diff
 backend:
   database:
--    client: sqlite3
+-    client: better-sqlite3
 -    connection: ':memory:'
 +    # config options: https://node-postgres.com/api/client
 +    client: pg
@@ -43,9 +42,11 @@ backend:
 +      user: ${POSTGRES_USER}
 +      password: ${POSTGRES_PASSWORD}
 +      # https://node-postgres.com/features/ssl
-+      #ssl: require # see https://www.postgresql.org/docs/current/libpq-ssl.html Table 33.1. SSL Mode Descriptions (e.g. require)
-+        #ca: # if you have a CA file and want to verify it you can uncomment this section
-+        #$file: <file-path>/ca/server.crt
++      # you can set the sslmode configuration option via the `PGSSLMODE` environment variable
++      # see https://www.postgresql.org/docs/current/libpq-ssl.html Table 33.1. SSL Mode Descriptions (e.g. require)
++      # ssl:
++      #   ca: # if you have a CA file and want to verify it you can uncomment this section
++      #     $file: <file-path>/ca/server.crt
 ```
 
 If you have an `app-config.local.yaml` for local development, a similar update

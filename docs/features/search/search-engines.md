@@ -4,9 +4,9 @@ title: Search Engines
 description: Choosing and configuring your search engine for Backstage
 ---
 
-Backstage supports 2 search engines by default, an in-memory engine called Lunr
-and ElasticSearch. You can configure your own search engines by implementing the
-provided interface as mentioned in the
+Backstage supports 3 search engines by default, an in-memory engine called Lunr,
+ElasticSearch and Postgres. You can configure your own search engines by
+implementing the provided interface as mentioned in the
 [search backend documentation.](./getting-started.md#Backend)
 
 Provided search engine implementations have their own way of constructing
@@ -17,7 +17,7 @@ provided search engines by using the exposed setter to set the modified query
 translator into the instance.
 
 ```typescript
-const searchEngine = new LunrSearchEngine({ logger });
+const searchEngine = new LunrSearchEngine({ logger: env.logger });
 searchEngine.setTranslator(new MyNewAndBetterQueryTranslator());
 ```
 
@@ -30,8 +30,8 @@ Lunr can be instantiated like this:
 
 ```typescript
 // app/backend/src/plugins/search.ts
-const searchEngine = new LunrSearchEngine({ logger });
-const indexBuilder = new IndexBuilder({ logger, searchEngine });
+const searchEngine = new LunrSearchEngine({ logger: env.logger });
+const indexBuilder = new IndexBuilder({ logger: env.logger, searchEngine });
 ```
 
 ## Postgres
@@ -58,9 +58,9 @@ configured and make the following changes to your backend:
 // In packages/backend/src/plugins/search.ts
 
 // Initialize a connection to a search engine.
-const searchEngine = (await PgSearchEngine.supported(database))
-  ? await PgSearchEngine.from({ database })
-  : new LunrSearchEngine({ logger });
+const searchEngine = (await PgSearchEngine.supported(env.database))
+  ? await PgSearchEngine.from({ database: env.database })
+  : new LunrSearchEngine({ logger: env.logger });
 ```
 
 ## ElasticSearch
@@ -74,10 +74,10 @@ Similarly to Lunr above, ElasticSearch can be set up like this:
 ```typescript
 // app/backend/src/plugins/search.ts
 const searchEngine = await ElasticSearchSearchEngine.initialize({
-  logger,
-  config,
+  logger: env.logger,
+  config: env.config,
 });
-const indexBuilder = new IndexBuilder({ logger, searchEngine });
+const indexBuilder = new IndexBuilder({ logger: env.logger, searchEngine });
 ```
 
 For the engine to be available, your backend package needs a dependency into
@@ -89,6 +89,18 @@ within your instance. The configuration options are documented in the
 
 The underlying functionality is using official ElasticSearch client version 7.x,
 meaning that ElasticSearch version 7 is the only one confirmed to be supported.
+
+Should you need to create your own bespoke search experiences that require more
+than just a query translator (such as faceted search or Relay pagination), you
+can access the configuration of the search engine in order to create new elastic
+search clients. The version of the client need not be the same as one used
+internally by the elastic search engine plugin. For example:
+
+```typescript
+import { Client } from '@elastic/elastic-search';
+
+const client = searchEngine.newClient(options => new Client(options));
+```
 
 ## Example configurations
 

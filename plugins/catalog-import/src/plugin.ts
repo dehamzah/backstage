@@ -21,18 +21,25 @@ import {
   createRoutableExtension,
   createRouteRef,
   discoveryApiRef,
-  githubAuthApiRef,
   identityApiRef,
 } from '@backstage/core-plugin-api';
-import { scmIntegrationsApiRef } from '@backstage/integration-react';
+import {
+  scmAuthApiRef,
+  scmIntegrationsApiRef,
+} from '@backstage/integration-react';
 import { catalogApiRef } from '@backstage/plugin-catalog-react';
 import { catalogImportApiRef, CatalogImportClient } from './api';
 
 export const rootRouteRef = createRouteRef({
-  path: '',
-  title: 'catalog-import',
+  id: 'catalog-import',
 });
 
+/**
+ * A plugin that helps the user in importing projects and YAML files into the
+ * catalog.
+ *
+ * @public
+ */
 export const catalogImportPlugin = createPlugin({
   id: 'catalog-import',
   apis: [
@@ -40,7 +47,7 @@ export const catalogImportPlugin = createPlugin({
       api: catalogImportApiRef,
       deps: {
         discoveryApi: discoveryApiRef,
-        githubAuthApi: githubAuthApiRef,
+        scmAuthApi: scmAuthApiRef,
         identityApi: identityApiRef,
         scmIntegrationsApi: scmIntegrationsApiRef,
         catalogApi: catalogApiRef,
@@ -48,7 +55,7 @@ export const catalogImportPlugin = createPlugin({
       },
       factory: ({
         discoveryApi,
-        githubAuthApi,
+        scmAuthApi,
         identityApi,
         scmIntegrationsApi,
         catalogApi,
@@ -56,7 +63,7 @@ export const catalogImportPlugin = createPlugin({
       }) =>
         new CatalogImportClient({
           discoveryApi,
-          githubAuthApi,
+          scmAuthApi,
           scmIntegrationsApi,
           identityApi,
           catalogApi,
@@ -69,8 +76,14 @@ export const catalogImportPlugin = createPlugin({
   },
 });
 
+/**
+ * The page for importing projects and YAML files into the catalog.
+ *
+ * @public
+ */
 export const CatalogImportPage = catalogImportPlugin.provide(
   createRoutableExtension({
+    name: 'CatalogImportPage',
     component: () => import('./components/ImportPage').then(m => m.ImportPage),
     mountPoint: rootRouteRef,
   }),
