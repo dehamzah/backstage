@@ -2309,10 +2309,10 @@
     stream-events "^1.0.1"
     xdg-basedir "^4.0.0"
 
-"@graphiql/toolkit@^0.4.2":
-  version "0.4.2"
-  resolved "https://registry.npmjs.org/@graphiql/toolkit/-/toolkit-0.4.2.tgz#34de819add64672f3f7d4830dffb2094fb8d5366"
-  integrity sha512-14uG67QrONbRrhXwvBJFsMfcQfexmGhj7dgkputesx9xuPUkcCDNmVULnVA8sGYt8P/rSvjkfQYx3rtfW+GhAQ==
+"@graphiql/toolkit@^0.4.3":
+  version "0.4.3"
+  resolved "https://registry.npmjs.org/@graphiql/toolkit/-/toolkit-0.4.3.tgz#2653d045693d902f7faaf87b9047e8786397ec48"
+  integrity sha512-L0l6BezvTXmWZhtdmZxirhYwKzcZToAciQY0A13KRAWSpJ9bb/ZdkBpcz3fOXrsjuJHf0wBr6Vk9kztJ6lV7uA==
   dependencies:
     "@n1ru4l/push-pull-async-iterable-iterator" "^3.1.0"
     meros "^1.1.4"
@@ -9383,13 +9383,13 @@ code-point-at@^1.0.0:
   resolved "https://registry.npmjs.org/code-point-at/-/code-point-at-1.1.0.tgz#0d070b4d043a5bea33a2f1a40e2edb3d9a4ccf77"
   integrity sha1-DQcLTQQ6W+ozovGkDi7bPZpMz3c=
 
-codemirror-graphql@^1.2.15:
-  version "1.2.15"
-  resolved "https://registry.npmjs.org/codemirror-graphql/-/codemirror-graphql-1.2.15.tgz#0a7ba091ee429763aa31075e1c06ce1ed29a655f"
-  integrity sha512-srON9VHCaVt6VoZm2m7Qgy0EUNCUgD50Lc3HRtHpyoi1HRjN9dAens6KlQPjv5uJrpuYLGkhwiYjh92zLfSyiA==
+codemirror-graphql@^1.2.16:
+  version "1.2.16"
+  resolved "https://registry.npmjs.org/codemirror-graphql/-/codemirror-graphql-1.2.16.tgz#21722300a189320333ee923c1644d4c3e1a0990b"
+  integrity sha512-26F6vkrqnZ5g/v3FTYhNtwdB2CZ8zatE8wI5W+EoNx5O1yQ+2KCZUnX3uREKqV/bHMS9TIvtlsPVg5EXYDk2MQ==
   dependencies:
     "@codemirror/stream-parser" "^0.19.2"
-    graphql-language-service "^5.0.1"
+    graphql-language-service "^5.0.2"
 
 codemirror@^5.58.2:
   version "5.63.3"
@@ -13525,17 +13525,17 @@ grapheme-splitter@^1.0.4:
   integrity sha512-bzh50DW9kTPM00T8y4o8vQg89Di9oLJVLW/KaOGIXJWP/iqCN6WKYkbNOF04vFLJhwcpYUh9ydh/+5vpOqV4YQ==
 
 graphiql@^1.5.12:
-  version "1.8.2"
-  resolved "https://registry.npmjs.org/graphiql/-/graphiql-1.8.2.tgz#f3debd55b7bbcc8a5ea5022060f7a24c6b9c9aee"
-  integrity sha512-e8svnv6Nw2Q/uWueDhUmUeQ/jlTC/i6zRXI6JjMNEaGJUXUx2SFPny9MSqM7JCHhCOs+XhAgDD7nwib2+YSpwg==
+  version "1.8.5"
+  resolved "https://registry.npmjs.org/graphiql/-/graphiql-1.8.5.tgz#f8add7f93680f53069a8ab3052fe9fd536375320"
+  integrity sha512-R8hDuVbytoKnPtKaw6wTdYEZRgbsAuh5Ovpsq6ZLW4Fs5AbVdIdpgphaKTEoBfOmFvFocz7ejTDZcY+UmjRxFg==
   dependencies:
-    "@graphiql/toolkit" "^0.4.2"
+    "@graphiql/toolkit" "^0.4.3"
     codemirror "^5.58.2"
-    codemirror-graphql "^1.2.15"
+    codemirror-graphql "^1.2.16"
     copy-to-clipboard "^3.2.0"
     entities "^2.0.0"
     escape-html "^1.0.3"
-    graphql-language-service "^5.0.1"
+    graphql-language-service "^5.0.2"
     markdown-it "^12.2.0"
     set-value "^4.1.0"
 
@@ -13580,12 +13580,11 @@ graphql-config@^4.1.0:
     minimatch "3.0.4"
     string-env-interpolation "1.0.1"
 
-graphql-language-service@^5.0.1:
-  version "5.0.1"
-  resolved "https://registry.npmjs.org/graphql-language-service/-/graphql-language-service-5.0.1.tgz#de72d12051fa48deec3883f4980f6ff3475ab8d6"
-  integrity sha512-DGaGtCyU5ugCJIkTWqFxNESFCqjNEHJGWDhcu2jXY28GcPnTSqfKAk4ryCK4E514AKNFrvX9WwZEB6Csi+xbdQ==
+graphql-language-service@^5.0.2:
+  version "5.0.2"
+  resolved "https://registry.npmjs.org/graphql-language-service/-/graphql-language-service-5.0.2.tgz#50bb6ccaf488e4d4ff5f73efbb9c1b328afc2026"
+  integrity sha512-CHw78TGrUywA1Iut8PNIGfW2bonJCCgtD3nfhUGkIaiMoN/Y7IbftxlshauLNufRYhDXLSfNDDSvHFjh3agP/Q==
   dependencies:
-    graphql-config "^4.1.0"
     nullthrows "^1.0.0"
     vscode-languageserver-types "^3.15.1"
 
