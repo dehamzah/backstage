@@ -1,6 +1,6 @@
 apiVersion: backstage.io/v1alpha1
 kind: Component
-metadata:
+metadataa:
   name: backstage
   description: |
     Backstage is an open-source developer portal that puts the developer experience first.
