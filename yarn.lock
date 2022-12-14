@@ -5064,10 +5064,10 @@
   resolved "https://registry.npmjs.org/@protobufjs/utf8/-/utf8-1.1.0.tgz#a777360b5b39a1a2e5106f8e858f2fd2d060c570"
   integrity sha1-p3c2C1s5oaLlEG+OhY8v0tBgxXA=
 
-"@react-hookz/deep-equal@^1.0.1":
-  version "1.0.1"
-  resolved "https://registry.npmjs.org/@react-hookz/deep-equal/-/deep-equal-1.0.1.tgz#1e9aad97b964879b54a3909f36f0727befa13e1f"
-  integrity sha512-6k/pU2jNlgYvKOy84vpCAZ8MGVwybvAdjzrh4UicCVOCPxz0LSBws1OE6O5TO4sPHaSw+yLfNzNK8RicGFc1Kw==
+"@react-hookz/deep-equal@^1.0.1", "@react-hookz/deep-equal@^1.0.3":
+  version "1.0.3"
+  resolved "https://registry.npmjs.org/@react-hookz/deep-equal/-/deep-equal-1.0.3.tgz#e044bca38c1612ea8c1596ef858ef7cfea49dd7a"
+  integrity sha512-lGZR5l3YRjzeIOHtJhiq96vQKrsq+9lsCyv+0fROMQeSNWtLLzX3R+psHNi6nsoP3XEhspiZ92nsiPmdNo8ztQ==
 
 "@react-hookz/web@^13.0.0":
   version "13.0.0"
@@ -5075,6 +5075,13 @@
   integrity sha512-sAMTOiOnAvxpJtHea7Vk+2+KJdTC/o77wPII+glnH+astNUSSiduptLaMPeoIXXwqjfJT+IJ9JzWyZPrLpdyFw==
   dependencies:
     "@react-hookz/deep-equal" "^1.0.1"
+
+"@react-hookz/web@^20.0.1":
+  version "20.0.1"
+  resolved "https://registry.npmjs.org/@react-hookz/web/-/web-20.0.1.tgz#52ded151e1e7c4c0d67e03980443dc912f220177"
+  integrity sha512-Khb2ytw9qknGAklFSTXEOTvS2cEAZ0uLgMvh2i4agWPneCvP5Et1FKffwxD0THU8R96+Ut9NDrGrQhg9lxJteQ==
+  dependencies:
+    "@react-hookz/deep-equal" "^1.0.3"
 
 "@rjsf/core@^3.2.1":
   version "3.2.1"
